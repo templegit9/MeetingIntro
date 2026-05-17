@@ -12,6 +12,8 @@ struct MeetingIntroApp: App {
     @StateObject private var notificationManager = NotificationManager()
     @StateObject private var countdownConfig = CountdownConfigManager()
     @StateObject private var mixkitSounds = MixkitSoundManager()
+    @StateObject private var contextMonitor = MeetingContextMonitor()
+    @StateObject private var smartConfig = SmartConfigManager()
 
     var body: some Scene {
         // MARK: - Menu Bar
@@ -23,7 +25,9 @@ struct MeetingIntroApp: App {
                 voiceReminder: voiceReminder,
                 notificationManager: notificationManager,
                 countdownConfig: countdownConfig,
-                mixkitSounds: mixkitSounds
+                mixkitSounds: mixkitSounds,
+                contextMonitor: contextMonitor,
+                smartConfig: smartConfig
             )
         } label: {
             Label("MeetingIntro", systemImage: "clock.badge.checkmark")
@@ -32,7 +36,16 @@ struct MeetingIntroApp: App {
 
         // MARK: - Settings Window
         Settings {
-            SettingsView(calendarManager: calendarManager, audioManager: audioManager, voiceReminder: voiceReminder, notificationManager: notificationManager, countdownConfig: countdownConfig, mixkitSounds: mixkitSounds)
+            SettingsView(
+                calendarManager: calendarManager,
+                audioManager: audioManager,
+                voiceReminder: voiceReminder,
+                notificationManager: notificationManager,
+                countdownConfig: countdownConfig,
+                mixkitSounds: mixkitSounds,
+                contextMonitor: contextMonitor,
+                smartConfig: smartConfig
+            )
         }
     }
 }
@@ -51,14 +64,30 @@ final class AppLifecycleManager: ObservableObject {
         voiceReminder: VoiceReminderManager,
         notificationManager: NotificationManager,
         countdownConfig: CountdownConfigManager,
-        mixkitSounds: MixkitSoundManager
+        mixkitSounds: MixkitSoundManager,
+        contextMonitor: MeetingContextMonitor,
+        smartConfig: SmartConfigManager
     ) {
         // Wire the config manager into CalendarManager
         calendarManager.countdownConfigs = countdownConfig
         notificationManager.soundManager = mixkitSounds
         overlayController.configure(calendarManager: calendarManager, audioManager: audioManager)
-        calendarManager.startPolling()
         notificationManager.requestPermission()
+
+        // Single decision point for all three channels (overlay / notification / voice).
+        // The closure reads the live snapshot each time it's called, so toggling Focus or
+        // muting in another call takes effect on the next firing without any further wiring.
+        let decide: @MainActor (CountdownTrigger) -> ReminderDecision = { trigger in
+            ReminderEscalationPolicy.decide(
+                trigger: trigger,
+                context: contextMonitor.snapshot,
+                config: smartConfig
+            )
+        }
+        calendarManager.shouldFireOverlay = { decide($0).showOverlay }
+
+        // Start polling AFTER the hook is set, so the first poll uses the policy.
+        calendarManager.startPolling()
 
         calendarManager.$shouldShowCountdown
             .removeDuplicates()
@@ -73,7 +102,7 @@ final class AppLifecycleManager: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Check upcoming meetings for voice + notification triggers per config
+        // Fan out notifications + voice through the same policy.
         calendarManager.$upcomingMeetings
             .sink { meetings in
                 for meeting in meetings where meeting.timeUntilStart > 0 {
@@ -81,13 +110,12 @@ final class AppLifecycleManager: ObservableObject {
                         let threshold = TimeInterval(trigger.minutes * 60)
                         guard meeting.timeUntilStart <= threshold else { continue }
 
-                        // System notification per trigger
-                        if trigger.sendNotification {
+                        let decision = decide(trigger)
+
+                        if decision.sendNotification {
                             notificationManager.sendCountdownNotification(for: meeting, minutesBefore: trigger.minutes)
                         }
-
-                        // Voice reminder per trigger
-                        if trigger.playVoice {
+                        if decision.playVoice {
                             voiceReminder.speakReminderIfNeeded(for: meeting)
                         }
                     }
@@ -107,6 +135,8 @@ struct MenuBarView: View {
     @ObservedObject var notificationManager: NotificationManager
     @ObservedObject var countdownConfig: CountdownConfigManager
     @ObservedObject var mixkitSounds: MixkitSoundManager
+    @ObservedObject var contextMonitor: MeetingContextMonitor
+    @ObservedObject var smartConfig: SmartConfigManager
 
     @StateObject private var lifecycleManager = AppLifecycleManager()
 
@@ -165,7 +195,9 @@ struct MenuBarView: View {
                 voiceReminder: voiceReminder,
                 notificationManager: notificationManager,
                 countdownConfig: countdownConfig,
-                mixkitSounds: mixkitSounds
+                mixkitSounds: mixkitSounds,
+                contextMonitor: contextMonitor,
+                smartConfig: smartConfig
             )
         }
     }

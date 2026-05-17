@@ -8,18 +8,24 @@
 
 /* Begin PBXBuildFile section */
 		06F32CFDCF41BE6E7F8D56FE /* CountdownConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BA29FA390A4A1D580C895A8 /* CountdownConfig.swift */; };
+		175F2E49C8587451AB910A93 /* MicrophoneDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B60DBB01A2C688FE793716C /* MicrophoneDetector.swift */; };
 		2A15E4DF2BDC03E4F3D79756 /* CalendarManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A99A9D2EE9624DA582CD8D5 /* CalendarManager.swift */; };
 		3CEA795EFAD5F9E28F297D07 /* CalendarProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DD250C84523C24862974C5D /* CalendarProvider.swift */; };
 		4FAA179DD289F0BA7A5C83E8 /* ConferenceLinkExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28D229B727F2C87F6712FCC4 /* ConferenceLinkExtractor.swift */; };
 		52E3A860EC8A1BA2804CBF85 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5673A02C0FAC799726EA0BCF /* Assets.xcassets */; };
 		70EA5C5D3C9C3001612AA4AC /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2415B0B2BBF77234529B496A /* NotificationManager.swift */; };
+		787C4DDF39E71D19EBB5C801 /* ReminderEscalationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B33CEBB2784C6AFE2BB1379 /* ReminderEscalationPolicy.swift */; };
 		7C988823B083DA90D7A0A78D /* VoiceReminderManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C58BE975466982E750F7FDA /* VoiceReminderManager.swift */; };
 		8E0C498C8FB52734B010B773 /* OverlayWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22E108D1CE89056097ED33FE /* OverlayWindowController.swift */; };
+		914FB58159F10D9161F4DD21 /* FrontmostAppDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEDC37D08E46673E508040D3 /* FrontmostAppDetector.swift */; };
 		A37C805D6770F7294432E384 /* EventKitProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B73976360782F9155FDD238 /* EventKitProvider.swift */; };
+		AD26A100B4AF3676FD59CBC9 /* ScreenCaptureDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0884058017A627B40452B5E /* ScreenCaptureDetector.swift */; };
+		B7EA1C818EBD405895A0EB6F /* FocusModeDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B8186D8004986233B28EE7F /* FocusModeDetector.swift */; };
 		C7D67F889CA6E39386F2B34D /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79AB0D1338EB2A471C1C13FD /* AudioManager.swift */; };
 		C8676CAB632124F3AFBD267B /* GraphCalendarProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 711DFD4598AE2E83744CCFBD /* GraphCalendarProvider.swift */; };
 		D195FE28659E1B2C38932999 /* CountdownOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D81EBB57F5E6FDD478BC43 /* CountdownOverlayView.swift */; };
 		DD8A1A680768E76BFD44F679 /* MixkitSoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C252C77AB45CB10DE5063A4E /* MixkitSoundManager.swift */; };
+		EC5ECB498EC05BBEE61EFB34 /* MeetingContextMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68E04A0A0326198310A91568 /* MeetingContextMonitor.swift */; };
 		ECEE3D2B63C61C565B38BA13 /* MeetingIntroApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88FE80611C96045D0752ECE8 /* MeetingIntroApp.swift */; };
 		FCE9B7AB56FB291DB7BEDD1F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4291882B0E4FE689BCFF6CA7 /* SettingsView.swift */; };
 /* End PBXBuildFile section */
@@ -34,11 +40,17 @@
 		2BA29FA390A4A1D580C895A8 /* CountdownConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountdownConfig.swift; sourceTree = "<group>"; };
 		4291882B0E4FE689BCFF6CA7 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		5673A02C0FAC799726EA0BCF /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		68E04A0A0326198310A91568 /* MeetingContextMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingContextMonitor.swift; sourceTree = "<group>"; };
+		6B8186D8004986233B28EE7F /* FocusModeDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusModeDetector.swift; sourceTree = "<group>"; };
 		711DFD4598AE2E83744CCFBD /* GraphCalendarProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphCalendarProvider.swift; sourceTree = "<group>"; };
 		79AB0D1338EB2A471C1C13FD /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
 		88FE80611C96045D0752ECE8 /* MeetingIntroApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingIntroApp.swift; sourceTree = "<group>"; };
 		8A99A9D2EE9624DA582CD8D5 /* CalendarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarManager.swift; sourceTree = "<group>"; };
+		8B60DBB01A2C688FE793716C /* MicrophoneDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicrophoneDetector.swift; sourceTree = "<group>"; };
+		9B33CEBB2784C6AFE2BB1379 /* ReminderEscalationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderEscalationPolicy.swift; sourceTree = "<group>"; };
 		9C58BE975466982E750F7FDA /* VoiceReminderManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceReminderManager.swift; sourceTree = "<group>"; };
+		AEDC37D08E46673E508040D3 /* FrontmostAppDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrontmostAppDetector.swift; sourceTree = "<group>"; };
+		B0884058017A627B40452B5E /* ScreenCaptureDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCaptureDetector.swift; sourceTree = "<group>"; };
 		B4D81EBB57F5E6FDD478BC43 /* CountdownOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountdownOverlayView.swift; sourceTree = "<group>"; };
 		C252C77AB45CB10DE5063A4E /* MixkitSoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MixkitSoundManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -50,6 +62,19 @@
 				032FDEB0D30107ADCC02AD92 /* MeetingIntro.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		6533CA6AB49E16C366CCF8E8 /* MeetingContext */ = {
+			isa = PBXGroup;
+			children = (
+				6B8186D8004986233B28EE7F /* FocusModeDetector.swift */,
+				AEDC37D08E46673E508040D3 /* FrontmostAppDetector.swift */,
+				68E04A0A0326198310A91568 /* MeetingContextMonitor.swift */,
+				8B60DBB01A2C688FE793716C /* MicrophoneDetector.swift */,
+				9B33CEBB2784C6AFE2BB1379 /* ReminderEscalationPolicy.swift */,
+				B0884058017A627B40452B5E /* ScreenCaptureDetector.swift */,
+			);
+			path = MeetingContext;
 			sourceTree = "<group>";
 		};
 		E23B221A094EBFA88F29CB36 /* MeetingIntro */ = {
@@ -70,6 +95,7 @@
 				22E108D1CE89056097ED33FE /* OverlayWindowController.swift */,
 				4291882B0E4FE689BCFF6CA7 /* SettingsView.swift */,
 				9C58BE975466982E750F7FDA /* VoiceReminderManager.swift */,
+				6533CA6AB49E16C366CCF8E8 /* MeetingContext */,
 			);
 			path = MeetingIntro;
 			sourceTree = "<group>";
@@ -156,11 +182,17 @@
 				06F32CFDCF41BE6E7F8D56FE /* CountdownConfig.swift in Sources */,
 				D195FE28659E1B2C38932999 /* CountdownOverlayView.swift in Sources */,
 				A37C805D6770F7294432E384 /* EventKitProvider.swift in Sources */,
+				B7EA1C818EBD405895A0EB6F /* FocusModeDetector.swift in Sources */,
+				914FB58159F10D9161F4DD21 /* FrontmostAppDetector.swift in Sources */,
 				C8676CAB632124F3AFBD267B /* GraphCalendarProvider.swift in Sources */,
+				EC5ECB498EC05BBEE61EFB34 /* MeetingContextMonitor.swift in Sources */,
 				ECEE3D2B63C61C565B38BA13 /* MeetingIntroApp.swift in Sources */,
+				175F2E49C8587451AB910A93 /* MicrophoneDetector.swift in Sources */,
 				DD8A1A680768E76BFD44F679 /* MixkitSoundManager.swift in Sources */,
 				70EA5C5D3C9C3001612AA4AC /* NotificationManager.swift in Sources */,
 				8E0C498C8FB52734B010B773 /* OverlayWindowController.swift in Sources */,
+				787C4DDF39E71D19EBB5C801 /* ReminderEscalationPolicy.swift in Sources */,
+				AD26A100B4AF3676FD59CBC9 /* ScreenCaptureDetector.swift in Sources */,
 				FCE9B7AB56FB291DB7BEDD1F /* SettingsView.swift in Sources */,
 				7C988823B083DA90D7A0A78D /* VoiceReminderManager.swift in Sources */,
 			);

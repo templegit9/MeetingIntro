@@ -32,6 +32,12 @@ final class CalendarManager: ObservableObject {
     /// CalendarManager reads enabled minutes from it.
     var countdownConfigs: CountdownConfigManager?
 
+    /// Hook consulted before showing the overlay for a trigger. Returning `false`
+    /// suppresses the overlay even when the trigger has `showOverlay = true` — used by
+    /// `ReminderEscalationPolicy` to gate firings on live context (in-call, Focus, etc).
+    /// Default behavior (when the hook is nil) is to respect the trigger flag directly.
+    var shouldFireOverlay: ((CountdownTrigger) -> Bool)?
+
     /// Convenience: list of all enabled countdown minutes.
     var countdownMinutesList: [Int] {
         countdownConfigs?.enabledMinutes ?? [2]
@@ -151,9 +157,16 @@ final class CalendarManager: ObservableObject {
                    !triggeredCombinations.contains(comboKey) {
                     triggeredCombinations.insert(comboKey)
 
-                    // Only show overlay if this trigger has it enabled
+                    // Consult the policy hook (if set) before showing the overlay. The
+                    // hook reads live context — e.g., suppress while in another call.
                     let triggerConfig = countdownConfigs?.trigger(for: minutes)
-                    if triggerConfig?.showOverlay ?? true, !shouldShowCountdown {
+                    let allowed: Bool
+                    if let triggerConfig {
+                        allowed = shouldFireOverlay?(triggerConfig) ?? triggerConfig.showOverlay
+                    } else {
+                        allowed = true
+                    }
+                    if allowed, !shouldShowCountdown {
                         nextMeeting = event
                         countdownMeeting = event
                         shouldShowCountdown = true

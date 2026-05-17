@@ -24,5 +24,7 @@
 	<string>MeetingIntro needs access to your calendars to monitor upcoming meetings and trigger countdown reminders.</string>
 	<key>NSCalendarsUsageDescription</key>
 	<string>MeetingIntro needs access to your calendars to monitor upcoming meetings and trigger countdown reminders.</string>
+	<key>NSFocusStatusUsageDescription</key>
+	<string>MeetingIntro uses your Focus status to silence voice reminders and audio alerts while you're in Do Not Disturb.</string>
 </dict>
 </plist>

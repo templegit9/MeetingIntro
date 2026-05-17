@@ -8,6 +8,8 @@ struct SettingsView: View {
     @ObservedObject var notificationManager: NotificationManager
     @ObservedObject var countdownConfig: CountdownConfigManager
     @ObservedObject var mixkitSounds: MixkitSoundManager
+    @ObservedObject var contextMonitor: MeetingContextMonitor
+    @ObservedObject var smartConfig: SmartConfigManager
 
     @State private var selectedProvider: CalendarProviderType = .eventKit
 
@@ -28,6 +30,11 @@ struct SettingsView: View {
             countdownTab
                 .tabItem {
                     Label("Countdown", systemImage: "timer")
+                }
+
+            smartTab
+                .tabItem {
+                    Label("Smart", systemImage: "brain")
                 }
 
             audioTab
@@ -264,6 +271,86 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
+    }
+
+    // MARK: - Smart Tab
+
+    private var smartTab: some View {
+        Form {
+            Section("Context-Aware Reminders") {
+                Toggle("Suppress when I'm already in a call",
+                       isOn: $smartConfig.suppressWhenInCall)
+                Toggle("Visual-only when Focus is on",
+                       isOn: $smartConfig.visualOnlyWhenFocus)
+                Toggle("No voice when I'm screen sharing",
+                       isOn: $smartConfig.noVoiceWhenScreenSharing)
+                Toggle("Escalate when a fullscreen app is active",
+                       isOn: $smartConfig.escalateWhenFullscreen)
+
+                Text("MeetingIntro reads four live signals to decide which channels should fire. Rules are evaluated top-to-bottom — the first matching rule wins.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Live Signals") {
+                signalRow(name: "In a call",
+                          isOn: contextMonitor.snapshot.isInActiveCall,
+                          detail: contextMonitor.snapshot.isConferenceAppActive
+                            ? "video-conf app active"
+                            : (contextMonitor.snapshot.isMicrophoneInUseElsewhere ? "mic in use" : "no signal"))
+                signalRow(name: "Focus on",
+                          isOn: contextMonitor.snapshot.isFocusActive,
+                          detail: focusAuthDetail)
+                signalRow(name: "Screen sharing",
+                          isOn: contextMonitor.snapshot.isScreenCaptured)
+                signalRow(name: "Fullscreen app",
+                          isOn: contextMonitor.snapshot.isFullscreenAppActive,
+                          detail: contextMonitor.snapshot.frontmostBundleID ?? "—")
+            }
+
+            if contextMonitor.focus.authorizationStatus != .authorized {
+                Section {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                        VStack(alignment: .leading) {
+                            Text("Focus integration needs permission")
+                                .font(.subheadline).fontWeight(.semibold)
+                            Text("Without Focus permission, MeetingIntro treats Focus as always off.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button("Grant…") {
+                            Task { await contextMonitor.requestFocusAuthorization() }
+                        }
+                    }
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+    }
+
+    private var focusAuthDetail: String {
+        switch contextMonitor.focus.authorizationStatus {
+        case .authorized: return "authorized"
+        case .denied: return "permission denied"
+        case .restricted: return "restricted"
+        case .notDetermined: return "permission not asked"
+        }
+    }
+
+    private func signalRow(name: String, isOn: Bool, detail: String? = nil) -> some View {
+        HStack {
+            Circle()
+                .fill(isOn ? Color.green : Color.gray.opacity(0.4))
+                .frame(width: 10, height: 10)
+            Text(name)
+            Spacer()
+            if let detail {
+                Text(detail).font(.caption).foregroundStyle(.secondary)
+            }
+        }
     }
 
     // MARK: - Audio Tab

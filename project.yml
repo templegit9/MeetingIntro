@@ -22,6 +22,7 @@ targets:
         LSUIElement: true
         NSCalendarsFullAccessUsageDescription: "MeetingIntro needs access to your calendars to monitor upcoming meetings and trigger countdown reminders."
         NSCalendarsUsageDescription: "MeetingIntro needs access to your calendars to monitor upcoming meetings and trigger countdown reminders."
+        NSFocusStatusUsageDescription: "MeetingIntro uses your Focus status to silence voice reminders and audio alerts while you're in Do Not Disturb."
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.oluyinka.MeetingIntro
