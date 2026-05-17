@@ -1,0 +1,15 @@
+.DS_Store
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+
+# Release secrets — never commit
+.env.release
+
+# Release artifacts (built locally by scripts/release.sh)
+MeetingIntro-*.zip
+MeetingIntro.dmg
+MeetingIntro_Release/
+MeetingIntro_Release*.zip
+MeetingIntro.app/
