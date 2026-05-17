@@ -13,16 +13,51 @@ final class GraphCalendarProvider: CalendarProvider {
         set { UserDefaults.standard.set(newValue, forKey: "graphClientId") }
     }
 
-    /// Cached OAuth2 access token.
+    private static let accessTokenAccount = "graphAccessToken"
+    private static let tokenExpirationAccount = "graphTokenExpiration"
+
+    /// Cached OAuth2 access token. Backed by Keychain; on first read after upgrading
+    /// from a UserDefaults-storing build, the legacy value is migrated and cleared.
     private var accessToken: String? {
-        get { UserDefaults.standard.string(forKey: "graphAccessToken") }
-        set { UserDefaults.standard.set(newValue, forKey: "graphAccessToken") }
+        get {
+            if let token = KeychainStore.get(Self.accessTokenAccount) { return token }
+            if let legacy = UserDefaults.standard.string(forKey: Self.accessTokenAccount) {
+                KeychainStore.set(legacy, for: Self.accessTokenAccount)
+                UserDefaults.standard.removeObject(forKey: Self.accessTokenAccount)
+                return legacy
+            }
+            return nil
+        }
+        set {
+            if let value = newValue {
+                KeychainStore.set(value, for: Self.accessTokenAccount)
+            } else {
+                KeychainStore.delete(Self.accessTokenAccount)
+            }
+        }
     }
 
-    /// Token expiration date.
+    /// Token expiration date. Stored as `timeIntervalSince1970` string in Keychain.
     private var tokenExpiration: Date? {
-        get { UserDefaults.standard.object(forKey: "graphTokenExpiration") as? Date }
-        set { UserDefaults.standard.set(newValue, forKey: "graphTokenExpiration") }
+        get {
+            if let raw = KeychainStore.get(Self.tokenExpirationAccount),
+               let interval = TimeInterval(raw) {
+                return Date(timeIntervalSince1970: interval)
+            }
+            if let legacy = UserDefaults.standard.object(forKey: Self.tokenExpirationAccount) as? Date {
+                KeychainStore.set(String(legacy.timeIntervalSince1970), for: Self.tokenExpirationAccount)
+                UserDefaults.standard.removeObject(forKey: Self.tokenExpirationAccount)
+                return legacy
+            }
+            return nil
+        }
+        set {
+            if let date = newValue {
+                KeychainStore.set(String(date.timeIntervalSince1970), for: Self.tokenExpirationAccount)
+            } else {
+                KeychainStore.delete(Self.tokenExpirationAccount)
+            }
+        }
     }
 
     /// Set of calendar IDs the user has chosen to monitor (empty = all).

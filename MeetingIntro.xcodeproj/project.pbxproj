@@ -12,6 +12,7 @@
 		2A15E4DF2BDC03E4F3D79756 /* CalendarManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A99A9D2EE9624DA582CD8D5 /* CalendarManager.swift */; };
 		383CE6338C41F88BF51B7F8C /* HandoffStateSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B298FA1587E1C1B7A432A3C /* HandoffStateSnapshot.swift */; };
 		3CEA795EFAD5F9E28F297D07 /* CalendarProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DD250C84523C24862974C5D /* CalendarProvider.swift */; };
+		4AB46FF6A5BBC1A5EE9B08DC /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71EA4E2BE1890659874BD76D /* KeychainStore.swift */; };
 		4FAA179DD289F0BA7A5C83E8 /* ConferenceLinkExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28D229B727F2C87F6712FCC4 /* ConferenceLinkExtractor.swift */; };
 		52E3A860EC8A1BA2804CBF85 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5673A02C0FAC799726EA0BCF /* Assets.xcassets */; };
 		70EA5C5D3C9C3001612AA4AC /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2415B0B2BBF77234529B496A /* NotificationManager.swift */; };
@@ -53,6 +54,7 @@
 		6B298FA1587E1C1B7A432A3C /* HandoffStateSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandoffStateSnapshot.swift; sourceTree = "<group>"; };
 		6B8186D8004986233B28EE7F /* FocusModeDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusModeDetector.swift; sourceTree = "<group>"; };
 		711DFD4598AE2E83744CCFBD /* GraphCalendarProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphCalendarProvider.swift; sourceTree = "<group>"; };
+		71EA4E2BE1890659874BD76D /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		79AB0D1338EB2A471C1C13FD /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
 		88FE80611C96045D0752ECE8 /* MeetingIntroApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingIntroApp.swift; sourceTree = "<group>"; };
 		8A99A9D2EE9624DA582CD8D5 /* CalendarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarManager.swift; sourceTree = "<group>"; };
@@ -68,6 +70,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		29FFED99052EC98F82FB113D /* Storage */ = {
+			isa = PBXGroup;
+			children = (
+				71EA4E2BE1890659874BD76D /* KeychainStore.swift */,
+			);
+			path = Storage;
+			sourceTree = "<group>";
+		};
 		3A0BCB501604EE3461D107DB /* SystemHandoff */ = {
 			isa = PBXGroup;
 			children = (
@@ -121,6 +131,7 @@
 				4291882B0E4FE689BCFF6CA7 /* SettingsView.swift */,
 				9C58BE975466982E750F7FDA /* VoiceReminderManager.swift */,
 				6533CA6AB49E16C366CCF8E8 /* MeetingContext */,
+				29FFED99052EC98F82FB113D /* Storage */,
 				3A0BCB501604EE3461D107DB /* SystemHandoff */,
 			);
 			path = MeetingIntro;
@@ -215,6 +226,7 @@
 				C8676CAB632124F3AFBD267B /* GraphCalendarProvider.swift in Sources */,
 				A86F18A52513641C6C274116 /* HandoffConfig.swift in Sources */,
 				383CE6338C41F88BF51B7F8C /* HandoffStateSnapshot.swift in Sources */,
+				4AB46FF6A5BBC1A5EE9B08DC /* KeychainStore.swift in Sources */,
 				EC5ECB498EC05BBEE61EFB34 /* MeetingContextMonitor.swift in Sources */,
 				AE9DE19805E2D21EC2D22F1D /* MeetingDetailsPanel.swift in Sources */,
 				B0CB597A37C8A1BDC0AFD335 /* MeetingHandoffCoordinator.swift in Sources */,
