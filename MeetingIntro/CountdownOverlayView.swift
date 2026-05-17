@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// A floating, always-on-top overlay that shows a countdown timer before a meeting.
@@ -9,6 +10,7 @@ struct CountdownOverlayView: View {
     @State private var timeRemaining: TimeInterval = 0
     @State private var timer: Timer?
     @State private var isAppearing = false
+    @AppStorage("joinButtonEnabled") private var joinButtonEnabled: Bool = true
 
     private var progress: Double {
         guard timeRemaining > 0 else { return 1.0 }
@@ -103,6 +105,26 @@ struct CountdownOverlayView: View {
                 Text("Starts at \(meeting.formattedStartTime)")
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.5))
+
+                // Join button — visible when a conference link was detected
+                if let joinURL = meeting.url, joinButtonEnabled {
+                    Button {
+                        NSWorkspace.shared.open(joinURL)
+                    } label: {
+                        Label("Join Meeting", systemImage: "video.fill")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 28)
+                            .padding(.vertical, 12)
+                            .frame(minHeight: 44)
+                            .background(
+                                Capsule()
+                                    .fill(Color(red: 0.25, green: 0.78, blue: 0.45))
+                                    .shadow(color: Color.black.opacity(0.25), radius: 6, y: 3)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
 
                 Spacer()
 

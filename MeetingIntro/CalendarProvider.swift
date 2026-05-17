@@ -11,6 +11,11 @@ struct MeetingEvent: Identifiable, Equatable {
     let calendarName: String
     let location: String?
     let isAllDay: Bool
+    let url: URL?
+    let notes: String?
+    let attendeeNames: [String]
+    let attendeeCount: Int
+    let organizerName: String?
 
     /// Time remaining until the meeting starts, relative to now.
     var timeUntilStart: TimeInterval {

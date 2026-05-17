@@ -63,7 +63,7 @@ final class GraphCalendarProvider: CalendarProvider {
         let startStr = formatter.string(from: now)
         let endStr = formatter.string(from: endDate)
 
-        let urlString = "https://graph.microsoft.com/v1.0/me/calendarview?startdatetime=\(startStr)&enddatetime=\(endStr)&$select=id,subject,start,end,location,isAllDay,organizer&$orderby=start/dateTime"
+        let urlString = "https://graph.microsoft.com/v1.0/me/calendarview?startdatetime=\(startStr)&enddatetime=\(endStr)&$select=id,subject,start,end,location,isAllDay,organizer,body,attendees,onlineMeeting,isOnlineMeeting&$orderby=start/dateTime"
 
         guard let url = URL(string: urlString) else {
             throw CalendarProviderError.unknown(underlying: URLError(.badURL))
@@ -102,6 +102,15 @@ final class GraphCalendarProvider: CalendarProvider {
                 // Graph calendarview doesn't include calendar ID by default,
                 // so we skip calendar filtering for now unless we add calendar-specific queries
 
+                let attendeeNames = (event.attendees ?? []).compactMap { $0.emailAddress?.name }
+                let notes = event.body.flatMap { Self.plainText(from: $0) }
+                let onlineMeetingURL = event.onlineMeeting?.joinUrl.flatMap(URL.init(string:))
+                let joinURL = ConferenceLinkExtractor.bestURL(
+                    eventURL: nil,
+                    notes: notes,
+                    location: event.location?.displayName,
+                    graphOnlineMeetingURL: onlineMeetingURL
+                )
                 return MeetingEvent(
                     id: event.id,
                     title: event.subject ?? "Untitled Meeting",
@@ -109,7 +118,12 @@ final class GraphCalendarProvider: CalendarProvider {
                     endDate: endDate,
                     calendarName: "Outlook",
                     location: event.location?.displayName,
-                    isAllDay: event.isAllDay
+                    isAllDay: event.isAllDay,
+                    url: joinURL,
+                    notes: notes,
+                    attendeeNames: Array(attendeeNames.prefix(10)),
+                    attendeeCount: attendeeNames.count,
+                    organizerName: event.organizer?.emailAddress?.name
                 )
             }
             .sorted { $0.startDate < $1.startDate }
@@ -233,6 +247,26 @@ final class GraphCalendarProvider: CalendarProvider {
         return formatter.date(from: dateStr)
     }
 
+    /// Converts a Graph `itemBody` payload into plain text. HTML bodies are stripped
+    /// of tags via `NSAttributedString`; plaintext bodies pass through trimmed.
+    fileprivate static func plainText(from body: GraphBody) -> String? {
+        guard let content = body.content?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !content.isEmpty else { return nil }
+        if body.contentType?.lowercased() == "html" {
+            guard let data = content.data(using: .utf8) else { return content }
+            let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
+                .documentType: NSAttributedString.DocumentType.html,
+                .characterEncoding: String.Encoding.utf8.rawValue
+            ]
+            if let attr = try? NSAttributedString(data: data, options: options, documentAttributes: nil) {
+                let stripped = attr.string.trimmingCharacters(in: .whitespacesAndNewlines)
+                return stripped.isEmpty ? nil : stripped
+            }
+            return content
+        }
+        return content
+    }
+
     private func graphColorToHex(_ color: String?) -> String {
         let colorMap: [String: String] = [
             "auto": "#007AFF", "lightBlue": "#5AC8FA", "lightGreen": "#34C759",
@@ -263,6 +297,34 @@ struct GraphEvent: Codable {
     let end: GraphDateTime?
     let location: GraphLocation?
     let isAllDay: Bool
+    let body: GraphBody?
+    let attendees: [GraphAttendee]?
+    let onlineMeeting: GraphOnlineMeeting?
+    let isOnlineMeeting: Bool?
+    let organizer: GraphRecipient?
+}
+
+struct GraphBody: Codable {
+    let contentType: String?
+    let content: String?
+}
+
+struct GraphAttendee: Codable {
+    let emailAddress: GraphEmailAddress?
+    let type: String?
+}
+
+struct GraphRecipient: Codable {
+    let emailAddress: GraphEmailAddress?
+}
+
+struct GraphEmailAddress: Codable {
+    let name: String?
+    let address: String?
+}
+
+struct GraphOnlineMeeting: Codable {
+    let joinUrl: String?
 }
 
 struct GraphDateTime: Codable {

@@ -40,14 +40,25 @@ final class EventKitProvider: CalendarProvider {
         return ekEvents
             .filter { !$0.isAllDay } // Skip all-day events by default for meeting countdown
             .map { event in
-                MeetingEvent(
+                let attendees = (event.attendees ?? []).compactMap { $0.name }
+                let joinURL = ConferenceLinkExtractor.bestURL(
+                    eventURL: event.url,
+                    notes: event.notes,
+                    location: event.location
+                )
+                return MeetingEvent(
                     id: event.eventIdentifier ?? UUID().uuidString,
                     title: event.title ?? "Untitled Meeting",
                     startDate: event.startDate,
                     endDate: event.endDate,
                     calendarName: event.calendar?.title ?? "Unknown",
                     location: event.location,
-                    isAllDay: event.isAllDay
+                    isAllDay: event.isAllDay,
+                    url: joinURL,
+                    notes: event.notes,
+                    attendeeNames: Array(attendees.prefix(10)),
+                    attendeeCount: attendees.count,
+                    organizerName: event.organizer?.name
                 )
             }
             .sorted { $0.startDate < $1.startDate }

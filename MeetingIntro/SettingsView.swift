@@ -234,6 +234,13 @@ struct SettingsView: View {
                 }
             }
 
+            Section("Join Meeting Button") {
+                Toggle("Show \"Join Meeting\" button when a link is detected", isOn: $countdownConfig.joinButtonEnabled)
+                Text("MeetingIntro scans the event's URL field, description, and location for Zoom, Teams, Google Meet, Webex, and GoToMeeting links.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Preview") {
                 Button("Test Countdown Overlay") {
                     let previewMinutes = countdownConfig.enabledMinutes.first ?? 2
@@ -244,7 +251,12 @@ struct SettingsView: View {
                         endDate: Date().addingTimeInterval(TimeInterval(previewMinutes * 60 + 3600)),
                         calendarName: "Preview",
                         location: "Conference Room A",
-                        isAllDay: false
+                        isAllDay: false,
+                        url: URL(string: "https://zoom.us/j/0000000000"),
+                        notes: nil,
+                        attendeeNames: [],
+                        attendeeCount: 0,
+                        organizerName: nil
                     )
                     showCountdownOverlay(for: testMeeting)
                 }

@@ -23,6 +23,12 @@ final class CountdownConfigManager: ObservableObject {
         didSet { save() }
     }
 
+    /// When true and a join URL is detected for the meeting, the countdown overlay
+    /// shows a prominent "Join Meeting" button.
+    @Published var joinButtonEnabled: Bool {
+        didSet { UserDefaults.standard.set(joinButtonEnabled, forKey: "joinButtonEnabled") }
+    }
+
     static let availableMinutes = [1, 2, 3, 5, 10, 15]
 
     init() {
@@ -34,6 +40,11 @@ final class CountdownConfigManager: ObservableObject {
             self.triggers = [
                 CountdownTrigger(minutes: 2, showOverlay: true, sendNotification: false, playVoice: false)
             ]
+        }
+        if UserDefaults.standard.object(forKey: "joinButtonEnabled") == nil {
+            self.joinButtonEnabled = true
+        } else {
+            self.joinButtonEnabled = UserDefaults.standard.bool(forKey: "joinButtonEnabled")
         }
     }
 
