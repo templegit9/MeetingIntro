@@ -20,6 +20,7 @@
 		914FB58159F10D9161F4DD21 /* FrontmostAppDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEDC37D08E46673E508040D3 /* FrontmostAppDetector.swift */; };
 		A37C805D6770F7294432E384 /* EventKitProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B73976360782F9155FDD238 /* EventKitProvider.swift */; };
 		AD26A100B4AF3676FD59CBC9 /* ScreenCaptureDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0884058017A627B40452B5E /* ScreenCaptureDetector.swift */; };
+		AE9DE19805E2D21EC2D22F1D /* MeetingDetailsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 570F13DE8551AC2384BF9DB7 /* MeetingDetailsPanel.swift */; };
 		B7EA1C818EBD405895A0EB6F /* FocusModeDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B8186D8004986233B28EE7F /* FocusModeDetector.swift */; };
 		C7D67F889CA6E39386F2B34D /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79AB0D1338EB2A471C1C13FD /* AudioManager.swift */; };
 		C8676CAB632124F3AFBD267B /* GraphCalendarProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 711DFD4598AE2E83744CCFBD /* GraphCalendarProvider.swift */; };
@@ -40,6 +41,7 @@
 		2BA29FA390A4A1D580C895A8 /* CountdownConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountdownConfig.swift; sourceTree = "<group>"; };
 		4291882B0E4FE689BCFF6CA7 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		5673A02C0FAC799726EA0BCF /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		570F13DE8551AC2384BF9DB7 /* MeetingDetailsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDetailsPanel.swift; sourceTree = "<group>"; };
 		68E04A0A0326198310A91568 /* MeetingContextMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingContextMonitor.swift; sourceTree = "<group>"; };
 		6B8186D8004986233B28EE7F /* FocusModeDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusModeDetector.swift; sourceTree = "<group>"; };
 		711DFD4598AE2E83744CCFBD /* GraphCalendarProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphCalendarProvider.swift; sourceTree = "<group>"; };
@@ -89,6 +91,7 @@
 				B4D81EBB57F5E6FDD478BC43 /* CountdownOverlayView.swift */,
 				1B73976360782F9155FDD238 /* EventKitProvider.swift */,
 				711DFD4598AE2E83744CCFBD /* GraphCalendarProvider.swift */,
+				570F13DE8551AC2384BF9DB7 /* MeetingDetailsPanel.swift */,
 				88FE80611C96045D0752ECE8 /* MeetingIntroApp.swift */,
 				C252C77AB45CB10DE5063A4E /* MixkitSoundManager.swift */,
 				2415B0B2BBF77234529B496A /* NotificationManager.swift */,
@@ -186,6 +189,7 @@
 				914FB58159F10D9161F4DD21 /* FrontmostAppDetector.swift in Sources */,
 				C8676CAB632124F3AFBD267B /* GraphCalendarProvider.swift in Sources */,
 				EC5ECB498EC05BBEE61EFB34 /* MeetingContextMonitor.swift in Sources */,
+				AE9DE19805E2D21EC2D22F1D /* MeetingDetailsPanel.swift in Sources */,
 				ECEE3D2B63C61C565B38BA13 /* MeetingIntroApp.swift in Sources */,
 				175F2E49C8587451AB910A93 /* MicrophoneDetector.swift in Sources */,
 				DD8A1A680768E76BFD44F679 /* MixkitSoundManager.swift in Sources */,

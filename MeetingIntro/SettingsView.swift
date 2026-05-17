@@ -13,6 +13,11 @@ struct SettingsView: View {
 
     @State private var selectedProvider: CalendarProviderType = .eventKit
 
+    @AppStorage("contextPanelShowNotes") private var contextPanelShowNotes: Bool = true
+    @AppStorage("contextPanelShowAttendees") private var contextPanelShowAttendees: Bool = true
+    @AppStorage("contextPanelShowJoinURL") private var contextPanelShowJoinURL: Bool = true
+    @AppStorage("contextPanelMinThreshold") private var contextPanelMinThreshold: Int = 0
+
     @State private var graphClientId: String = ""
     @State private var graphAuthMessage: String?
     @State private var isSigningIn: Bool = false
@@ -248,6 +253,18 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section("Meeting Details Panel") {
+                Toggle("Show notes in overlay", isOn: $contextPanelShowNotes)
+                Toggle("Show attendees in overlay", isOn: $contextPanelShowAttendees)
+                Toggle("Show secondary join link in overlay", isOn: $contextPanelShowJoinURL)
+                Stepper(value: $contextPanelMinThreshold, in: 0...60) {
+                    Text("Hide panel when meeting is closer than \(contextPanelMinThreshold) min")
+                }
+                Text("The details panel adds notes, attendees, and a copy/open join link below the countdown ring. Use the stepper to suppress it on last-minute reminders.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Preview") {
                 Button("Test Countdown Overlay") {
                     let previewMinutes = countdownConfig.enabledMinutes.first ?? 2
@@ -260,10 +277,10 @@ struct SettingsView: View {
                         location: "Conference Room A",
                         isAllDay: false,
                         url: URL(string: "https://zoom.us/j/0000000000"),
-                        notes: nil,
-                        attendeeNames: [],
-                        attendeeCount: 0,
-                        organizerName: nil
+                        notes: "Sprint review for Q2 planning. Bring updates on the data-pipeline migration and the customer-segmentation analysis. We'll spend the first 15 minutes on the roadmap doc, then open the floor for blockers.",
+                        attendeeNames: ["Alice Wong", "Ben Patel", "Chiamaka Eze", "Diego Ortiz", "Emma Schultz", "Fatima Bello", "Grace Liu", "Henry Park"],
+                        attendeeCount: 8,
+                        organizerName: "Alice Wong"
                     )
                     showCountdownOverlay(for: testMeeting)
                 }

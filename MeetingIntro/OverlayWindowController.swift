@@ -27,9 +27,14 @@ final class OverlayWindowController: ObservableObject {
 
         let hostingView = NSHostingView(rootView: overlayView)
 
+        // Panel size depends on whether the details panel will render — taller to
+        // accommodate notes/attendees/secondary join link without scrolling the ring.
+        let threshold = UserDefaults.standard.object(forKey: "contextPanelMinThreshold") as? Int ?? 0
+        let panelHeight: CGFloat = CountdownOverlayView.shouldShowDetailsPanel(for: meeting, threshold: threshold) ? 720 : 560
+
         // Create a floating panel
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 560),
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: panelHeight),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -49,7 +54,7 @@ final class OverlayWindowController: ObservableObject {
         if let screen = NSScreen.main {
             let screenFrame = screen.visibleFrame
             let x = screenFrame.midX - 210
-            let y = screenFrame.midY - 280
+            let y = screenFrame.midY - panelHeight / 2
             panel.setFrameOrigin(NSPoint(x: x, y: y))
         }
 

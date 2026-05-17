@@ -11,6 +11,7 @@ struct CountdownOverlayView: View {
     @State private var timer: Timer?
     @State private var isAppearing = false
     @AppStorage("joinButtonEnabled") private var joinButtonEnabled: Bool = true
+    @AppStorage("contextPanelMinThreshold") private var panelMinThreshold: Int = 0
 
     private var progress: Double {
         guard timeRemaining > 0 else { return 1.0 }
@@ -101,6 +102,14 @@ struct CountdownOverlayView: View {
                 }
                 .frame(width: 200, height: 200)
 
+                // Pre-meeting details — notes, attendees, secondary join link.
+                // Hidden when timeUntilStart is below the user-configured threshold
+                // (default 0 = always show whenever there's content).
+                if shouldShowDetailsPanel {
+                    MeetingDetailsPanel(meeting: meeting)
+                        .transition(.opacity)
+                }
+
                 // Start time info
                 Text("Starts at \(meeting.formattedStartTime)")
                     .font(.subheadline)
@@ -176,6 +185,28 @@ struct CountdownOverlayView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Details panel gating
+
+    /// Computed once when the overlay appears — matches the logic the window controller
+    /// uses to pick window size. Returns true iff the meeting is far enough out AND
+    /// has at least one piece of content the panel can render.
+    private var shouldShowDetailsPanel: Bool {
+        Self.shouldShowDetailsPanel(for: meeting, threshold: panelMinThreshold)
+    }
+
+    static func shouldShowDetailsPanel(for meeting: MeetingEvent, threshold: Int) -> Bool {
+        // 30-second grace so the panel doesn't snap shut as the timer crosses the threshold.
+        guard meeting.timeUntilStart >= TimeInterval(threshold * 60) - 30 else { return false }
+        let d = UserDefaults.standard
+        let showNotes = d.object(forKey: "contextPanelShowNotes") as? Bool ?? true
+        let showAttendees = d.object(forKey: "contextPanelShowAttendees") as? Bool ?? true
+        let showJoinURL = d.object(forKey: "contextPanelShowJoinURL") as? Bool ?? true
+        let hasNotes = showNotes && !(meeting.notes ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let hasAttendees = showAttendees && !meeting.attendeeNames.isEmpty
+        let hasJoinURL = showJoinURL && meeting.url != nil
+        return hasNotes || hasAttendees || hasJoinURL
     }
 
     // MARK: - Formatting
