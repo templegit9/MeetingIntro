@@ -402,11 +402,43 @@ struct SettingsView: View {
 
             Section("Focus Mode") {
                 Toggle("Enable Focus during meetings", isOn: $handoffConfig.focusHandoffEnabled)
-                Text("MeetingIntro can't enable Focus directly — macOS requires going through a user-installed Shortcut. Create two Shortcuts named exactly:")
-                    .font(.caption).foregroundStyle(.secondary)
-                Text("• MeetingIntro – Start Focus\n• MeetingIntro – End Focus")
-                    .font(.system(.caption, design: .monospaced))
-                    .foregroundStyle(.secondary)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Setup (one time)")
+                        .font(.caption).fontWeight(.semibold).foregroundStyle(.secondary)
+                    Text("macOS doesn't let apps toggle Focus directly — we go through Shortcuts. Create two Shortcuts in the Shortcuts app, named exactly:")
+                        .font(.caption).foregroundStyle(.secondary)
+                    HStack(spacing: 8) {
+                        Image(systemName: "1.circle.fill").foregroundStyle(Color.accentColor)
+                        Text("MeetingIntro – Start Focus")
+                            .font(.system(.caption, design: .monospaced))
+                    }
+                    Text("Single action: \"Set Focus\" → Do Not Disturb → On")
+                        .font(.caption).foregroundStyle(.secondary).padding(.leading, 22)
+
+                    HStack(spacing: 8) {
+                        Image(systemName: "2.circle.fill").foregroundStyle(Color.accentColor)
+                        Text("MeetingIntro – End Focus")
+                            .font(.system(.caption, design: .monospaced))
+                    }
+                    Text("Single action: \"Set Focus\" → Do Not Disturb → Off")
+                        .font(.caption).foregroundStyle(.secondary).padding(.leading, 22)
+
+                    HStack(spacing: 12) {
+                        Button {
+                            NSWorkspace.shared.open(URL(string: "shortcuts://")!)
+                        } label: {
+                            Label("Open Shortcuts App", systemImage: "arrow.up.right.square")
+                        }
+                        Button("Test Start Focus") {
+                            Task { await handoffCoordinator.testFocusEnable() }
+                        }
+                        .disabled(!handoffConfig.focusHandoffEnabled)
+                    }
+                    .padding(.top, 4)
+                }
+                .padding(.vertical, 2)
+
                 if let outcome = handoffCoordinator.lastFocusOutcome {
                     focusOutcomeView(outcome)
                 }

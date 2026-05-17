@@ -29,6 +29,13 @@ final class MeetingHandoffCoordinator: ObservableObject {
         self.config = config
     }
 
+    /// Settings UI hook: dry-run the Focus enable path so the user can see whether their
+    /// Shortcuts setup actually works without scheduling a real meeting. Does NOT snapshot
+    /// or take any other action.
+    func testFocusEnable() async {
+        lastFocusOutcome = await focus.enable()
+    }
+
     /// Subscribe to the calendar manager and recover any stale snapshot from a crash.
     func attach(to calendarManager: CalendarManager) {
         self.calendarManager = calendarManager
