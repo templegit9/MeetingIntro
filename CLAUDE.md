@@ -4,66 +4,100 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-MeetingIntro is a macOS menu bar app (Swift 5.9 / SwiftUI, macOS 14+) that watches the user's calendar and, at configurable thresholds before each meeting, fires some combination of: a floating overlay with background music, a system notification with a Mixkit sound, and a spoken voice reminder.
+MeetingIntro is a macOS menu bar app (Swift 5.9 / SwiftUI, macOS 14+) that watches the user's calendar and, at configurable thresholds before each meeting, fires some combination of: a floating overlay with background music + a one-click Join button + a meeting context panel, a system notification with a Mixkit sound, and a spoken voice reminder. Firings are gated by live context (in another call, Focus on, screen-sharing, fullscreen app) and the app can also hand off audio output + Focus state on meeting start/end.
+
+Distributed via Homebrew cask: `brew install --cask templegit9/tap/meetingintro`. Notarized + stapled.
 
 ## Build / run
 
-The Xcode project is generated from `project.yml` via [XcodeGen](https://github.com/yonaskolb/XcodeGen) — never hand-edit `MeetingIntro.xcodeproj/project.pbxproj`. After changing `project.yml` or adding source files, regenerate:
+Xcode project is **generated** from `project.yml` via [XcodeGen](https://github.com/yonaskolb/XcodeGen) — never hand-edit `MeetingIntro.xcodeproj/project.pbxproj`. **Info.plist is also generated** from `project.yml`'s `info.properties`; direct edits to `MeetingIntro/Info.plist` get overwritten on every `xcodegen generate`. Add new plist keys to `project.yml`.
 
 ```bash
-xcodegen generate                                                  # rebuild .xcodeproj from project.yml
-open MeetingIntro.xcodeproj                                        # open in Xcode (⌘R to run)
+xcodegen generate                                                  # regenerate .xcodeproj + Info.plist
+open MeetingIntro.xcodeproj                                        # Xcode (⌘R to run Debug)
 xcodebuild -project MeetingIntro.xcodeproj -scheme MeetingIntro -configuration Debug build
 ```
 
-Bundle ID is `com.oluyinka.MeetingIntro`. `LSUIElement = true` — the app has no Dock icon; it lives only in the menu bar. Hardened runtime is off and code signing is ad-hoc (`-`) in `project.yml`, so the app runs locally without a developer account.
+Bundle ID is `com.oluyinka.MeetingIntro`. `LSUIElement = true` — no Dock icon, menu bar only. Debug builds use ad-hoc signing (`-`) and no hardened runtime so they run without certs. Release builds use Developer ID + hardened runtime + `--timestamp` + `--options runtime` for notarization.
 
-There is no test target. Verification is manual: schedule a calendar event a few minutes out, set a matching countdown trigger, watch the overlay/notification/voice fire.
+No test target. Verification is manual: open Settings → Countdown → **Test Countdown Overlay** for an in-app preview that exercises every overlay feature, or schedule a real calendar event a few minutes out and watch the live behavior.
 
 ## Releasing (Homebrew cask)
 
-The app ships via `brew install --cask templegit9/tap/meetingintro`. Cutting a release is `scripts/release.sh <version>` — the script builds Release, signs with Developer ID, notarizes/staples, attaches the zip to a GitHub release, and updates `Casks/meetingintro.rb` in the `templegit9/homebrew-tap` repo. `Casks/meetingintro.rb` in this repo is the canonical template (version + sha are placeholders the script substitutes when copying into the tap). Full one-time setup and per-release runbook in [RELEASING.md](./RELEASING.md). The `Release` config in `project.yml` reads signing identity and team from `MEETINGINTRO_SIGN_IDENTITY` / `MEETINGINTRO_TEAM_ID` env vars (defaults to ad-hoc so Debug builds work without certs).
+`scripts/release.sh <version>` does the full pipeline: regenerate project → build Release → sign → notarize → staple → re-zip → GitHub release → push cask to `templegit9/homebrew-tap`. Secrets load from `.env.release` at the repo root (gitignored). Full runbook in [RELEASING.md](./RELEASING.md).
+
+**Signing gotchas that have actually bitten us** — keep these intact:
+- `CODE_SIGN_ENTITLEMENTS: MeetingIntro/MeetingIntro.entitlements` in `project.yml` base settings. **Required** because `CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO` in Release turns off Xcode's automatic entitlement injection. Without the explicit path, the signed binary has zero entitlements and every capability (calendar, network, file pick) silently fails at runtime, regardless of TCC state. We shipped v1.0.0 through v2.0.4 with this bug; v2.0.5 fixed it.
+- `OTHER_CODE_SIGN_FLAGS: "--timestamp --options runtime"` in Release. Notarization rejects signatures without a secure timestamp.
+- `CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO` in Release. Otherwise Xcode injects `com.apple.security.get-task-allow` (the debugger-attach entitlement) and notarization rejects it.
+- `Info.plist` uses `$(MARKETING_VERSION)` / `$(CURRENT_PROJECT_VERSION)` substitutions so the version the release script passes via `xcodebuild MARKETING_VERSION=$VERSION` actually reaches the bundle.
 
 ## Architecture
 
 ### App composition (`MeetingIntroApp.swift`)
 
-`@main MeetingIntroApp` owns one `@StateObject` per long-lived service and exposes two scenes: a `MenuBarExtra` (status item) and a `Settings` window. Services are passed into views explicitly rather than read from the environment.
+`@main MeetingIntroApp` owns one `@StateObject` per long-lived service and exposes two scenes: `MenuBarExtra` and `Settings`. Services pass into views explicitly, not via the environment. The `audioRouter` / `handoffConfig` / `handoffCoordinator` trio is constructed together in `init()` because the coordinator needs references to the other two.
 
-`AppLifecycleManager.observe(...)` is the **single wiring point**. It's called once from `MenuBarView.onAppear` and:
-1. Injects `CountdownConfigManager` into `CalendarManager` and `MixkitSoundManager` into `NotificationManager`.
-2. Starts the 30-second poll timer (`calendarManager.startPolling()`).
-3. Subscribes to `calendarManager.$shouldShowCountdown` → drives `OverlayWindowController.show/dismiss`.
-4. Subscribes to `calendarManager.$upcomingMeetings` → fans out to `NotificationManager` and `VoiceReminderManager` based on each trigger's per-channel flags.
+`AppLifecycleManager.observe(...)` is the **single wiring point**. Called once from `MenuBarView.onAppear`:
+1. Wires `CountdownConfigManager` into `CalendarManager`, `MixkitSoundManager` into `NotificationManager`, attaches `handoffCoordinator` to `CalendarManager`.
+2. Defines one `@MainActor` `decide` closure: `(CountdownTrigger) -> ReminderDecision` that calls `ReminderEscalationPolicy.decide` with the live context snapshot. **The same closure is used for all three channels** (overlay, notification, voice) — single source of truth for the gating decision.
+3. Wires the overlay channel via `calendarManager.shouldFireOverlay = { decide($0).showOverlay }`.
+4. Starts polling (must happen *after* the hook is set so the first poll uses the policy).
+5. Subscribes to `$shouldShowCountdown` for the overlay window, and to `$upcomingMeetings` for notification + voice fan-out (each gated by `decide(trigger)`).
 
-If you add a new alert channel (e.g., Slack DM, Hue light), wire it here — don't sprinkle subscriptions across views.
+If you add a new alert channel, wire it through `decide` here — don't sprinkle subscriptions across views.
 
 ### Calendar abstraction
 
 `CalendarProvider` protocol (`CalendarProvider.swift`) unifies two backends:
-- `EventKitProvider` — local macOS calendars via EventKit. Requires the `com.apple.security.personal-information.calendars` entitlement (already in `MeetingIntro.entitlements`).
-- `GraphCalendarProvider` — Microsoft 365 via Graph REST API using **OAuth device code flow** (chosen because a sandboxed menu-bar app doesn't have a reliable redirect URI). The user must supply their own Azure App Registration client ID in Settings; token + expiration are cached in `UserDefaults` under `graphAccessToken` / `graphTokenExpiration`.
+- `EventKitProvider` — local macOS calendars via EventKit. Requires the `com.apple.security.personal-information.calendars` entitlement (declared in `MeetingIntro.entitlements`, wired via `CODE_SIGN_ENTITLEMENTS`).
+- `GraphCalendarProvider` — Microsoft 365 via Graph REST API using **OAuth device code flow** (a sandboxed menu-bar app doesn't have a reliable redirect URI). The Graph access token + expiration are stored in **Keychain** via `KeychainStore` (`MeetingIntro/Storage/`); the legacy UserDefaults values auto-migrate on first read after upgrade. Client ID stays in UserDefaults (not a credential).
 
-`MeetingEvent` is the unified model — never leak `EKEvent` or Graph JSON above the provider boundary. `CalendarManager.activeProvider` switches on the user-selected `CalendarProviderType` stored in `UserDefaults["activeProviderType"]`.
+`MeetingEvent` is the unified model. **Never leak `EKEvent` or Graph JSON above the provider boundary.** Fields: `id, title, startDate, endDate, calendarName, location?, isAllDay, url?, notes?, attendeeNames, attendeeCount, organizerName?`. The provider boundary HTML-strips Graph `body.content` to plain text once and runs `ConferenceLinkExtractor.bestURL(...)` to pick the join link from (Graph onlineMeeting → EKEvent.url → notes regex → location regex).
 
-### Countdown triggering (`CalendarManager` + `CountdownConfigManager`)
+**Three call sites** construct `MeetingEvent`: `EventKitProvider`, `GraphCalendarProvider`, and the `Test Countdown Overlay` preview in `SettingsView`. When you add a field, update all three.
 
-`CalendarManager` is `@MainActor`, polls every 30s, and on each refresh runs `evaluateCountdownTrigger()`. Two rules to preserve:
+`CalendarManager` (@MainActor) polls every 30s and also subscribes to `EKEventStoreChanged` so granting calendar access in System Settings triggers a refresh without an app restart. `errorMessage` is cleared at the top of `refreshEvents()` and re-set only if a new error occurs — so stale "access denied" messages clear automatically once the user grants access.
 
-1. **De-duplication**: `triggeredCombinations: Set<String>` keys on `"\(meetingID)_\(minutes)"`. Without this, every 30-second poll would re-fire the overlay for the same threshold. If you add new trigger logic, use the same key pattern or it will spam.
-2. **Per-trigger channel flags**: `CountdownTrigger` has independent `showOverlay` / `sendNotification` / `playVoice` booleans. The user might want "5 min: voice only, 1 min: overlay + music". `CalendarManager` only owns the overlay decision; notification and voice fan-out lives in `AppLifecycleManager`'s `$upcomingMeetings` subscription. Keep that split — overlay is stateful (one at a time), notifications and voice are stateless per fire.
+### Countdown triggering
 
-`CountdownConfigManager.triggers` is the source of truth; it auto-persists to `UserDefaults["countdownTriggers"]` via `didSet`. `CalendarManager.countdownMinutesList` is a read-through to it.
+`CalendarManager.evaluateCountdownTrigger()` keeps two rules:
+
+1. **De-duplication**: `triggeredCombinations: Set<String>` keyed `"\(meetingID)_\(minutes)"`. Without this, every 30s poll would re-fire. Same key pattern for new trigger logic.
+2. **Policy hook**: the `shouldFireOverlay: ((CountdownTrigger) -> Bool)?` closure is consulted before setting `shouldShowCountdown = true`. `AppLifecycleManager` injects a closure that consults `ReminderEscalationPolicy`. Default (closure nil) is to respect `trigger.showOverlay` directly.
+
+`CountdownConfigManager.triggers` is the source of truth for which thresholds are enabled and which channels each fires; auto-persists to UserDefaults via `didSet`.
+
+### Smart context detection (`MeetingContext/`)
+
+Four detectors + monitor + pure-function policy:
+- **`FrontmostAppDetector`** — `NSWorkspace.didActivateApplicationNotification` push-driven. Bundle ID match against a video-conf allowlist; fullscreen check via `CGWindowListCopyWindowInfo` window-bounds.
+- **`MicrophoneDetector`** — CoreAudio `kAudioDevicePropertyDeviceIsRunningSomewhere` listeners on each input device. **No mic prompt** because we never open the device for capture.
+- **`FocusModeDetector`** — `INFocusStatusCenter` (read-only API). Polls every 10s; `.denied` is treated as "Focus off." Requires `NSFocusStatusUsageDescription` in `project.yml`.
+- **`ScreenCaptureDetector`** — heuristic: known-recorder bundle ID running OR (conference app frontmost AND mic in use). **No public macOS API exposes "is being captured by another process"** — `CGDisplayIsCaptured` is deprecated on macOS 14+, `SCShareableContent` only lists shareable resources, not capture state. The heuristic is the best we can do without Screen Recording permission. The detector takes closures for frontmost-bundle-ID and mic-in-use so it stays decoupled; `MeetingContextMonitor` wires them and pokes `refresh()` on every input change.
+
+`MeetingContextMonitor` aggregates into `MeetingContextSnapshot`. `ReminderEscalationPolicy.decide(trigger, context, config)` is pure: evaluates rules top-to-bottom (most aggressive first: in-call → suppress-all; Focus on → visual-only; sharing → no voice; fullscreen → escalate), returns `ReminderDecision`. `SmartConfigManager` persists the four user toggles individually.
 
 ### Overlay window (`OverlayWindowController`)
 
-The overlay is **not** a SwiftUI `Window` — it's an `NSPanel` wrapping `NSHostingView(CountdownOverlayView)`, with `.canJoinAllSpaces | .fullScreenAuxiliary` collection behavior and `.floating` level so it appears over fullscreen apps. This is intentional; SwiftUI's window scenes can't reliably do always-on-top + non-activating. Don't replace it with a `Window` scene without verifying behavior over fullscreen Zoom/Teams.
+The overlay is **not** a SwiftUI `Window` — it's an `NSPanel` wrapping `NSHostingView(CountdownOverlayView)`, with `.canJoinAllSpaces | .fullScreenAuxiliary` collection behavior and `.floating` level so it appears over fullscreen Zoom/Teams. SwiftUI's window scenes can't reliably do always-on-top + non-activating.
 
-Calling `show(for:)` while a panel already exists is a no-op (the `guard overlayWindow == nil` check) — this is how the de-dup interacts with the window layer.
+Panel height is computed at `show(for:)` time: **720pt** when `CountdownOverlayView.shouldShowDetailsPanel(for:threshold:)` says the details panel will render, **560pt** otherwise. Same function is also called from the SwiftUI view itself, so the size and visibility decisions stay in sync.
+
+Calling `show(for:)` while a panel exists is a no-op (`guard overlayWindow == nil`).
+
+### System handoff (`SystemHandoff/`)
+
+Runs on meeting start/end (currently-running meetings, not just upcoming):
+- **`AudioRouter`** — CoreAudio wrapper around `kAudioHardwarePropertyDefaultOutputDevice`. Lists output devices with their **UID** (stable across reboots) and transport type (so Bluetooth is identifiable). The Handoff config persists device *UIDs*, never `AudioDeviceID` (CoreAudio reassigns those on disconnect).
+- **`FocusModeController`** — invokes user-installed Shortcuts via `shortcuts://run-shortcut?name=...` URLs. `INFocusStatusCenter` is read-only, AppleScript needs the Automation entitlement, Shortcuts is the only blessed escape hatch for a sandboxed app. After invocation, polls `INFocusStatusCenter` for up to 3s to verify; reports `.verified` / `.unverified` / `.noFocusPermission`. Users must install two named Shortcuts: `MeetingIntro – Start Focus` and `MeetingIntro – End Focus`.
+- **`HandoffStateSnapshot`** — `Codable`, persisted to UserDefaults. Captures `(meetingID, endTime, priorOutputDeviceUID, priorFocusWasActive)`. The coordinator restores from this snapshot on the meeting-end event, and on next launch if a stale snapshot exists with `endTime <= now` (crash-recovery path).
+- **`MeetingHandoffCoordinator`** subscribes to set-diff on `CalendarManager.$meetingsCurrentlyRunning`. On enter: snapshot + switch audio + invoke Focus. On exit: restore.
 
 ## Conventions
 
-- **No hardcoded values.** Every tunable (countdown minutes, music file, calendar selection, lookahead interval, Graph client ID, voice template) lives in `UserDefaults`. If you add a feature, add a setting.
-- **SwiftUI-first.** Drop to AppKit only where SwiftUI genuinely can't do the job — currently just `OverlayWindowController` (NSPanel) and the `NSOpenPanel` file picker for audio.
-- **`@MainActor` on managers that touch published state.** `CalendarManager`, `OverlayWindowController`, `CountdownConfigManager` are all main-actor isolated; respect that when adding async work.
-- **Single wiring point.** New cross-service subscriptions go in `AppLifecycleManager.observe`, not in views.
+- **No hardcoded values.** Every tunable lives in `UserDefaults` (or Keychain for credentials). If you add a feature, add a setting.
+- **SwiftUI-first.** Drop to AppKit only where SwiftUI genuinely can't do the job — currently `OverlayWindowController` (NSPanel), `NSOpenPanel` for audio picking, and `NSWorkspace.shared.open` for URLs/Shortcuts.
+- **`@MainActor` on managers that touch published state.** All managers in `MeetingContext/` and `SystemHandoff/` are main-actor isolated. CoreAudio listeners dispatch back to main via `Task { @MainActor in ... }`. `deinit` cannot call `@MainActor` methods — for singletons that live for app lifetime, just skip explicit cleanup.
+- **Single wiring point.** New cross-service subscriptions go in `AppLifecycleManager.observe`.
+- **`.entitlements` and `Info.plist` are configured in `project.yml`, not edited directly.**
