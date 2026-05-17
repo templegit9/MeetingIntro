@@ -7,7 +7,7 @@ final class EventKitProvider: CalendarProvider {
 
     let providerType: CalendarProviderType = .eventKit
 
-    private let eventStore = EKEventStore()
+    let eventStore = EKEventStore()
 
     /// Set of calendar identifiers the user has chosen to monitor (empty = all).
     var selectedCalendarIDs: Set<String> = []

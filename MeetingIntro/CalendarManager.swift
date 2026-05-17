@@ -1,4 +1,5 @@
 import Combine
+import EventKit
 import Foundation
 
 /// Orchestrates calendar event polling using the active calendar provider.
@@ -93,6 +94,7 @@ final class CalendarManager: ObservableObject {
     // MARK: - Private State
 
     private var pollTimer: Timer?
+    private var eventStoreObserver: NSObjectProtocol?
     /// Tracks which (meetingID, minutesBefore) combos have already been triggered.
     private var triggeredCombinations: Set<String> = []
 
@@ -110,6 +112,20 @@ final class CalendarManager: ObservableObject {
                 await self?.refreshEvents()
             }
         }
+
+        // EventKit posts EKEventStoreChanged when the calendar database changes — which
+        // includes permission grant/revoke. Subscribing here means granting calendar
+        // access from System Settings triggers a refresh immediately, no app restart.
+        if eventStoreObserver == nil {
+            eventStoreObserver = NotificationCenter.default.addObserver(
+                forName: .EKEventStoreChanged,
+                object: eventKitProvider.eventStore,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor [weak self] in await self?.refreshEvents() }
+            }
+        }
+
         // Also fetch immediately
         Task { await refreshEvents() }
     }
@@ -124,6 +140,11 @@ final class CalendarManager: ObservableObject {
 
     /// Refresh events from the active provider.
     func refreshEvents() async {
+        // Clear any prior error before re-evaluating. If the refresh fails for a real
+        // reason we set it again below; if it succeeds, we don't carry a stale "access
+        // was denied" message after the user has actually granted access.
+        errorMessage = nil
+
         do {
             // Check authorization
             if !activeProvider.isAuthorized {
