@@ -10,6 +10,9 @@ struct SettingsView: View {
     @ObservedObject var mixkitSounds: MixkitSoundManager
     @ObservedObject var contextMonitor: MeetingContextMonitor
     @ObservedObject var smartConfig: SmartConfigManager
+    @ObservedObject var audioRouter: AudioRouter
+    @ObservedObject var handoffConfig: HandoffConfigManager
+    @ObservedObject var handoffCoordinator: MeetingHandoffCoordinator
 
     @State private var selectedProvider: CalendarProviderType = .eventKit
 
@@ -40,6 +43,11 @@ struct SettingsView: View {
             smartTab
                 .tabItem {
                     Label("Smart", systemImage: "brain")
+                }
+
+            handoffTab
+                .tabItem {
+                    Label("Handoff", systemImage: "arrow.left.arrow.right.circle")
                 }
 
             audioTab
@@ -367,6 +375,80 @@ struct SettingsView: View {
             if let detail {
                 Text(detail).font(.caption).foregroundStyle(.secondary)
             }
+        }
+    }
+
+    // MARK: - Handoff Tab
+
+    private var handoffTab: some View {
+        Form {
+            Section("Audio Output") {
+                Toggle("Switch output device when a meeting starts", isOn: $handoffConfig.audioHandoffEnabled)
+                Picker("Preferred", selection: handoffDeviceBinding(\.preferredOutputUID)) {
+                    Text("(none)").tag(String?.none)
+                    ForEach(audioRouter.devices, id: \.uid) { device in
+                        deviceLabel(device).tag(String?.some(device.uid))
+                    }
+                }
+                .disabled(!handoffConfig.audioHandoffEnabled)
+                Picker("Fallback", selection: handoffDeviceBinding(\.fallbackOutputUID)) {
+                    Text("Built-in (default)").tag(String?.none)
+                    ForEach(audioRouter.devices, id: \.uid) { device in
+                        deviceLabel(device).tag(String?.some(device.uid))
+                    }
+                }
+                .disabled(!handoffConfig.audioHandoffEnabled)
+            }
+
+            Section("Focus Mode") {
+                Toggle("Enable Focus during meetings", isOn: $handoffConfig.focusHandoffEnabled)
+                Text("MeetingIntro can't enable Focus directly — macOS requires going through a user-installed Shortcut. Create two Shortcuts named exactly:")
+                    .font(.caption).foregroundStyle(.secondary)
+                Text("• MeetingIntro – Start Focus\n• MeetingIntro – End Focus")
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                if let outcome = handoffCoordinator.lastFocusOutcome {
+                    focusOutcomeView(outcome)
+                }
+            }
+
+            Section("Restore") {
+                Toggle("Restore prior audio + Focus state when meeting ends", isOn: $handoffConfig.restoreOnEnd)
+                Text("A snapshot of the prior state is taken when the meeting starts. If MeetingIntro crashes mid-meeting, the state is restored on next launch.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+    }
+
+    private func deviceLabel(_ device: AudioRouter.OutputDevice) -> some View {
+        let icon: String
+        if device.isBluetooth { icon = "airpods" }
+        else if device.isBuiltIn { icon = "speaker.wave.2" }
+        else { icon = "hifispeaker" }
+        return Label(device.name, systemImage: icon)
+    }
+
+    private func handoffDeviceBinding(_ keyPath: ReferenceWritableKeyPath<HandoffConfigManager, String?>) -> Binding<String?> {
+        Binding(
+            get: { handoffConfig[keyPath: keyPath] },
+            set: { handoffConfig[keyPath: keyPath] = $0 }
+        )
+    }
+
+    @ViewBuilder
+    private func focusOutcomeView(_ outcome: FocusModeController.Outcome) -> some View {
+        switch outcome {
+        case .verified:
+            Label("Focus shortcut ran successfully", systemImage: "checkmark.circle.fill")
+                .foregroundStyle(.green).font(.caption)
+        case .unverified:
+            Label("Focus state didn't change — did you install the Shortcuts?", systemImage: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange).font(.caption)
+        case .noFocusPermission:
+            Label("Focus permission needed to verify (grant in the Smart tab)", systemImage: "lock.fill")
+                .foregroundStyle(.orange).font(.caption)
         }
     }
 

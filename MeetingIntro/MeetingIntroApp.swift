@@ -14,6 +14,18 @@ struct MeetingIntroApp: App {
     @StateObject private var mixkitSounds = MixkitSoundManager()
     @StateObject private var contextMonitor = MeetingContextMonitor()
     @StateObject private var smartConfig = SmartConfigManager()
+    @StateObject private var audioRouter: AudioRouter
+    @StateObject private var handoffConfig: HandoffConfigManager
+    @StateObject private var handoffCoordinator: MeetingHandoffCoordinator
+
+    init() {
+        let router = AudioRouter()
+        let config = HandoffConfigManager()
+        let focus = FocusModeController()
+        _audioRouter = StateObject(wrappedValue: router)
+        _handoffConfig = StateObject(wrappedValue: config)
+        _handoffCoordinator = StateObject(wrappedValue: MeetingHandoffCoordinator(router: router, focus: focus, config: config))
+    }
 
     var body: some Scene {
         // MARK: - Menu Bar
@@ -27,7 +39,10 @@ struct MeetingIntroApp: App {
                 countdownConfig: countdownConfig,
                 mixkitSounds: mixkitSounds,
                 contextMonitor: contextMonitor,
-                smartConfig: smartConfig
+                smartConfig: smartConfig,
+                audioRouter: audioRouter,
+                handoffConfig: handoffConfig,
+                handoffCoordinator: handoffCoordinator
             )
         } label: {
             Label("MeetingIntro", systemImage: "clock.badge.checkmark")
@@ -44,7 +59,10 @@ struct MeetingIntroApp: App {
                 countdownConfig: countdownConfig,
                 mixkitSounds: mixkitSounds,
                 contextMonitor: contextMonitor,
-                smartConfig: smartConfig
+                smartConfig: smartConfig,
+                audioRouter: audioRouter,
+                handoffConfig: handoffConfig,
+                handoffCoordinator: handoffCoordinator
             )
         }
     }
@@ -66,13 +84,15 @@ final class AppLifecycleManager: ObservableObject {
         countdownConfig: CountdownConfigManager,
         mixkitSounds: MixkitSoundManager,
         contextMonitor: MeetingContextMonitor,
-        smartConfig: SmartConfigManager
+        smartConfig: SmartConfigManager,
+        handoffCoordinator: MeetingHandoffCoordinator
     ) {
         // Wire the config manager into CalendarManager
         calendarManager.countdownConfigs = countdownConfig
         notificationManager.soundManager = mixkitSounds
         overlayController.configure(calendarManager: calendarManager, audioManager: audioManager)
         notificationManager.requestPermission()
+        handoffCoordinator.attach(to: calendarManager)
 
         // Single decision point for all three channels (overlay / notification / voice).
         // The closure reads the live snapshot each time it's called, so toggling Focus or
@@ -137,6 +157,9 @@ struct MenuBarView: View {
     @ObservedObject var mixkitSounds: MixkitSoundManager
     @ObservedObject var contextMonitor: MeetingContextMonitor
     @ObservedObject var smartConfig: SmartConfigManager
+    @ObservedObject var audioRouter: AudioRouter
+    @ObservedObject var handoffConfig: HandoffConfigManager
+    @ObservedObject var handoffCoordinator: MeetingHandoffCoordinator
 
     @StateObject private var lifecycleManager = AppLifecycleManager()
 
@@ -197,7 +220,8 @@ struct MenuBarView: View {
                 countdownConfig: countdownConfig,
                 mixkitSounds: mixkitSounds,
                 contextMonitor: contextMonitor,
-                smartConfig: smartConfig
+                smartConfig: smartConfig,
+                handoffCoordinator: handoffCoordinator
             )
         }
     }

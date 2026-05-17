@@ -11,6 +11,10 @@ final class CalendarManager: ObservableObject {
     /// All upcoming meetings from the active provider.
     @Published var upcomingMeetings: [MeetingEvent] = []
 
+    /// Meetings whose start time has passed but end time has not. Updated on each poll.
+    /// Used by `MeetingHandoffCoordinator` to drive enter/exit side effects.
+    @Published var meetingsCurrentlyRunning: [MeetingEvent] = []
+
     /// The next meeting that hasn't been triggered yet.
     @Published var nextMeeting: MeetingEvent?
 
@@ -135,6 +139,8 @@ final class CalendarManager: ObservableObject {
 
             let events = try await activeProvider.fetchUpcomingEvents(within: lookAheadInterval)
             upcomingMeetings = events
+            let now = Date()
+            meetingsCurrentlyRunning = events.filter { $0.startDate <= now && now < $0.endDate }
             errorMessage = nil
 
             evaluateCountdownTrigger()
