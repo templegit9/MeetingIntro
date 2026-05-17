@@ -42,4 +42,6 @@ targets:
           CODE_SIGN_IDENTITY: "$(MEETINGINTRO_SIGN_IDENTITY:default=-)"
           DEVELOPMENT_TEAM: "$(MEETINGINTRO_TEAM_ID:default=)"
           ENABLE_HARDENED_RUNTIME: true
+          CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+          OTHER_CODE_SIGN_FLAGS: "--timestamp --options runtime"
           SWIFT_OPTIMIZATION_LEVEL: "-Owholemodule"

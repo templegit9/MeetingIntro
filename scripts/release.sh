@@ -74,11 +74,22 @@ rm -f "$ZIP_PATH"
 ditto -c -k --keepParent "$APP_PATH" "$ZIP_PATH"
 
 echo "▶ Submitting to Apple notary service (this can take a few minutes)"
-xcrun notarytool submit "$ZIP_PATH" \
+NOTARY_OUT="$(xcrun notarytool submit "$ZIP_PATH" \
   --apple-id "$APPLE_ID" \
   --team-id "$MEETINGINTRO_TEAM_ID" \
   --password "$APPLE_APP_PASSWORD" \
-  --wait
+  --wait 2>&1)"
+echo "$NOTARY_OUT"
+
+if ! echo "$NOTARY_OUT" | grep -qE "status: Accepted"; then
+  SUBMISSION_ID="$(echo "$NOTARY_OUT" | awk '/id: [a-f0-9-]{36}/ {print $2; exit}')"
+  echo "✗ Notarization did not succeed. Fetching detailed log:" >&2
+  xcrun notarytool log "$SUBMISSION_ID" \
+    --apple-id "$APPLE_ID" \
+    --team-id "$MEETINGINTRO_TEAM_ID" \
+    --password "$APPLE_APP_PASSWORD" >&2 || true
+  exit 1
+fi
 
 echo "▶ Stapling ticket to .app"
 xcrun stapler staple "$APP_PATH"
