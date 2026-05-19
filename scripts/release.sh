@@ -46,6 +46,15 @@ APP_PATH="$BUILD_DIR/Build/Products/Release/MeetingIntro.app"
 ZIP_NAME="MeetingIntro-${VERSION}.zip"
 ZIP_PATH="$REPO_ROOT/build/$ZIP_NAME"
 
+echo "▶ Bumping project.yml MARKETING_VERSION to $VERSION"
+/usr/bin/sed -i '' "s|MARKETING_VERSION: \".*\"|MARKETING_VERSION: \"$VERSION\"|" "$REPO_ROOT/project.yml"
+( cd "$REPO_ROOT" && \
+    git add project.yml && \
+    if ! git diff --cached --quiet; then \
+        git commit -m "chore: bump version to $VERSION" && \
+        git push origin main; \
+    fi )
+
 echo "▶ Regenerating Xcode project"
 ( cd "$REPO_ROOT" && xcodegen generate )
 
