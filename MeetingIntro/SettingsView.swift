@@ -15,6 +15,7 @@ struct SettingsView: View {
     @ObservedObject var handoffCoordinator: MeetingHandoffCoordinator
 
     @State private var selectedProvider: CalendarProviderType = .eventKit
+    @State private var selectedSection: SettingsSection = .calendar
 
     @AppStorage("contextPanelShowNotes") private var contextPanelShowNotes: Bool = true
     @AppStorage("contextPanelShowAttendees") private var contextPanelShowAttendees: Bool = true
@@ -29,53 +30,36 @@ struct SettingsView: View {
     @State private var volume: Float = 0.7
 
     var body: some View {
-        TabView {
-            calendarTab
-                .tabItem {
-                    Label("Calendar", systemImage: "calendar")
+        NavigationSplitView {
+            List(selection: $selectedSection) {
+                ForEach(SettingsGroup.allCases, id: \.self) { group in
+                    Section(group.title) {
+                        ForEach(SettingsSection.allCases.filter { $0.group == group }, id: \.self) { section in
+                            Label(section.title, systemImage: section.systemImage)
+                                .tag(section)
+                        }
+                    }
                 }
-
-            countdownTab
-                .tabItem {
-                    Label("Countdown", systemImage: "timer")
+            }
+            .listStyle(.sidebar)
+            .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 240)
+        } detail: {
+            Group {
+                switch selectedSection {
+                case .calendar:  calendarTab
+                case .countdown: countdownTab
+                case .smart:     smartTab
+                case .voice:     voiceTab
+                case .sounds:    soundsTab
+                case .audio:     audioTab
+                case .handoff:   handoffTab
+                case .guide:     guideTab
+                case .about:     aboutTab
                 }
-
-            smartTab
-                .tabItem {
-                    Label("Smart", systemImage: "brain")
-                }
-
-            handoffTab
-                .tabItem {
-                    Label("Handoff", systemImage: "arrow.left.arrow.right.circle")
-                }
-
-            audioTab
-                .tabItem {
-                    Label("Audio", systemImage: "music.note")
-                }
-
-            voiceTab
-                .tabItem {
-                    Label("Voice", systemImage: "waveform")
-                }
-
-            soundsTab
-                .tabItem {
-                    Label("Sounds", systemImage: "speaker.wave.2")
-                }
-
-            guideTab
-                .tabItem {
-                    Label("Guide", systemImage: "book")
-                }
-
-            aboutTab
-                .tabItem {
-                    Label("About", systemImage: "info.circle")
-                }
+            }
+            .navigationTitle(selectedSection.title)
         }
-        .frame(width: 760, height: 540)
+        .frame(minWidth: 760, idealWidth: 820, minHeight: 540, idealHeight: 600)
         .onAppear { loadSettings() }
     }
 
@@ -882,5 +866,76 @@ extension Color {
             r = 0; g = 0.48; b = 1.0
         }
         self.init(red: r, green: g, blue: b)
+    }
+}
+
+// MARK: - Sidebar sections
+
+/// Groups for the Settings sidebar. The order here is the display order
+/// in the sidebar; sections are filtered into their group by `SettingsSection.group`.
+enum SettingsGroup: String, CaseIterable, Hashable {
+    case sources
+    case reminders
+    case inMeeting
+    case help
+
+    var title: String {
+        switch self {
+        case .sources:   return "Sources"
+        case .reminders: return "Reminders"
+        case .inMeeting: return "In-Meeting"
+        case .help:      return "Help"
+        }
+    }
+}
+
+/// One row in the Settings sidebar. Order within `allCases` is the display order
+/// within each group.
+enum SettingsSection: String, CaseIterable, Hashable {
+    case calendar
+    case countdown
+    case smart
+    case voice
+    case sounds
+    case audio
+    case handoff
+    case guide
+    case about
+
+    var title: String {
+        switch self {
+        case .calendar:  return "Calendar"
+        case .countdown: return "Countdown"
+        case .smart:     return "Smart"
+        case .voice:     return "Voice"
+        case .sounds:    return "Sounds"
+        case .audio:     return "Audio"
+        case .handoff:   return "Handoff"
+        case .guide:     return "Guide"
+        case .about:     return "About"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .calendar:  return "calendar"
+        case .countdown: return "timer"
+        case .smart:     return "brain"
+        case .voice:     return "waveform"
+        case .sounds:    return "speaker.wave.2"
+        case .audio:     return "music.note"
+        case .handoff:   return "arrow.left.arrow.right.circle"
+        case .guide:     return "book"
+        case .about:     return "info.circle"
+        }
+    }
+
+    var group: SettingsGroup {
+        switch self {
+        case .calendar:                                  return .sources
+        case .countdown, .smart, .voice, .sounds:        return .reminders
+        case .audio, .handoff:                           return .inMeeting
+        case .guide, .about:                             return .help
+        }
     }
 }
