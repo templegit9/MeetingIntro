@@ -180,7 +180,13 @@ final class CalendarManager: ObservableObject {
                 let thresholdSeconds = TimeInterval(minutes * 60)
                 let comboKey = "\(event.id)_\(minutes)"
 
+                // Freshness gate: only fire if the threshold was crossed within the
+                // last poll cycle (~60s grace). Without this, waking from sleep with a
+                // meeting still ahead would dump every stale threshold ("15 min before")
+                // even though those windows already passed during sleep.
+                let secondsSinceCrossed = thresholdSeconds - event.timeUntilStart
                 if event.timeUntilStart <= thresholdSeconds &&
+                   secondsSinceCrossed <= 60 &&
                    !triggeredCombinations.contains(comboKey) {
                     triggeredCombinations.insert(comboKey)
 

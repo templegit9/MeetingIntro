@@ -122,13 +122,18 @@ final class AppLifecycleManager: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Fan out notifications + voice through the same policy.
+        // Fan out notifications + voice through the same policy. The freshness gate
+        // (secondsSinceCrossed <= 60) suppresses backed-up reminders whose threshold
+        // crossing happened during sleep — without it, waking the laptop dumps every
+        // missed "15 min before" / "5 min before" reminder at once.
         calendarManager.$upcomingMeetings
             .sink { meetings in
                 for meeting in meetings where meeting.timeUntilStart > 0 {
                     for trigger in countdownConfig.triggers {
                         let threshold = TimeInterval(trigger.minutes * 60)
                         guard meeting.timeUntilStart <= threshold else { continue }
+                        let secondsSinceCrossed = threshold - meeting.timeUntilStart
+                        guard secondsSinceCrossed <= 60 else { continue }
 
                         let decision = decide(trigger)
 
