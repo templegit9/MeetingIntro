@@ -104,12 +104,41 @@ echo "▶ Artifact SHA-256: $SHA256"
 
 echo "▶ Creating GitHub release v$VERSION"
 TAG="v$VERSION"
+RELEASE_NOTES="## Install
+
+### If you already have Homebrew
+
+\`\`\`sh
+brew install --cask templegit9/tap/meetingintro
+\`\`\`
+
+### If you don't have Homebrew yet
+
+Install Homebrew first (one-time, takes a minute):
+
+\`\`\`sh
+/bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"
+\`\`\`
+
+Then install MeetingIntro:
+
+\`\`\`sh
+brew install --cask templegit9/tap/meetingintro
+\`\`\`
+
+### Updating to the latest version
+
+\`\`\`sh
+brew upgrade --cask templegit9/tap/meetingintro
+\`\`\`
+
+The app is signed with Developer ID and notarized by Apple, so it opens without Gatekeeper warnings."
 ( cd "$REPO_ROOT" && \
     git tag -a "$TAG" -m "Release $TAG" 2>/dev/null || true ; \
     git push origin "$TAG" 2>/dev/null || true ; \
     gh release create "$TAG" "$ZIP_PATH" \
       --title "MeetingIntro $VERSION" \
-      --notes "Install: \`brew install --cask templegit9/tap/meetingintro\`" \
+      --notes "$RELEASE_NOTES" \
       || gh release upload "$TAG" "$ZIP_PATH" --clobber )
 
 echo "▶ Updating cask in $TAP_REPO_PATH"
