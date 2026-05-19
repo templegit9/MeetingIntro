@@ -75,7 +75,7 @@ struct SettingsView: View {
                     Label("About", systemImage: "info.circle")
                 }
         }
-        .frame(width: 520, height: 480)
+        .frame(width: 760, height: 540)
         .onAppear { loadSettings() }
     }
 
