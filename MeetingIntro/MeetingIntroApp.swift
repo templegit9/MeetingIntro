@@ -1,9 +1,33 @@
+import AppKit
 import SwiftUI
 import Combine
+
+/// Holds a weak reference to the recording coordinator so the OS-level
+/// `applicationShouldTerminate` callback can block app quit until a recording is
+/// finalized. The coordinator is injected by `AppLifecycleManager.observe` once the
+/// `@StateObject`s exist.
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    weak var recordingCoordinator: MeetingRecordingCoordinator?
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard let coord = recordingCoordinator, coord.isRecording else {
+            return .terminateNow
+        }
+        // Tell macOS we need a moment; finalize the recording, then let the quit proceed.
+        // Without this, the AVAssetWriter is force-killed mid-write and we lose the file.
+        Task { @MainActor in
+            await coord.stopManually()
+            sender.reply(toApplicationShouldTerminate: true)
+        }
+        return .terminateLater
+    }
+}
 
 /// Main entry point for the MeetingIntro menu bar app.
 @main
 struct MeetingIntroApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     @StateObject private var calendarManager = CalendarManager()
     @StateObject private var audioManager = AudioManager()
@@ -57,7 +81,14 @@ struct MeetingIntroApp: App {
                 recordingCoordinator: recordingCoordinator
             )
         } label: {
-            Label("MeetingIntro", systemImage: "clock.badge.checkmark")
+            // When recording, swap the menu bar glyph to a red record symbol so the
+            // user has an at-a-glance signal from anywhere on screen — not just the
+            // OS-level dot, which isn't MeetingIntro-specific.
+            if recordingController.isRecording {
+                Label("Recording", systemImage: "record.circle.fill")
+            } else {
+                Label("MeetingIntro", systemImage: "clock.badge.checkmark")
+            }
         }
         .menuBarExtraStyle(.menu)
 
@@ -109,7 +140,11 @@ final class AppLifecycleManager: ObservableObject {
         overlayController.configure(calendarManager: calendarManager, audioManager: audioManager)
         notificationManager.requestPermission()
         handoffCoordinator.attach(to: calendarManager)
+        recordingCoordinator.notificationManager = notificationManager
         recordingCoordinator.attach(to: calendarManager)
+        if let delegate = NSApplication.shared.delegate as? AppDelegate {
+            delegate.recordingCoordinator = recordingCoordinator
+        }
 
         // Single decision point for all three channels (overlay / notification / voice).
         // The closure reads the live snapshot each time it's called, so toggling Focus or
@@ -190,6 +225,25 @@ struct MenuBarView: View {
 
     var body: some View {
         Group {
+            // Recording status — shown above everything else when active so the user
+            // can stop without digging through Settings.
+            if recordingController.isRecording, let title = recordingController.currentMeetingTitle {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Circle().fill(Color.red).frame(width: 8, height: 8)
+                        Text("Recording").font(.caption).fontWeight(.semibold).foregroundStyle(.red)
+                    }
+                    Text(title).font(.caption).lineLimit(1).foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                Button("Stop Recording") {
+                    Task { await recordingCoordinator.stopManually() }
+                }
+                .keyboardShortcut("s")
+                Divider()
+            }
+
             if let next = calendarManager.nextMeeting {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Next Meeting")

@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import Foundation
 
@@ -15,6 +16,10 @@ final class MeetingRecordingCoordinator: ObservableObject {
     private let config: RecordingConfig
     private let controller: RecordingController
     private weak var calendarManager: CalendarManager?
+
+    /// Posted-on-start notifier. Optional so the coordinator stays decoupled — if not set,
+    /// no notification fires (Settings UI still surfaces state).
+    var notificationManager: NotificationManager?
 
     private var runningMeetingIDs: Set<String> = []
     private var cancellables = Set<AnyCancellable>()
@@ -36,6 +41,45 @@ final class MeetingRecordingCoordinator: ObservableObject {
                 Task { @MainActor [weak self] in await self?.reconcile(meetings: meetings) }
             }
             .store(in: &cancellables)
+
+        // Sleep/wake — recording can't survive system sleep cleanly (SCStream and
+        // AVCaptureSession pause and the AVAssetWriter is in an undefined state on wake),
+        // so we finalize the file before sleep and start a new one on wake if the meeting
+        // is still going.
+        let workspace = NSWorkspace.shared.notificationCenter
+        workspace.publisher(for: NSWorkspace.willSleepNotification)
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in await self?.handleWillSleep() }
+            }
+            .store(in: &cancellables)
+        workspace.publisher(for: NSWorkspace.didWakeNotification)
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in await self?.handleDidWake() }
+            }
+            .store(in: &cancellables)
+    }
+
+    /// On system sleep: finalize whatever's recording so the file is playable. We do NOT
+    /// clear `runningMeetingIDs` here because that's the wake handler's job — we want
+    /// `handleDidWake` to see the meetings as "fresh starts" so it can re-arm recording
+    /// in a new file.
+    private func handleWillSleep() async {
+        guard controller.isRecording else { return }
+        await controller.stop()
+        // Intentionally leave the RecordingSession snapshot in place so a crash during
+        // sleep is still recoverable on next launch. The wake handler will clear it.
+    }
+
+    /// On wake: if a meeting is still scheduled to be running (per the calendar's view)
+    /// and recording is configured, restart recording in a new file. We can't resume
+    /// the pre-sleep file — AVAssetWriter has no resume API. The pre-sleep file is
+    /// already finalized and saved.
+    private func handleDidWake() async {
+        runningMeetingIDs = []
+        RecordingSession.clear()
+        if let calendarManager {
+            await reconcile(meetings: calendarManager.meetingsCurrentlyRunning)
+        }
     }
 
     // MARK: - Reconciliation
@@ -81,6 +125,7 @@ final class MeetingRecordingCoordinator: ObservableObject {
                 meetingEndTime: meeting.endDate
             ).save()
             lastError = nil
+            notificationManager?.sendRecordingStartedNotification(for: meeting)
         } catch {
             lastError = error.localizedDescription
         }
@@ -122,4 +167,9 @@ final class MeetingRecordingCoordinator: ObservableObject {
         await controller.stop()
         RecordingSession.clear()
     }
+
+    /// Passthrough for the AppDelegate so it can block app termination only when a
+    /// recording is actually in progress, without holding a direct reference to the
+    /// controller.
+    var isRecording: Bool { controller.isRecording }
 }

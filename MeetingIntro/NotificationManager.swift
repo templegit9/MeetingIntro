@@ -77,4 +77,23 @@ final class NotificationManager: ObservableObject {
     func resetSentState() {
         sentNotificationKeys.removeAll()
     }
+
+    /// Post a one-shot notification when an auto-recording starts. Keyed per meeting
+    /// so a brief sleep/wake (which produces a new recording file for the same meeting)
+    /// doesn't double-notify within the same calendar event.
+    func sendRecordingStartedNotification(for meeting: MeetingEvent) {
+        guard isEnabled else { return }
+        let key = "recording_started_\(meeting.id)"
+        guard !sentNotificationKeys.contains(key) else { return }
+        sentNotificationKeys.insert(key)
+
+        let content = UNMutableNotificationContent()
+        content.title = "Recording started"
+        content.subtitle = meeting.title
+        content.body = "Audio is being captured to ~/Movies/MeetingIntro/. Click the menu bar icon to stop."
+        content.sound = .default
+
+        let request = UNNotificationRequest(identifier: key, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request) { _ in }
+    }
 }
