@@ -111,6 +111,13 @@ Permissions required (added to `project.yml` `info.properties` so they land in t
 
 Filename format: `YYYY-MM-DD HHmm - {sanitized title}.m4a`. Sanitization strips `/\:?<>|*"`, collapses whitespace, truncates to 80 chars, suffixes `-2`/`-3`/… on collision.
 
+**Visibility and lifecycle (v2.1.1):**
+- Menu bar icon swaps to `record.circle.fill` while recording — at-a-glance signal that the active capture belongs to MeetingIntro vs some other app.
+- Menu bar dropdown shows "🔴 Recording" + meeting title + inline Stop button at the top — manual stop without opening Settings.
+- `NotificationManager.sendRecordingStartedNotification` posts a one-shot per meeting when recording begins (key `recording_started_<meeting.id>`).
+- **Graceful app quit:** `AppDelegate.applicationShouldTerminate` returns `.terminateLater` while a recording is in progress, awaits `coordinator.stopManually()`, then calls `reply(toApplicationShouldTerminate:)`. Without this the `AVAssetWriter` is force-killed mid-write and the file is unrecoverable. The delegate is wired via `NSApplicationDelegateAdaptor`; `AppLifecycleManager.observe` injects the coordinator weak reference once the `@StateObject`s exist.
+- **Sleep/wake:** `NSWorkspace.willSleepNotification` → `controller.stop()` so the file is finalized before macOS suspends `SCStream` and `AVCaptureSession`. `NSWorkspace.didWakeNotification` clears `runningMeetingIDs` + the snapshot and reconciles against the calendar's currently-running meetings, so a meeting that's still going across a sleep gets a fresh recording in a new file. `AVAssetWriter` has no resume API; a new file is the cleanest recovery path.
+
 ## Conventions
 
 - **No hardcoded values.** Every tunable lives in `UserDefaults` (or Keychain for credentials). If you add a feature, add a setting.
