@@ -13,6 +13,12 @@ struct SettingsView: View {
     @ObservedObject var audioRouter: AudioRouter
     @ObservedObject var handoffConfig: HandoffConfigManager
     @ObservedObject var handoffCoordinator: MeetingHandoffCoordinator
+    @ObservedObject var recordingConfig: RecordingConfig
+    @ObservedObject var recordingController: RecordingController
+    @ObservedObject var recordingCoordinator: MeetingRecordingCoordinator
+
+    @State private var showRecordingDisclaimer = false
+    @State private var recordingStats: (count: Int, sizeBytes: Int64) = (0, 0)
 
     @State private var selectedProvider: CalendarProviderType = .eventKit
     @State private var selectedSection: SettingsSection = .calendar
@@ -53,6 +59,7 @@ struct SettingsView: View {
                 case .sounds:    soundsTab
                 case .audio:     audioTab
                 case .handoff:   handoffTab
+                case .recording: recordingTab
                 case .guide:     guideTab
                 case .about:     aboutTab
                 }
@@ -466,6 +473,119 @@ struct SettingsView: View {
             Label("Focus permission needed to verify (grant in the Smart tab)", systemImage: "lock.fill")
                 .foregroundStyle(.orange).font(.caption)
         }
+    }
+
+    // MARK: - Recording Tab
+
+    private var recordingTab: some View {
+        Form {
+            Section("Auto-Record Meetings") {
+                Toggle("Record meetings with conference links automatically",
+                       isOn: Binding(
+                        get: { recordingConfig.isEnabled },
+                        set: { newValue in
+                            if newValue && !recordingConfig.hasAcceptedDisclaimer {
+                                showRecordingDisclaimer = true
+                            } else {
+                                recordingConfig.isEnabled = newValue
+                            }
+                        }))
+                Text("MeetingIntro starts a mic + system-audio recording at the meeting's start time and stops at its end time. Meetings without a detected Zoom/Teams/Meet/Webex link are skipped.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if recordingController.isRecording, let title = recordingController.currentMeetingTitle {
+                    HStack {
+                        Circle().fill(Color.red).frame(width: 10, height: 10)
+                        Text("Recording: \(title)").font(.caption).fontWeight(.medium)
+                        Spacer()
+                        Button("Stop") { Task { await recordingCoordinator.stopManually() } }
+                            .tint(.red)
+                    }
+                }
+            }
+
+            Section("Save Location") {
+                HStack {
+                    Image(systemName: "folder")
+                    Text(recordingConfig.resolveSaveDirectory().path)
+                        .font(.system(.caption, design: .monospaced))
+                        .truncationMode(.middle)
+                        .lineLimit(1)
+                    Spacer()
+                }
+                HStack(spacing: 12) {
+                    Button("Show in Finder") {
+                        let url = recordingConfig.resolveSaveDirectory()
+                        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+                        NSWorkspace.shared.activateFileViewerSelecting([url])
+                    }
+                    Button("Change…") { pickSaveLocation() }
+                    if recordingConfig.saveDirectoryBookmark != nil {
+                        Button("Reset to default") { recordingConfig.saveDirectoryBookmark = nil }
+                    }
+                }
+                Text("\(recordingStats.count) recording\(recordingStats.count == 1 ? "" : "s"), \(formatBytes(recordingStats.sizeBytes))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if let error = recordingCoordinator.lastError {
+                Section("Last error") {
+                    Label(error, systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange).font(.caption)
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+        .onAppear { refreshRecordingStats() }
+        .alert("Before you enable recording", isPresented: $showRecordingDisclaimer) {
+            Button("Cancel", role: .cancel) {}
+            Button("I understand, enable recording") {
+                recordingConfig.hasAcceptedDisclaimer = true
+                recordingConfig.isEnabled = true
+            }
+        } message: {
+            Text("MeetingIntro will record your microphone and the meeting audio you hear when each meeting with a conference link starts, and stop when it ends. Recordings save to your chosen folder.\n\nRecording laws vary by jurisdiction. In California, Massachusetts, Illinois, and most of the EU, you generally need participants to know they're being recorded. You're responsible for telling them.")
+        }
+    }
+
+    private func pickSaveLocation() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Choose"
+        if panel.runModal() == .OK, let url = panel.url {
+            recordingConfig.saveDirectoryBookmark = try? url.bookmarkData(
+                options: [.withSecurityScope],
+                includingResourceValuesForKeys: nil,
+                relativeTo: nil
+            )
+            refreshRecordingStats()
+        }
+    }
+
+    private func refreshRecordingStats() {
+        let dir = recordingConfig.resolveSaveDirectory()
+        guard let items = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.fileSizeKey], options: [.skipsHiddenFiles]) else {
+            recordingStats = (0, 0)
+            return
+        }
+        let m4as = items.filter { $0.pathExtension.lowercased() == "m4a" }
+        let totalSize = m4as.reduce(Int64(0)) { acc, url in
+            let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+            return acc + Int64(size)
+        }
+        recordingStats = (m4as.count, totalSize)
+    }
+
+    private func formatBytes(_ bytes: Int64) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.allowedUnits = [.useMB, .useGB, .useKB]
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: bytes)
     }
 
     // MARK: - Audio Tab
@@ -899,6 +1019,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
     case sounds
     case audio
     case handoff
+    case recording
     case guide
     case about
 
@@ -911,6 +1032,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
         case .sounds:    return "Sounds"
         case .audio:     return "Audio"
         case .handoff:   return "Handoff"
+        case .recording: return "Recording"
         case .guide:     return "Guide"
         case .about:     return "About"
         }
@@ -925,6 +1047,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
         case .sounds:    return "speaker.wave.2"
         case .audio:     return "music.note"
         case .handoff:   return "arrow.left.arrow.right.circle"
+        case .recording: return "record.circle"
         case .guide:     return "book"
         case .about:     return "info.circle"
         }
@@ -934,7 +1057,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
         switch self {
         case .calendar:                                  return .sources
         case .countdown, .smart, .voice, .sounds:        return .reminders
-        case .audio, .handoff:                           return .inMeeting
+        case .audio, .handoff, .recording:               return .inMeeting
         case .guide, .about:                             return .help
         }
     }

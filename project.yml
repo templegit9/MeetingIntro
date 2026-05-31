@@ -25,6 +25,8 @@ targets:
         NSCalendarsFullAccessUsageDescription: "MeetingIntro needs access to your calendars to monitor upcoming meetings and trigger countdown reminders."
         NSCalendarsUsageDescription: "MeetingIntro needs access to your calendars to monitor upcoming meetings and trigger countdown reminders."
         NSFocusStatusUsageDescription: "MeetingIntro uses your Focus status to silence voice reminders and audio alerts while you're in Do Not Disturb."
+        NSMicrophoneUsageDescription: "MeetingIntro records your microphone alongside meeting audio when Auto-Record is enabled, so you can review what was said after the meeting."
+        NSScreenCaptureUsageDescription: "MeetingIntro captures meeting audio playback via ScreenCaptureKit. No video is recorded — audio only."
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.oluyinka.MeetingIntro

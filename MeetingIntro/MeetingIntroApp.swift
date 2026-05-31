@@ -17,6 +17,9 @@ struct MeetingIntroApp: App {
     @StateObject private var audioRouter: AudioRouter
     @StateObject private var handoffConfig: HandoffConfigManager
     @StateObject private var handoffCoordinator: MeetingHandoffCoordinator
+    @StateObject private var recordingConfig: RecordingConfig
+    @StateObject private var recordingController: RecordingController
+    @StateObject private var recordingCoordinator: MeetingRecordingCoordinator
 
     init() {
         let router = AudioRouter()
@@ -25,6 +28,12 @@ struct MeetingIntroApp: App {
         _audioRouter = StateObject(wrappedValue: router)
         _handoffConfig = StateObject(wrappedValue: config)
         _handoffCoordinator = StateObject(wrappedValue: MeetingHandoffCoordinator(router: router, focus: focus, config: config))
+
+        let recConfig = RecordingConfig()
+        let recController = RecordingController()
+        _recordingConfig = StateObject(wrappedValue: recConfig)
+        _recordingController = StateObject(wrappedValue: recController)
+        _recordingCoordinator = StateObject(wrappedValue: MeetingRecordingCoordinator(config: recConfig, controller: recController))
     }
 
     var body: some Scene {
@@ -42,7 +51,10 @@ struct MeetingIntroApp: App {
                 smartConfig: smartConfig,
                 audioRouter: audioRouter,
                 handoffConfig: handoffConfig,
-                handoffCoordinator: handoffCoordinator
+                handoffCoordinator: handoffCoordinator,
+                recordingConfig: recordingConfig,
+                recordingController: recordingController,
+                recordingCoordinator: recordingCoordinator
             )
         } label: {
             Label("MeetingIntro", systemImage: "clock.badge.checkmark")
@@ -62,7 +74,10 @@ struct MeetingIntroApp: App {
                 smartConfig: smartConfig,
                 audioRouter: audioRouter,
                 handoffConfig: handoffConfig,
-                handoffCoordinator: handoffCoordinator
+                handoffCoordinator: handoffCoordinator,
+                recordingConfig: recordingConfig,
+                recordingController: recordingController,
+                recordingCoordinator: recordingCoordinator
             )
         }
     }
@@ -85,7 +100,8 @@ final class AppLifecycleManager: ObservableObject {
         mixkitSounds: MixkitSoundManager,
         contextMonitor: MeetingContextMonitor,
         smartConfig: SmartConfigManager,
-        handoffCoordinator: MeetingHandoffCoordinator
+        handoffCoordinator: MeetingHandoffCoordinator,
+        recordingCoordinator: MeetingRecordingCoordinator
     ) {
         // Wire the config manager into CalendarManager
         calendarManager.countdownConfigs = countdownConfig
@@ -93,6 +109,7 @@ final class AppLifecycleManager: ObservableObject {
         overlayController.configure(calendarManager: calendarManager, audioManager: audioManager)
         notificationManager.requestPermission()
         handoffCoordinator.attach(to: calendarManager)
+        recordingCoordinator.attach(to: calendarManager)
 
         // Single decision point for all three channels (overlay / notification / voice).
         // The closure reads the live snapshot each time it's called, so toggling Focus or
@@ -165,6 +182,9 @@ struct MenuBarView: View {
     @ObservedObject var audioRouter: AudioRouter
     @ObservedObject var handoffConfig: HandoffConfigManager
     @ObservedObject var handoffCoordinator: MeetingHandoffCoordinator
+    @ObservedObject var recordingConfig: RecordingConfig
+    @ObservedObject var recordingController: RecordingController
+    @ObservedObject var recordingCoordinator: MeetingRecordingCoordinator
 
     @StateObject private var lifecycleManager = AppLifecycleManager()
 
@@ -226,7 +246,8 @@ struct MenuBarView: View {
                 mixkitSounds: mixkitSounds,
                 contextMonitor: contextMonitor,
                 smartConfig: smartConfig,
-                handoffCoordinator: handoffCoordinator
+                handoffCoordinator: handoffCoordinator,
+                recordingCoordinator: recordingCoordinator
             )
         }
     }
