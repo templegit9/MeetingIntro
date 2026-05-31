@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-MeetingIntro is a macOS menu bar app (Swift 5.9 / SwiftUI, macOS 14+) that watches the user's calendar and, at configurable thresholds before each meeting, fires some combination of: a floating overlay with background music + a one-click Join button + a meeting context panel, a system notification with a Mixkit sound, and a spoken voice reminder. Firings are gated by live context (in another call, Focus on, screen-sharing, fullscreen app) and the app can also hand off audio output + Focus state on meeting start/end.
+MeetingIntro is a macOS menu bar app (Swift 5.9 / SwiftUI, macOS 14+) that watches the user's calendar and, at configurable thresholds before each meeting, fires some combination of: a floating overlay with background music + a one-click Join button + a meeting context panel, a system notification with a Mixkit sound, and a spoken voice reminder. Firings are gated by live context (in another call, Focus on, screen-sharing, fullscreen app), the app can hand off audio output + Focus state on meeting start/end, and it can auto-record meetings with detected conference links to `.m4a` files in `~/Movies/MeetingIntro/`.
 
 Distributed via Homebrew cask: `brew install --cask templegit9/tap/meetingintro`. Notarized + stapled.
 
@@ -93,6 +93,23 @@ Runs on meeting start/end (currently-running meetings, not just upcoming):
 - **`FocusModeController`** — invokes user-installed Shortcuts via `shortcuts://run-shortcut?name=...` URLs. `INFocusStatusCenter` is read-only, AppleScript needs the Automation entitlement, Shortcuts is the only blessed escape hatch for a sandboxed app. After invocation, polls `INFocusStatusCenter` for up to 3s to verify; reports `.verified` / `.unverified` / `.noFocusPermission`. Users must install two named Shortcuts: `MeetingIntro – Start Focus` and `MeetingIntro – End Focus`.
 - **`HandoffStateSnapshot`** — `Codable`, persisted to UserDefaults. Captures `(meetingID, endTime, priorOutputDeviceUID, priorFocusWasActive)`. The coordinator restores from this snapshot on the meeting-end event, and on next launch if a stale snapshot exists with `endTime <= now` (crash-recovery path).
 - **`MeetingHandoffCoordinator`** subscribes to set-diff on `CalendarManager.$meetingsCurrentlyRunning`. On enter: snapshot + switch audio + invoke Focus. On exit: restore.
+
+### Meeting recording (`Recording/`)
+
+Same set-diff pattern as `SystemHandoff/`, gated on `meeting.url != nil` so meetings without a detected conference link are skipped:
+
+- **`RecordingController`** — owns **two parallel audio pipelines** writing to a single `.m4a`. `SCStream` (ScreenCaptureKit) for **system audio** — the only public macOS API that captures app playback without a virtual loopback driver. `AVCaptureSession` + `AVCaptureAudioDataOutput` for the **microphone**. We'd prefer SCStream's own `captureMicrophone` (one stream, one writer), but that's macOS 15+ and our deployment target is 14.0. SCStream requires video config even when we only want audio, so we set a 2×2 placeholder at 1 fps and never wire up a video output. Output: dual-track `.m4a` — most players (QuickTime, VLC, Finder Preview) mix the two tracks on playback.
+- **`SessionStarter`** — small threadsafe coordinator that calls `writer.startSession(atSourceTime:)` exactly once, using the PTS of whichever pipeline produces the first sample. Both pipelines wait on it before appending.
+- **`RecordingSession`** — `Codable`, persisted to `UserDefaults["recordingSession"]`. Same crash-recovery pattern as `HandoffStateSnapshot`. On launch, if `meetingEndTime <= now`: partial files under 100 KB get deleted (empty container, no recoverable audio); larger files are left for manual recovery via QuickTime or ffmpeg (we can't `finishWriting()` from a different process).
+- **`RecordingConfig`** — `isEnabled`, `hasAcceptedDisclaimer` (persists across off/on toggles so the legal disclaimer modal only fires once), `saveDirectoryBookmark: Data?` (security-scoped bookmark for user-picked non-default save folders; nil → defaults to `~/Movies/MeetingIntro/`).
+- **`MeetingRecordingCoordinator`** subscribes to `CalendarManager.$meetingsCurrentlyRunning` set-diff. Gates on `config.isEnabled && config.hasAcceptedDisclaimer && meeting.url != nil`. Errors surface via `lastError: String?` for the Settings UI to render.
+
+Permissions required (added to `project.yml` `info.properties` so they land in the generated `Info.plist`):
+- `NSMicrophoneUsageDescription` — prompted on first `AVCaptureSession.startRunning()`.
+- `NSScreenCaptureUsageDescription` — prompted on first `SCStream.startCapture()`.
+- Entitlements: `com.apple.security.device.audio-input` (sandboxed mic); `com.apple.security.files.user-selected.read-write` (was read-only; upgraded so the folder picker bookmark works).
+
+Filename format: `YYYY-MM-DD HHmm - {sanitized title}.m4a`. Sanitization strips `/\:?<>|*"`, collapses whitespace, truncates to 80 chars, suffixes `-2`/`-3`/… on collision.
 
 ## Conventions
 
