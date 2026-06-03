@@ -826,6 +826,16 @@ struct SettingsView: View {
                 .font(.caption)
             }
 
+            Divider()
+                .padding(.horizontal, 60)
+
+            VStack(spacing: 4) {
+                Text("Special thanks")
+                    .font(.caption).fontWeight(.semibold).foregroundStyle(.secondary)
+                Text("Jon Lind — cancellation handling (v2.2.0)")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+
             Spacer()
 
             Text("© \(Calendar.current.component(.year, from: Date())) TempleGit. All rights reserved.")
