@@ -1,0 +1,52 @@
+name: Bug report
+description: Something in MeetingIntro isn't working right
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Settings → Help → About, or `brew list --cask --versions meetingintro`
+      placeholder: "2.2.7"
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: "14.5 (Sonoma)"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you see, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Schedule a meeting with a Zoom link 5 minutes out
+        2. Cancel it from Calendar.app
+        3. ...
+    validations:
+      required: false
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which feature is affected?
+      options:
+        - Reminders (overlay / notification / voice)
+        - Calendar connection (EventKit / Microsoft 365)
+        - Auto-recording
+        - Cancellation handling
+        - Today view / menu bar
+        - Audio & Focus handoff
+        - Settings
+        - Install / update (Homebrew)
+        - Other
+    validations:
+      required: false

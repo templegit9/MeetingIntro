@@ -1,0 +1,25 @@
+name: Feature request
+description: An idea to make MeetingIntro better
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation where you wished MeetingIntro did something it doesn't.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: How do you imagine it working?
+    validations:
+      required: true
+  - type: input
+    id: name
+    attributes:
+      label: Name (optional)
+      description: Shipped ideas get credited in the app's About tab — see Jon Lind's cancellation handling.
+    validations:
+      required: false

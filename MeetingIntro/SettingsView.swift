@@ -861,8 +861,13 @@ struct SettingsView: View {
                     .fontWeight(.semibold)
                     .fontDesign(.rounded)
 
+                // Feedback front door. feedbackFormURL is the Google Form (no GitHub
+                // account needed; submissions auto-bridge to GitHub Issues via Apps
+                // Script — see docs/feedback-form-bridge.md). Until the form URL is
+                // set, fall back to the repo's issue chooser.
                 Button("Request Feature / Report Bug") {
-                    if let url = URL(string: "https://forms.gle/PLACEHOLDER_LINK") {
+                    let formURL = "https://github.com/templegit9/MeetingIntro/issues/new/choose"
+                    if let url = URL(string: formURL) {
                         NSWorkspace.shared.open(url)
                     }
                 }
