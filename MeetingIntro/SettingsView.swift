@@ -20,6 +20,7 @@ struct SettingsView: View {
 
     @AppStorage("cancellationShowInTodayView") private var cancellationShowInTodayView: Bool = true
     @AppStorage("cancellationShowOverlay") private var cancellationShowOverlay: Bool = false
+    @AppStorage("cancellationOverlayPosition") private var cancellationOverlayPosition: String = OverlayWindowController.CancellationOverlayPosition.topRight.rawValue
 
     @State private var showRecordingDisclaimer = false
     @State private var recordingStats: (count: Int, sizeBytes: Int64) = (0, 0)
@@ -278,6 +279,12 @@ struct SettingsView: View {
                        isOn: $cancellationShowInTodayView)
                 Toggle("Show overlay notice when a meeting is cancelled",
                        isOn: $cancellationShowOverlay)
+                Picker("Overlay position", selection: $cancellationOverlayPosition) {
+                    ForEach(OverlayWindowController.CancellationOverlayPosition.allCases, id: \.rawValue) { position in
+                        Text(position.displayName).tag(position.rawValue)
+                    }
+                }
+                .disabled(!cancellationShowOverlay)
                 Text("Reminders, voice prompts, and auto-recording are always suppressed for cancelled meetings — these settings only control how you're told about the cancellation. The overlay notice floats on screen like the countdown overlay and dismisses itself.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -869,7 +876,7 @@ struct SettingsView: View {
             VStack(spacing: 4) {
                 Text("Special thanks")
                     .font(.caption).fontWeight(.semibold).foregroundStyle(.secondary)
-                Text("Jon Lind — cancellation handling (v2.2.0)")
+                Text("Jon Lind, for suggesting smarter cancellation handling (v2.2.0)")
                     .font(.caption2).foregroundStyle(.secondary)
             }
 

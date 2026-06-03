@@ -82,9 +82,25 @@ final class OverlayWindowController: ObservableObject {
 
     // MARK: - Cancellation notice
 
-    /// Show the compact cancellation notice panel (top-right of the main screen,
-    /// toast-style). Replaces any existing notice — a fresh cancellation always wins.
-    /// The view auto-dismisses itself after `CancellationOverlayView.autoDismissAfter`.
+    /// Where the cancellation notice appears. Persisted via UserDefaults
+    /// (`cancellationOverlayPosition`); default is the top-right toast.
+    enum CancellationOverlayPosition: String, CaseIterable {
+        case topRight
+        case center
+
+        var displayName: String {
+            switch self {
+            case .topRight: return "Top right (toast)"
+            case .center: return "Center (like meeting overlay)"
+            }
+        }
+    }
+
+    /// Show the compact cancellation notice panel. Position follows the user's
+    /// `cancellationOverlayPosition` setting — top-right toast by default, or
+    /// centered like the countdown overlay. Replaces any existing notice — a fresh
+    /// cancellation always wins. The view auto-dismisses itself after
+    /// `CancellationOverlayView.autoDismissAfter`.
     func showCancellation(for meeting: MeetingEvent) {
         cancellationWindow?.close()
         cancellationWindow = nil
@@ -110,13 +126,22 @@ final class OverlayWindowController: ObservableObject {
         panel.backgroundColor = NSColor.black.withAlphaComponent(0.85)
         panel.hasShadow = true
 
-        // Top-right corner, toast-style — distinct placement from the centered
-        // countdown overlay so simultaneous display doesn't overlap.
+        // Position per user setting. Top-right toast keeps it clear of a
+        // simultaneously-visible countdown overlay; center matches the meeting
+        // overlay's placement for users who want cancellations equally prominent.
+        let position = CancellationOverlayPosition(
+            rawValue: UserDefaults.standard.string(forKey: "cancellationOverlayPosition") ?? ""
+        ) ?? .topRight
         if let screen = NSScreen.main {
             let frame = screen.visibleFrame
-            let x = frame.maxX - panelWidth - 20
-            let y = frame.maxY - panelHeight - 20
-            panel.setFrameOrigin(NSPoint(x: x, y: y))
+            let origin: NSPoint
+            switch position {
+            case .topRight:
+                origin = NSPoint(x: frame.maxX - panelWidth - 20, y: frame.maxY - panelHeight - 20)
+            case .center:
+                origin = NSPoint(x: frame.midX - panelWidth / 2, y: frame.midY - panelHeight / 2)
+            }
+            panel.setFrameOrigin(origin)
         }
 
         panel.orderFrontRegardless()
