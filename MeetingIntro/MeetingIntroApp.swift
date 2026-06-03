@@ -241,44 +241,51 @@ struct MenuBarView: View {
 
     @StateObject private var lifecycleManager = AppLifecycleManager()
 
-    /// Trailing status indicator per meeting row. Priority (only one shown):
-    /// cancelled → recording → in-progress → has-conference-link → none.
-    @ViewBuilder
-    private func statusIcon(for meeting: MeetingEvent) -> some View {
+    /// One meeting row as a single concatenated `Text`. NSMenu (the `.menu` extra
+    /// style) flattens container views — an HStack of Texts becomes one menu item
+    /// PER Text, splitting time/title/icon onto separate lines. Text concatenation
+    /// is the only way to get a styled single-row layout inside NSMenu.
+    private func meetingRowText(for meeting: MeetingEvent) -> Text {
+        let time = Text(meeting.formattedStartTime)
+            .font(.system(.caption, design: .monospaced))
+            .foregroundColor(.secondary)
+
+        var title = Text(meeting.title).font(.body)
         if meeting.isCancelled {
-            Image(systemName: "xmark.circle.fill")
-                .font(.caption).foregroundStyle(.red)
+            title = title.strikethrough().foregroundColor(.secondary)
+        }
+
+        // Trailing status glyph. Priority: cancelled → recording → live now → has link.
+        let status: Text
+        if meeting.isCancelled {
+            status = Text("  ") + Text(Image(systemName: "xmark.circle.fill"))
+                .font(.caption).foregroundColor(.red)
         } else if recordingController.isRecording,
                   recordingController.currentMeetingTitle == meeting.title {
-            Image(systemName: "record.circle.fill")
-                .font(.caption).foregroundStyle(.red)
+            status = Text("  ") + Text(Image(systemName: "record.circle.fill"))
+                .font(.caption).foregroundColor(.red)
         } else if meeting.startDate <= Date() && Date() < meeting.endDate {
-            Circle().fill(Color.green).frame(width: 6, height: 6)
+            status = Text("  ") + Text(Image(systemName: "circle.fill"))
+                .font(.system(size: 7)).foregroundColor(.green)
         } else if meeting.url != nil {
-            Image(systemName: "video.fill")
-                .font(.caption2).foregroundStyle(Color.accentColor)
+            status = Text("  ") + Text(Image(systemName: "video.fill"))
+                .font(.caption2).foregroundColor(.accentColor)
         } else {
-            Color.clear
+            status = Text("")
         }
+
+        return time + Text("   ") + title + status
     }
 
     var body: some View {
         Group {
             // Recording status — shown above everything else when active so the user
-            // can stop without digging through Settings.
+            // can stop without digging through Settings. Single concatenated Text:
+            // NSMenu splits container views into one menu item per child.
             if recordingController.isRecording, let title = recordingController.currentMeetingTitle {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Circle().fill(Color.red).frame(width: 8, height: 8)
-                        Text("Recording")
-                            .font(.system(.caption, weight: .semibold))
-                            .textCase(.uppercase)
-                            .tracking(0.5)
-                            .foregroundStyle(.red)
-                    }
-                    Text(title).font(.caption).lineLimit(1).foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 4)
+                Text(Image(systemName: "record.circle.fill")).foregroundColor(.red).font(.caption)
+                    + Text("  Recording — ").font(.system(.caption, weight: .semibold)).foregroundColor(.red)
+                    + Text(title).font(.caption).foregroundColor(.secondary)
                 Button("Stop Recording") {
                     Task { await recordingCoordinator.stopManually() }
                 }
@@ -288,69 +295,40 @@ struct MenuBarView: View {
 
             // Cancelled-today badge — persists across app restarts via UserDefaults
             // so a cancellation that fired overnight is still visible the next time
-            // the user opens the dropdown. Each row has its own Dismiss.
+            // the user opens the dropdown. Each row is a Button (NSMenu-native);
+            // clicking it dismisses that cancellation.
             if !calendarManager.pendingCancellations.isEmpty {
-                Text("Cancelled today")
+                Text("Cancelled Today — click to dismiss")
                     .font(.system(.caption, weight: .semibold))
-                    .textCase(.uppercase)
-                    .tracking(0.5)
-                    .foregroundStyle(.orange)
-                    .padding(.top, 6).padding(.bottom, 2)
+                    .foregroundColor(.orange)
                 ForEach(calendarManager.pendingCancellations) { meeting in
-                    HStack(spacing: 6) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                            .frame(width: 16)
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(meeting.title).font(.body).lineLimit(1)
-                            Text(meeting.formattedStartTime).font(.caption2).foregroundStyle(.secondary)
-                        }
-                        Spacer(minLength: 8)
-                        Button("Dismiss") {
-                            calendarManager.dismissCancellation(meeting.id)
-                        }
-                        .controlSize(.small)
+                    Button {
+                        calendarManager.dismissCancellation(meeting.id)
+                    } label: {
+                        Text(Image(systemName: "xmark.circle.fill")).foregroundColor(.red).font(.caption)
+                            + Text("  \(meeting.formattedStartTime)  ")
+                                .font(.system(.caption, design: .monospaced)).foregroundColor(.secondary)
+                            + Text(meeting.title).font(.body)
                     }
-                    .frame(minHeight: 22)
                 }
                 Divider()
             }
 
             // Today's meetings list. Includes cancelled ones (struck-through) so the
             // user can see them in context — but they don't trigger reminders.
+            // Each row is one concatenated Text → one NSMenu item → one visual line.
             if calendarManager.todaysMeetings.isEmpty {
                 Label("No meetings today", systemImage: "calendar")
             } else {
                 Text("Today's Meetings")
                     .font(.system(.caption, weight: .semibold))
-                    .textCase(.uppercase)
-                    .tracking(0.5)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 6).padding(.bottom, 2)
+                    .foregroundColor(.secondary)
                 ForEach(calendarManager.todaysMeetings.prefix(8)) { meeting in
-                    HStack(spacing: 6) {
-                        Text(meeting.formattedStartTime)
-                            .font(.system(.caption, design: .monospaced))
-                            .monospacedDigit()
-                            .foregroundStyle(.secondary)
-                            .frame(width: 64, alignment: .trailing)
-                        Text(meeting.title)
-                            .font(.body)
-                            .strikethrough(meeting.isCancelled, color: .secondary)
-                            .foregroundStyle(meeting.isCancelled ? .secondary : .primary)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                        Spacer(minLength: 8)
-                        statusIcon(for: meeting)
-                            .frame(width: 16)
-                    }
-                    .frame(minHeight: 22)
+                    meetingRowText(for: meeting)
                 }
                 if calendarManager.todaysMeetings.count > 8 {
                     Text("+ \(calendarManager.todaysMeetings.count - 8) more")
-                        .font(.caption2).foregroundStyle(.secondary)
-                        .padding(.top, 1)
+                        .font(.caption2).foregroundColor(.secondary)
                 }
             }
 
