@@ -57,10 +57,20 @@ final class CalendarManager: ObservableObject {
         countdownConfigs?.enabledMinutes ?? [2]
     }
 
-    /// How far ahead to look for meetings (in seconds). Default: 1 hour.
+    /// How far ahead to look for meetings (in seconds).
+    ///
+    /// Default is dynamic: always through end of today + a 2-hour buffer, so the menu
+    /// bar's "Today's Meetings" list reliably shows every event scheduled for the
+    /// current day (and a peek at tomorrow's earliest for the next-meeting case).
+    /// The previous fixed-1-hour default meant any meeting later than ~now+1h never
+    /// appeared in `upcomingMeetings` and the today view falsely rendered as empty.
+    /// User-set value via UserDefaults still wins.
     var lookAheadInterval: TimeInterval {
         let stored = UserDefaults.standard.double(forKey: "lookAheadInterval")
-        return stored > 0 ? stored : 3600
+        if stored > 0 { return stored }
+        let endOfDay = Calendar.current.date(bySettingHour: 23, minute: 59, second: 59, of: Date())
+            ?? Date().addingTimeInterval(86400)
+        return max(3600, endOfDay.timeIntervalSinceNow + 7200)
     }
 
     /// Set of calendar IDs to monitor (empty = all).
