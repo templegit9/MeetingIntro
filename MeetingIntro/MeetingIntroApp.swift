@@ -241,6 +241,27 @@ struct MenuBarView: View {
 
     @StateObject private var lifecycleManager = AppLifecycleManager()
 
+    /// Trailing status indicator per meeting row. Priority (only one shown):
+    /// cancelled → recording → in-progress → has-conference-link → none.
+    @ViewBuilder
+    private func statusIcon(for meeting: MeetingEvent) -> some View {
+        if meeting.isCancelled {
+            Image(systemName: "xmark.circle.fill")
+                .font(.caption).foregroundStyle(.red)
+        } else if recordingController.isRecording,
+                  recordingController.currentMeetingTitle == meeting.title {
+            Image(systemName: "record.circle.fill")
+                .font(.caption).foregroundStyle(.red)
+        } else if meeting.startDate <= Date() && Date() < meeting.endDate {
+            Circle().fill(Color.green).frame(width: 6, height: 6)
+        } else if meeting.url != nil {
+            Image(systemName: "video.fill")
+                .font(.caption2).foregroundStyle(Color.accentColor)
+        } else {
+            Color.clear
+        }
+    }
+
     var body: some View {
         Group {
             // Recording status — shown above everything else when active so the user
@@ -249,11 +270,14 @@ struct MenuBarView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
                         Circle().fill(Color.red).frame(width: 8, height: 8)
-                        Text("Recording").font(.caption).fontWeight(.semibold).foregroundStyle(.red)
+                        Text("Recording")
+                            .font(.system(.caption, weight: .semibold))
+                            .textCase(.uppercase)
+                            .tracking(0.5)
+                            .foregroundStyle(.red)
                     }
                     Text(title).font(.caption).lineLimit(1).foregroundStyle(.secondary)
                 }
-                .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 Button("Stop Recording") {
                     Task { await recordingCoordinator.stopManually() }
@@ -266,22 +290,29 @@ struct MenuBarView: View {
             // so a cancellation that fired overnight is still visible the next time
             // the user opens the dropdown. Each row has its own Dismiss.
             if !calendarManager.pendingCancellations.isEmpty {
-                Text("⚠️ Cancelled today")
-                    .font(.caption).fontWeight(.semibold).foregroundStyle(.orange)
-                    .padding(.horizontal, 8)
+                Text("Cancelled today")
+                    .font(.system(.caption, weight: .semibold))
+                    .textCase(.uppercase)
+                    .tracking(0.5)
+                    .foregroundStyle(.orange)
+                    .padding(.top, 6).padding(.bottom, 2)
                 ForEach(calendarManager.pendingCancellations) { meeting in
-                    HStack {
+                    HStack(spacing: 6) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                            .frame(width: 16)
                         VStack(alignment: .leading, spacing: 1) {
-                            Text(meeting.title).font(.caption).lineLimit(1)
+                            Text(meeting.title).font(.body).lineLimit(1)
                             Text(meeting.formattedStartTime).font(.caption2).foregroundStyle(.secondary)
                         }
-                        Spacer()
+                        Spacer(minLength: 8)
                         Button("Dismiss") {
                             calendarManager.dismissCancellation(meeting.id)
                         }
                         .controlSize(.small)
                     }
-                    .padding(.horizontal, 8)
+                    .frame(minHeight: 22)
                 }
                 Divider()
             }
@@ -290,33 +321,36 @@ struct MenuBarView: View {
             // user can see them in context — but they don't trigger reminders.
             if calendarManager.todaysMeetings.isEmpty {
                 Label("No meetings today", systemImage: "calendar")
-                    .padding(.horizontal, 8)
             } else {
                 Text("Today's Meetings")
-                    .font(.caption).foregroundStyle(.secondary)
-                    .padding(.horizontal, 8)
+                    .font(.system(.caption, weight: .semibold))
+                    .textCase(.uppercase)
+                    .tracking(0.5)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 6).padding(.bottom, 2)
                 ForEach(calendarManager.todaysMeetings.prefix(8)) { meeting in
                     HStack(spacing: 6) {
                         Text(meeting.formattedStartTime)
-                            .font(.caption2).foregroundStyle(.secondary)
-                            .frame(width: 56, alignment: .leading)
+                            .font(.system(.caption, design: .monospaced))
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                            .frame(width: 64, alignment: .trailing)
                         Text(meeting.title)
-                            .font(.caption)
+                            .font(.body)
                             .strikethrough(meeting.isCancelled, color: .secondary)
                             .foregroundStyle(meeting.isCancelled ? .secondary : .primary)
                             .lineLimit(1)
-                        if meeting.isCancelled {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.caption2).foregroundStyle(.red)
-                        }
-                        Spacer()
+                            .truncationMode(.tail)
+                        Spacer(minLength: 8)
+                        statusIcon(for: meeting)
+                            .frame(width: 16)
                     }
-                    .padding(.horizontal, 8)
+                    .frame(minHeight: 22)
                 }
                 if calendarManager.todaysMeetings.count > 8 {
                     Text("+ \(calendarManager.todaysMeetings.count - 8) more")
                         .font(.caption2).foregroundStyle(.secondary)
-                        .padding(.horizontal, 8)
+                        .padding(.top, 1)
                 }
             }
 
@@ -347,6 +381,7 @@ struct MenuBarView: View {
             }
             .keyboardShortcut("q")
         }
+        .frame(minWidth: 280, alignment: .leading)
         .onAppear {
             lifecycleManager.observe(
                 calendarManager: calendarManager,
