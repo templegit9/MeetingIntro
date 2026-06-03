@@ -98,7 +98,7 @@ final class GraphCalendarProvider: CalendarProvider {
         let startStr = formatter.string(from: now)
         let endStr = formatter.string(from: endDate)
 
-        let urlString = "https://graph.microsoft.com/v1.0/me/calendarview?startdatetime=\(startStr)&enddatetime=\(endStr)&$select=id,subject,start,end,location,isAllDay,organizer,body,attendees,onlineMeeting,isOnlineMeeting&$orderby=start/dateTime"
+        let urlString = "https://graph.microsoft.com/v1.0/me/calendarview?startdatetime=\(startStr)&enddatetime=\(endStr)&$select=id,subject,start,end,location,isAllDay,organizer,body,attendees,onlineMeeting,isOnlineMeeting,isCancelled&$orderby=start/dateTime"
 
         guard let url = URL(string: urlString) else {
             throw CalendarProviderError.unknown(underlying: URLError(.badURL))
@@ -146,9 +146,11 @@ final class GraphCalendarProvider: CalendarProvider {
                     location: event.location?.displayName,
                     graphOnlineMeetingURL: onlineMeetingURL
                 )
+                let title = event.subject ?? "Untitled Meeting"
+                let cancelled = (event.isCancelled ?? false) || CancellationTitlePrefix.matches(title)
                 return MeetingEvent(
                     id: event.id,
-                    title: event.subject ?? "Untitled Meeting",
+                    title: title,
                     startDate: startDate,
                     endDate: endDate,
                     calendarName: "Outlook",
@@ -158,7 +160,8 @@ final class GraphCalendarProvider: CalendarProvider {
                     notes: notes,
                     attendeeNames: Array(attendeeNames.prefix(10)),
                     attendeeCount: attendeeNames.count,
-                    organizerName: event.organizer?.emailAddress?.name
+                    organizerName: event.organizer?.emailAddress?.name,
+                    isCancelled: cancelled
                 )
             }
             .sorted { $0.startDate < $1.startDate }
@@ -337,6 +340,7 @@ struct GraphEvent: Codable {
     let onlineMeeting: GraphOnlineMeeting?
     let isOnlineMeeting: Bool?
     let organizer: GraphRecipient?
+    let isCancelled: Bool?
 }
 
 struct GraphBody: Codable {

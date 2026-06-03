@@ -78,6 +78,34 @@ final class NotificationManager: ObservableObject {
         sentNotificationKeys.removeAll()
     }
 
+    /// Post a one-shot notification when a meeting is detected as cancelled.
+    /// Keyed per meeting; dedup against UNUserNotificationCenter.
+    func sendCancellationNotification(for meeting: MeetingEvent) {
+        guard isEnabled else { return }
+        let key = "cancellation_\(meeting.id)"
+        guard !sentNotificationKeys.contains(key) else { return }
+        sentNotificationKeys.insert(key)
+
+        let content = UNMutableNotificationContent()
+        content.title = "Meeting cancelled"
+        content.subtitle = meeting.title
+        let formatter = DateFormatter()
+        formatter.dateStyle = .none
+        formatter.timeStyle = .short
+        var bodyParts: [String] = ["was \(formatter.string(from: meeting.startDate))"]
+        if let organizer = meeting.organizerName, !organizer.isEmpty {
+            bodyParts.append("· \(organizer)")
+        }
+        content.body = bodyParts.joined(separator: " ")
+        content.sound = .default
+
+        let request = UNNotificationRequest(identifier: key, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request) { _ in }
+
+        // Also play the user's Mixkit sound if they've selected one.
+        playSelectedSound()
+    }
+
     /// Post a one-shot notification when an auto-recording starts. Keyed per meeting
     /// so a brief sleep/wake (which produces a new recording file for the same meeting)
     /// doesn't double-notify within the same calendar event.

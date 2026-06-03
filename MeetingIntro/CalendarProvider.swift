@@ -16,6 +16,7 @@ struct MeetingEvent: Identifiable, Equatable {
     let attendeeNames: [String]
     let attendeeCount: Int
     let organizerName: String?
+    let isCancelled: Bool
 
     /// Time remaining until the meeting starts, relative to now.
     var timeUntilStart: TimeInterval {
@@ -74,6 +75,17 @@ protocol CalendarProvider {
 }
 
 // MARK: - CalendarInfo
+
+/// Title-prefix fallback detector for cancelled meetings. Used when a calendar
+/// source sets the title to `Canceled: ...` / `Cancelled: ...` but doesn't expose
+/// the cancellation via the structured status field — common with older Exchange
+/// servers that forward invites with a rewritten title.
+enum CancellationTitlePrefix {
+    static func matches(_ title: String) -> Bool {
+        let lower = title.lowercased()
+        return lower.hasPrefix("canceled:") || lower.hasPrefix("cancelled:")
+    }
+}
 
 /// Lightweight info about a calendar for display in settings.
 struct CalendarInfo: Identifiable, Hashable {

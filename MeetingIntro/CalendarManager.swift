@@ -16,6 +16,15 @@ final class CalendarManager: ObservableObject {
     /// Used by `MeetingHandoffCoordinator` to drive enter/exit side effects.
     @Published var meetingsCurrentlyRunning: [MeetingEvent] = []
 
+    /// All of today's meetings (sorted by start time). Includes cancelled ones so the
+    /// menu bar dropdown can show them struck-through. Computed each refresh.
+    @Published var todaysMeetings: [MeetingEvent] = []
+
+    /// Cancelled meetings that have been notified to the user but not yet dismissed
+    /// from the dropdown badge. Persisted across launches via `dismissedCancellationIDs`
+    /// in UserDefaults — exactly the "someone cancelled overnight" case in Jon's doc.
+    @Published var pendingCancellations: [MeetingEvent] = []
+
     /// The next meeting that hasn't been triggered yet.
     @Published var nextMeeting: MeetingEvent?
 
@@ -98,10 +107,21 @@ final class CalendarManager: ObservableObject {
     /// Tracks which (meetingID, minutesBefore) combos have already been triggered.
     private var triggeredCombinations: Set<String> = []
 
+    /// Cancellation IDs we've already fired a system notification for. Persisted to
+    /// UserDefaults so a relaunch doesn't re-notify for the same cancellation.
+    private(set) var notifiedCancellationIDs: Set<String> = []
+    /// Cancellation IDs the user has dismissed from the menu bar badge.
+    private(set) var dismissedCancellationIDs: Set<String> = []
+    private static let k_notifiedCancellations = "notifiedCancellationIDs"
+    private static let k_dismissedCancellations = "dismissedCancellationIDs"
+
     // MARK: - Lifecycle
 
     init() {
         updateProviderCalendarFilter()
+        let d = UserDefaults.standard
+        self.notifiedCancellationIDs = Set(d.stringArray(forKey: Self.k_notifiedCancellations) ?? [])
+        self.dismissedCancellationIDs = Set(d.stringArray(forKey: Self.k_dismissedCancellations) ?? [])
     }
 
     /// Start polling for calendar events.
@@ -161,7 +181,16 @@ final class CalendarManager: ObservableObject {
             let events = try await activeProvider.fetchUpcomingEvents(within: lookAheadInterval)
             upcomingMeetings = events
             let now = Date()
-            meetingsCurrentlyRunning = events.filter { $0.startDate <= now && now < $0.endDate }
+            meetingsCurrentlyRunning = events.filter { $0.startDate <= now && now < $0.endDate && !$0.isCancelled }
+            todaysMeetings = events
+                .filter { Calendar.current.isDateInToday($0.startDate) }
+                .sorted { $0.startDate < $1.startDate }
+            pendingCancellations = events.filter {
+                $0.isCancelled
+                    && notifiedCancellationIDs.contains($0.id)
+                    && !dismissedCancellationIDs.contains($0.id)
+            }
+            pruneCancellationState(against: events)
             errorMessage = nil
 
             evaluateCountdownTrigger()
@@ -174,8 +203,10 @@ final class CalendarManager: ObservableObject {
 
     /// Check if any meeting is within any of the countdown thresholds.
     private func evaluateCountdownTrigger() {
-        // For each meeting, check each configured countdown time
-        for event in upcomingMeetings where event.timeUntilStart > 0 {
+        // For each meeting, check each configured countdown time. Cancelled
+        // meetings are skipped — their reminders fire as a one-shot system
+        // notification at detection time instead (see AppLifecycleManager).
+        for event in upcomingMeetings where event.timeUntilStart > 0 && !event.isCancelled {
             for minutes in countdownMinutesList {
                 let thresholdSeconds = TimeInterval(minutes * 60)
                 let comboKey = "\(event.id)_\(minutes)"
@@ -216,6 +247,51 @@ final class CalendarManager: ObservableObject {
         if let current = countdownMeeting, current.timeUntilStart <= 0 {
             shouldShowCountdown = false
             countdownMeeting = nil
+        }
+    }
+
+    // MARK: - Cancellation helpers
+
+    /// Mark a cancellation as notified so the next refresh doesn't re-fire the
+    /// system notification. Persisted to UserDefaults.
+    func markCancellationNotified(_ id: String) {
+        notifiedCancellationIDs.insert(id)
+        UserDefaults.standard.set(Array(notifiedCancellationIDs), forKey: Self.k_notifiedCancellations)
+        // The pendingCancellations recompute happens on next refresh; nudge published
+        // value so the menu bar dropdown updates immediately if the meeting is still
+        // in the upcoming list.
+        if let meeting = upcomingMeetings.first(where: { $0.id == id }), meeting.isCancelled,
+           !dismissedCancellationIDs.contains(id) {
+            if !pendingCancellations.contains(where: { $0.id == id }) {
+                pendingCancellations.append(meeting)
+            }
+        }
+    }
+
+    /// User clicked "Dismiss" on a cancelled meeting badge. Persisted so the badge
+    /// stays gone across app restarts.
+    func dismissCancellation(_ id: String) {
+        dismissedCancellationIDs.insert(id)
+        UserDefaults.standard.set(Array(dismissedCancellationIDs), forKey: Self.k_dismissedCancellations)
+        pendingCancellations.removeAll { $0.id == id }
+    }
+
+    /// Drop notified/dismissed entries whose meeting has already ended — keeps the
+    /// UserDefaults sets bounded and prevents stale IDs from accumulating forever.
+    private func pruneCancellationState(against events: [MeetingEvent]) {
+        let now = Date()
+        // Build a set of meeting IDs that still exist in the upcoming window AND
+        // haven't ended yet. Any persisted ID outside this set is safe to drop.
+        let liveIDs = Set(events.filter { $0.endDate > now }.map(\.id))
+        let prunedNotified = notifiedCancellationIDs.intersection(liveIDs)
+        let prunedDismissed = dismissedCancellationIDs.intersection(liveIDs)
+        if prunedNotified != notifiedCancellationIDs {
+            notifiedCancellationIDs = prunedNotified
+            UserDefaults.standard.set(Array(prunedNotified), forKey: Self.k_notifiedCancellations)
+        }
+        if prunedDismissed != dismissedCancellationIDs {
+            dismissedCancellationIDs = prunedDismissed
+            UserDefaults.standard.set(Array(prunedDismissed), forKey: Self.k_dismissedCancellations)
         }
     }
 

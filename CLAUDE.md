@@ -26,6 +26,8 @@ No test target. Verification is manual: open Settings → Countdown → **Test C
 
 `scripts/release.sh <version>` does the full pipeline: regenerate project → build Release → sign → notarize → staple → re-zip → GitHub release → push cask to `templegit9/homebrew-tap`. Secrets load from `.env.release` at the repo root (gitignored). Full runbook in [RELEASING.md](./RELEASING.md).
 
+GitHub release notes are auto-generated: a "What's changed since <previous tag>" section is prepended to the install instructions from `git log <prev>..HEAD --pretty=format:'- %s' -- MeetingIntro/ project.yml scripts/ Casks/ CLAUDE.md RELEASING.md`. Capped at 30 commits so a long gap between releases doesn't produce wall-of-text notes. Implies that commit subjects are themselves user-facing — write them accordingly.
+
 **Signing gotchas that have actually bitten us** — keep these intact:
 - `CODE_SIGN_ENTITLEMENTS: MeetingIntro/MeetingIntro.entitlements` in `project.yml` base settings. **Required** because `CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO` in Release turns off Xcode's automatic entitlement injection. Without the explicit path, the signed binary has zero entitlements and every capability (calendar, network, file pick) silently fails at runtime, regardless of TCC state. We shipped v1.0.0 through v2.0.4 with this bug; v2.0.5 fixed it.
 - `OTHER_CODE_SIGN_FLAGS: "--timestamp --options runtime"` in Release. Notarization rejects signatures without a secure timestamp.
@@ -53,7 +55,7 @@ If you add a new alert channel, wire it through `decide` here — don't sprinkle
 - `EventKitProvider` — local macOS calendars via EventKit. Requires the `com.apple.security.personal-information.calendars` entitlement (declared in `MeetingIntro.entitlements`, wired via `CODE_SIGN_ENTITLEMENTS`).
 - `GraphCalendarProvider` — Microsoft 365 via Graph REST API using **OAuth device code flow** (a sandboxed menu-bar app doesn't have a reliable redirect URI). The Graph access token + expiration are stored in **Keychain** via `KeychainStore` (`MeetingIntro/Storage/`); the legacy UserDefaults values auto-migrate on first read after upgrade. Client ID stays in UserDefaults (not a credential).
 
-`MeetingEvent` is the unified model. **Never leak `EKEvent` or Graph JSON above the provider boundary.** Fields: `id, title, startDate, endDate, calendarName, location?, isAllDay, url?, notes?, attendeeNames, attendeeCount, organizerName?`. The provider boundary HTML-strips Graph `body.content` to plain text once and runs `ConferenceLinkExtractor.bestURL(...)` to pick the join link from (Graph onlineMeeting → EKEvent.url → notes regex → location regex).
+`MeetingEvent` is the unified model. **Never leak `EKEvent` or Graph JSON above the provider boundary.** Fields: `id, title, startDate, endDate, calendarName, location?, isAllDay, url?, notes?, attendeeNames, attendeeCount, organizerName?, isCancelled`. The provider boundary HTML-strips Graph `body.content` to plain text once, runs `ConferenceLinkExtractor.bestURL(...)` to pick the join link, and applies `CancellationTitlePrefix.matches(...)` as a fallback for cancellations whose calendar source rewrites the title to `Canceled: ...` / `Cancelled: ...` but doesn't set the structured status flag (common with older Exchange forwarding).
 
 **Three call sites** construct `MeetingEvent`: `EventKitProvider`, `GraphCalendarProvider`, and the `Test Countdown Overlay` preview in `SettingsView`. When you add a field, update all three.
 
@@ -67,6 +69,16 @@ If you add a new alert channel, wire it through `decide` here — don't sprinkle
 2. **Policy hook**: the `shouldFireOverlay: ((CountdownTrigger) -> Bool)?` closure is consulted before setting `shouldShowCountdown = true`. `AppLifecycleManager` injects a closure that consults `ReminderEscalationPolicy`. Default (closure nil) is to respect `trigger.showOverlay` directly.
 
 `CountdownConfigManager.triggers` is the source of truth for which thresholds are enabled and which channels each fires; auto-persists to UserDefaults via `didSet`.
+
+### Cancellation handling (v2.2.0)
+
+Cancelled meetings are first-class: notify once on detection, suppress all original-start-time channels (overlay, notification, voice, auto-record).
+
+- **Detection** lives in the providers (`EKEvent.status == .canceled` / Graph `isCancelled`, with `CancellationTitlePrefix` as fallback). The flag rides through on `MeetingEvent.isCancelled` so downstream code never has to ask the calendar source again.
+- **`CalendarManager` owns the persistence**: `notifiedCancellationIDs` (we've already fired the notification) and `dismissedCancellationIDs` (user clicked Dismiss on the dropdown badge). Both persist to UserDefaults so an overnight cancellation is still visible in the dropdown the next morning — Jon's "someone in Japan cancelled while I was asleep" case. `pruneCancellationState` drops IDs whose corresponding meeting has ended, keeping the sets bounded.
+- **Fan-out** is in `AppLifecycleManager.observe`: a dedicated `$upcomingMeetings.sink` runs **before** the regular reminder fan-out, so a freshly-cancelled meeting in the same refresh cycle never fires both a cancellation notification AND a stale reminder. Each cancelled meeting matched against `notifiedCancellationIDs` → either notify + mark, or skip.
+- **Suppression** is symmetric across every reminder channel: `CalendarManager.evaluateCountdownTrigger`'s outer `where` adds `!event.isCancelled`; `AppLifecycleManager`'s reminder fan-out adds the same gate; `MeetingRecordingCoordinator.shouldRecord` adds `&& !meeting.isCancelled`. Cancelled meetings are still added to `todaysMeetings` (the menu bar shows them struck-through) and to `meetingsCurrentlyRunning` excludes them so the handoff coordinator doesn't switch audio for a meeting that isn't happening.
+- **Today view in `MenuBarView`**: replaces the old "Next Meeting" header. Renders `todaysMeetings` as compact rows (time + title), cancelled ones get `.strikethrough()` + a red `xmark.circle.fill`. Above the list, when `pendingCancellations` is non-empty, a "⚠️ Cancelled today" section shows each one with an inline "Dismiss" button calling `calendarManager.dismissCancellation(id)`. Display capped at 8 rows + "+N more" overflow.
 
 ### Smart context detection (`MeetingContext/`)
 

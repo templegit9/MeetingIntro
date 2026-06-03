@@ -111,6 +111,7 @@ final class MeetingRecordingCoordinator: ObservableObject {
         config.isEnabled
             && config.hasAcceptedDisclaimer
             && meeting.url != nil
+            && !meeting.isCancelled
     }
 
     private func beginRecording(_ meeting: MeetingEvent) async {

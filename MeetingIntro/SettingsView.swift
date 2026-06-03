@@ -279,7 +279,8 @@ struct SettingsView: View {
                         notes: "Sprint review for Q2 planning. Bring updates on the data-pipeline migration and the customer-segmentation analysis. We'll spend the first 15 minutes on the roadmap doc, then open the floor for blockers.",
                         attendeeNames: ["Alice Wong", "Ben Patel", "Chiamaka Eze", "Diego Ortiz", "Emma Schultz", "Fatima Bello", "Grace Liu", "Henry Park"],
                         attendeeCount: 8,
-                        organizerName: "Alice Wong"
+                        organizerName: "Alice Wong",
+                        isCancelled: false
                     )
                     showCountdownOverlay(for: testMeeting)
                 }

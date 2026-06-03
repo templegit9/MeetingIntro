@@ -174,13 +174,31 @@ final class AppLifecycleManager: ObservableObject {
             }
             .store(in: &cancellables)
 
+        // Cancellation fan-out — fire a "Meeting cancelled" notification the first
+        // time we see each cancelled event, and never again. This runs BEFORE the
+        // reminder fan-out so a freshly-cancelled meeting can't accidentally fire a
+        // reminder in the same poll cycle.
+        calendarManager.$upcomingMeetings
+            .sink { [weak calendarManager] meetings in
+                guard let calendarManager else { return }
+                for meeting in meetings where meeting.isCancelled {
+                    if !calendarManager.notifiedCancellationIDs.contains(meeting.id) {
+                        notificationManager.sendCancellationNotification(for: meeting)
+                        calendarManager.markCancellationNotified(meeting.id)
+                    }
+                }
+            }
+            .store(in: &cancellables)
+
         // Fan out notifications + voice through the same policy. The freshness gate
         // (secondsSinceCrossed <= 60) suppresses backed-up reminders whose threshold
         // crossing happened during sleep — without it, waking the laptop dumps every
-        // missed "15 min before" / "5 min before" reminder at once.
+        // missed "15 min before" / "5 min before" reminder at once. Cancelled meetings
+        // are excluded — they fire a single cancellation notification at detection
+        // time (above) and skip the original-start-time reminders entirely.
         calendarManager.$upcomingMeetings
             .sink { meetings in
-                for meeting in meetings where meeting.timeUntilStart > 0 {
+                for meeting in meetings where meeting.timeUntilStart > 0 && !meeting.isCancelled {
                     for trigger in countdownConfig.triggers {
                         let threshold = TimeInterval(trigger.minutes * 60)
                         guard meeting.timeUntilStart <= threshold else { continue }
@@ -244,22 +262,62 @@ struct MenuBarView: View {
                 Divider()
             }
 
-            if let next = calendarManager.nextMeeting {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Next Meeting")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text(next.title)
-                        .font(.headline)
-                    Text("\(next.formattedStartTime) · \(next.calendarName)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-            } else {
-                Label("No upcoming meetings", systemImage: "calendar")
+            // Cancelled-today badge — persists across app restarts via UserDefaults
+            // so a cancellation that fired overnight is still visible the next time
+            // the user opens the dropdown. Each row has its own Dismiss.
+            if !calendarManager.pendingCancellations.isEmpty {
+                Text("⚠️ Cancelled today")
+                    .font(.caption).fontWeight(.semibold).foregroundStyle(.orange)
                     .padding(.horizontal, 8)
+                ForEach(calendarManager.pendingCancellations) { meeting in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(meeting.title).font(.caption).lineLimit(1)
+                            Text(meeting.formattedStartTime).font(.caption2).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button("Dismiss") {
+                            calendarManager.dismissCancellation(meeting.id)
+                        }
+                        .controlSize(.small)
+                    }
+                    .padding(.horizontal, 8)
+                }
+                Divider()
+            }
+
+            // Today's meetings list. Includes cancelled ones (struck-through) so the
+            // user can see them in context — but they don't trigger reminders.
+            if calendarManager.todaysMeetings.isEmpty {
+                Label("No meetings today", systemImage: "calendar")
+                    .padding(.horizontal, 8)
+            } else {
+                Text("Today's Meetings")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .padding(.horizontal, 8)
+                ForEach(calendarManager.todaysMeetings.prefix(8)) { meeting in
+                    HStack(spacing: 6) {
+                        Text(meeting.formattedStartTime)
+                            .font(.caption2).foregroundStyle(.secondary)
+                            .frame(width: 56, alignment: .leading)
+                        Text(meeting.title)
+                            .font(.caption)
+                            .strikethrough(meeting.isCancelled, color: .secondary)
+                            .foregroundStyle(meeting.isCancelled ? .secondary : .primary)
+                            .lineLimit(1)
+                        if meeting.isCancelled {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.caption2).foregroundStyle(.red)
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 8)
+                }
+                if calendarManager.todaysMeetings.count > 8 {
+                    Text("+ \(calendarManager.todaysMeetings.count - 8) more")
+                        .font(.caption2).foregroundStyle(.secondary)
+                        .padding(.horizontal, 8)
+                }
             }
 
             Divider()

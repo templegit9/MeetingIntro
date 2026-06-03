@@ -113,7 +113,27 @@ echo "▶ Artifact SHA-256: $SHA256"
 
 echo "▶ Creating GitHub release v$VERSION"
 TAG="v$VERSION"
-RELEASE_NOTES="## Install
+
+# Build a "What's changed" section from commits since the previous tag. We bound
+# the list at 30 entries so a long gap between releases doesn't produce wall-of-
+# text release notes.
+PREV_TAG="$(cd "$REPO_ROOT" && git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo '')"
+if [[ -n "$PREV_TAG" ]]; then
+    CHANGELOG_LINES="$(cd "$REPO_ROOT" && git log "$PREV_TAG..HEAD" --pretty=format:'- %s' -- MeetingIntro/ project.yml scripts/ Casks/ CLAUDE.md RELEASING.md 2>/dev/null | head -n 30)"
+    if [[ -z "$CHANGELOG_LINES" ]]; then
+        CHANGELOG_LINES="- (no user-facing changes since $PREV_TAG)"
+    fi
+    CHANGELOG_HEADER="## What's changed since $PREV_TAG"
+else
+    CHANGELOG_LINES="- Initial release"
+    CHANGELOG_HEADER="## What's in this release"
+fi
+
+RELEASE_NOTES="$CHANGELOG_HEADER
+
+$CHANGELOG_LINES
+
+## Install
 
 ### If you already have Homebrew
 

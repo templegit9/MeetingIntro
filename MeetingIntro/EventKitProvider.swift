@@ -46,9 +46,11 @@ final class EventKitProvider: CalendarProvider {
                     notes: event.notes,
                     location: event.location
                 )
+                let title = event.title ?? "Untitled Meeting"
+                let cancelled = event.status == .canceled || CancellationTitlePrefix.matches(title)
                 return MeetingEvent(
                     id: event.eventIdentifier ?? UUID().uuidString,
-                    title: event.title ?? "Untitled Meeting",
+                    title: title,
                     startDate: event.startDate,
                     endDate: event.endDate,
                     calendarName: event.calendar?.title ?? "Unknown",
@@ -58,7 +60,8 @@ final class EventKitProvider: CalendarProvider {
                     notes: event.notes,
                     attendeeNames: Array(attendees.prefix(10)),
                     attendeeCount: attendees.count,
-                    organizerName: event.organizer?.name
+                    organizerName: event.organizer?.name,
+                    isCancelled: cancelled
                 )
             }
             .sorted { $0.startDate < $1.startDate }
