@@ -274,7 +274,7 @@ struct MenuBarView: View {
             status = Text("")
         }
 
-        return time + Text("   ") + title + status
+        return time + Text(" ") + title + status
     }
 
     var body: some View {
@@ -306,7 +306,7 @@ struct MenuBarView: View {
                         calendarManager.dismissCancellation(meeting.id)
                     } label: {
                         Text(Image(systemName: "xmark.circle.fill")).foregroundColor(.red).font(.caption)
-                            + Text("  \(meeting.formattedStartTime)  ")
+                            + Text(" \(meeting.formattedStartTime) ")
                                 .font(.system(.caption, design: .monospaced)).foregroundColor(.secondary)
                             + Text(meeting.title).font(.body)
                     }
