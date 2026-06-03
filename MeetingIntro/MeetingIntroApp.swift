@@ -108,7 +108,8 @@ struct MeetingIntroApp: App {
                 handoffCoordinator: handoffCoordinator,
                 recordingConfig: recordingConfig,
                 recordingController: recordingController,
-                recordingCoordinator: recordingCoordinator
+                recordingCoordinator: recordingCoordinator,
+                overlayController: overlayController
             )
         }
     }
@@ -174,16 +175,22 @@ final class AppLifecycleManager: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Cancellation fan-out — fire a "Meeting cancelled" notification the first
-        // time we see each cancelled event, and never again. This runs BEFORE the
-        // reminder fan-out so a freshly-cancelled meeting can't accidentally fire a
-        // reminder in the same poll cycle.
+        // Cancellation fan-out — fire a "Meeting cancelled" notification (and the
+        // optional overlay notice) the first time we see each cancelled event, and
+        // never again. This runs BEFORE the reminder fan-out so a freshly-cancelled
+        // meeting can't accidentally fire a reminder in the same poll cycle.
+        // Note: markCancellationNotified is called even when the notify toggle is
+        // off — "notified" really means "seen", which the dropdown badge and the
+        // dedup both depend on.
         calendarManager.$upcomingMeetings
             .sink { [weak calendarManager] meetings in
                 guard let calendarManager else { return }
                 for meeting in meetings where meeting.isCancelled {
                     if !calendarManager.notifiedCancellationIDs.contains(meeting.id) {
                         notificationManager.sendCancellationNotification(for: meeting)
+                        if UserDefaults.standard.bool(forKey: "cancellationShowOverlay") {
+                            overlayController.showCancellation(for: meeting)
+                        }
                         calendarManager.markCancellationNotified(meeting.id)
                     }
                 }
@@ -240,6 +247,16 @@ struct MenuBarView: View {
     @ObservedObject var recordingCoordinator: MeetingRecordingCoordinator
 
     @StateObject private var lifecycleManager = AppLifecycleManager()
+    @AppStorage("cancellationShowInTodayView") private var showCancelledInTodayView: Bool = true
+
+    /// Today's meetings as displayed — cancelled ones filtered out when the user
+    /// has turned off "show cancelled meetings in Today's Meetings". Display-side
+    /// only; the underlying data (and suppression logic) is untouched.
+    private var displayedTodaysMeetings: [MeetingEvent] {
+        showCancelledInTodayView
+            ? calendarManager.todaysMeetings
+            : calendarManager.todaysMeetings.filter { !$0.isCancelled }
+    }
 
     /// One meeting row as a single concatenated `Text`. NSMenu (the `.menu` extra
     /// style) flattens container views — an HStack of Texts becomes one menu item
@@ -317,17 +334,17 @@ struct MenuBarView: View {
             // Today's meetings list. Includes cancelled ones (struck-through) so the
             // user can see them in context — but they don't trigger reminders.
             // Each row is one concatenated Text → one NSMenu item → one visual line.
-            if calendarManager.todaysMeetings.isEmpty {
+            if displayedTodaysMeetings.isEmpty {
                 Label("No meetings today", systemImage: "calendar")
             } else {
                 Text("Today's Meetings")
                     .font(.system(.caption, weight: .semibold))
                     .foregroundColor(.secondary)
-                ForEach(calendarManager.todaysMeetings.prefix(8)) { meeting in
+                ForEach(displayedTodaysMeetings.prefix(8)) { meeting in
                     meetingRowText(for: meeting)
                 }
-                if calendarManager.todaysMeetings.count > 8 {
-                    Text("+ \(calendarManager.todaysMeetings.count - 8) more")
+                if displayedTodaysMeetings.count > 8 {
+                    Text("+ \(displayedTodaysMeetings.count - 8) more")
                         .font(.caption2).foregroundColor(.secondary)
                 }
             }

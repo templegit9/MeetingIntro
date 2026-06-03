@@ -9,6 +9,9 @@ final class OverlayWindowController: ObservableObject {
     @Published var isShowing: Bool = false
 
     private var overlayWindow: NSPanel?
+    /// Separate slot for the cancellation notice so it never collides with an
+    /// active countdown overlay — both can be on screen at once.
+    private var cancellationWindow: NSPanel?
     private var calendarManager: CalendarManager?
     private var audioManager: AudioManager?
 
@@ -75,5 +78,53 @@ final class OverlayWindowController: ObservableObject {
 
         audioManager?.fadeOut(duration: 1.5)
         calendarManager?.dismissCountdown()
+    }
+
+    // MARK: - Cancellation notice
+
+    /// Show the compact cancellation notice panel (top-right of the main screen,
+    /// toast-style). Replaces any existing notice — a fresh cancellation always wins.
+    /// The view auto-dismisses itself after `CancellationOverlayView.autoDismissAfter`.
+    func showCancellation(for meeting: MeetingEvent) {
+        cancellationWindow?.close()
+        cancellationWindow = nil
+
+        let view = CancellationOverlayView(meeting: meeting) { [weak self] in
+            Task { @MainActor [weak self] in self?.dismissCancellationNotice() }
+        }
+        let hostingView = NSHostingView(rootView: view)
+
+        let panelWidth: CGFloat = 380
+        let panelHeight: CGFloat = 240
+        let panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        panel.contentView = hostingView
+        panel.isFloatingPanel = true
+        panel.level = .floating
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.isOpaque = false
+        panel.backgroundColor = NSColor.black.withAlphaComponent(0.85)
+        panel.hasShadow = true
+
+        // Top-right corner, toast-style — distinct placement from the centered
+        // countdown overlay so simultaneous display doesn't overlap.
+        if let screen = NSScreen.main {
+            let frame = screen.visibleFrame
+            let x = frame.maxX - panelWidth - 20
+            let y = frame.maxY - panelHeight - 20
+            panel.setFrameOrigin(NSPoint(x: x, y: y))
+        }
+
+        panel.orderFrontRegardless()
+        cancellationWindow = panel
+    }
+
+    func dismissCancellationNotice() {
+        cancellationWindow?.close()
+        cancellationWindow = nil
     }
 }

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		06F32CFDCF41BE6E7F8D56FE /* CountdownConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BA29FA390A4A1D580C895A8 /* CountdownConfig.swift */; };
+		159AA5A9C571071C598623DA /* CancellationOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2918B368AF626877462E126 /* CancellationOverlayView.swift */; };
 		175F2E49C8587451AB910A93 /* MicrophoneDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B60DBB01A2C688FE793716C /* MicrophoneDetector.swift */; };
 		2A15E4DF2BDC03E4F3D79756 /* CalendarManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A99A9D2EE9624DA582CD8D5 /* CalendarManager.swift */; };
 		2B12A77C9BF7293F27AB6EEF /* MeetingRecordingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67C9C4B04514972B0139B4A6 /* MeetingRecordingCoordinator.swift */; };
@@ -74,6 +75,7 @@
 		DDA27499ED2FB32E55234F2B /* HandoffConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandoffConfig.swift; sourceTree = "<group>"; };
 		DDFC8F7479FAF2BB94D98907 /* MeetingHandoffCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingHandoffCoordinator.swift; sourceTree = "<group>"; };
 		E21F519F51FBE4A4BD52367A /* RecordingSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingSession.swift; sourceTree = "<group>"; };
+		F2918B368AF626877462E126 /* CancellationOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CancellationOverlayView.swift; sourceTree = "<group>"; };
 		FF8C273D97F1B3730C901661 /* RecordingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -126,6 +128,7 @@
 				79AB0D1338EB2A471C1C13FD /* AudioManager.swift */,
 				8A99A9D2EE9624DA582CD8D5 /* CalendarManager.swift */,
 				0DD250C84523C24862974C5D /* CalendarProvider.swift */,
+				F2918B368AF626877462E126 /* CancellationOverlayView.swift */,
 				28D229B727F2C87F6712FCC4 /* ConferenceLinkExtractor.swift */,
 				2BA29FA390A4A1D580C895A8 /* CountdownConfig.swift */,
 				B4D81EBB57F5E6FDD478BC43 /* CountdownOverlayView.swift */,
@@ -236,6 +239,7 @@
 				CC7683CA9E1E90FD5AC1A39F /* AudioRouter.swift in Sources */,
 				2A15E4DF2BDC03E4F3D79756 /* CalendarManager.swift in Sources */,
 				3CEA795EFAD5F9E28F297D07 /* CalendarProvider.swift in Sources */,
+				159AA5A9C571071C598623DA /* CancellationOverlayView.swift in Sources */,
 				4FAA179DD289F0BA7A5C83E8 /* ConferenceLinkExtractor.swift in Sources */,
 				06F32CFDCF41BE6E7F8D56FE /* CountdownConfig.swift in Sources */,
 				D195FE28659E1B2C38932999 /* CountdownOverlayView.swift in Sources */,
@@ -344,7 +348,7 @@
 				INFOPLIST_FILE = MeetingIntro/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.2.3;
+				MARKETING_VERSION = 2.2.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.oluyinka.MeetingIntro;
 				SDKROOT = macosx;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -423,7 +427,7 @@
 				INFOPLIST_FILE = MeetingIntro/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.2.3;
+				MARKETING_VERSION = 2.2.5;
 				OTHER_CODE_SIGN_FLAGS = "--timestamp --options runtime";
 				PRODUCT_BUNDLE_IDENTIFIER = com.oluyinka.MeetingIntro;
 				SDKROOT = macosx;

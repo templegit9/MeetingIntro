@@ -10,6 +10,21 @@ final class NotificationManager: ObservableObject {
         didSet { UserDefaults.standard.set(isEnabled, forKey: "notificationsEnabled") }
     }
 
+    /// Whether a cancellation fires an immediate system notification. When off,
+    /// cancellations are still tracked (struck-through rows, dropdown badge,
+    /// reminder suppression) — just silently. Jon's doc flagged this toggle as a
+    /// recommended enhancement.
+    @Published var cancellationNotifyEnabled: Bool {
+        didSet { UserDefaults.standard.set(cancellationNotifyEnabled, forKey: "cancellationNotifyEnabled") }
+    }
+
+    /// Whether the Mixkit sound plays alongside a cancellation notification.
+    /// "You have one less meeting" arguably doesn't warrant the same fanfare
+    /// as "your meeting starts in 2 minutes."
+    @Published var cancellationPlaySound: Bool {
+        didSet { UserDefaults.standard.set(cancellationPlaySound, forKey: "cancellationPlaySound") }
+    }
+
     /// Reference to Mixkit sound manager for custom alert sounds.
     var soundManager: MixkitSoundManager?
 
@@ -17,7 +32,10 @@ final class NotificationManager: ObservableObject {
     private var audioPlayer: AVAudioPlayer?
 
     init() {
-        self.isEnabled = UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool ?? true
+        let d = UserDefaults.standard
+        self.isEnabled = d.object(forKey: "notificationsEnabled") as? Bool ?? true
+        self.cancellationNotifyEnabled = d.object(forKey: "cancellationNotifyEnabled") as? Bool ?? true
+        self.cancellationPlaySound = d.object(forKey: "cancellationPlaySound") as? Bool ?? true
     }
 
     /// Request notification permission from the user.
@@ -80,8 +98,11 @@ final class NotificationManager: ObservableObject {
 
     /// Post a one-shot notification when a meeting is detected as cancelled.
     /// Keyed per meeting; dedup against UNUserNotificationCenter.
+    /// Gated on both the global toggle and the cancellation-specific one —
+    /// when either is off, the caller still marks the cancellation as seen so the
+    /// dropdown badge and suppression behavior work, just silently.
     func sendCancellationNotification(for meeting: MeetingEvent) {
-        guard isEnabled else { return }
+        guard isEnabled, cancellationNotifyEnabled else { return }
         let key = "cancellation_\(meeting.id)"
         guard !sentNotificationKeys.contains(key) else { return }
         sentNotificationKeys.insert(key)
@@ -97,13 +118,15 @@ final class NotificationManager: ObservableObject {
             bodyParts.append("· \(organizer)")
         }
         content.body = bodyParts.joined(separator: " ")
-        content.sound = .default
+        content.sound = cancellationPlaySound ? .default : nil
 
         let request = UNNotificationRequest(identifier: key, content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request) { _ in }
 
         // Also play the user's Mixkit sound if they've selected one.
-        playSelectedSound()
+        if cancellationPlaySound {
+            playSelectedSound()
+        }
     }
 
     /// Post a one-shot notification when an auto-recording starts. Keyed per meeting

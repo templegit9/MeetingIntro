@@ -16,6 +16,10 @@ struct SettingsView: View {
     @ObservedObject var recordingConfig: RecordingConfig
     @ObservedObject var recordingController: RecordingController
     @ObservedObject var recordingCoordinator: MeetingRecordingCoordinator
+    @ObservedObject var overlayController: OverlayWindowController
+
+    @AppStorage("cancellationShowInTodayView") private var cancellationShowInTodayView: Bool = true
+    @AppStorage("cancellationShowOverlay") private var cancellationShowOverlay: Bool = false
 
     @State private var showRecordingDisclaimer = false
     @State private var recordingStats: (count: Int, sizeBytes: Int64) = (0, 0)
@@ -262,6 +266,39 @@ struct SettingsView: View {
                 Text("The details panel adds notes, attendees, and a copy/open join link below the countdown ring. Use the stepper to suppress it on last-minute reminders.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+
+            Section("Cancelled Meetings") {
+                Toggle("Notify me immediately when a meeting is cancelled",
+                       isOn: $notificationManager.cancellationNotifyEnabled)
+                Toggle("Play sound with cancellation notifications",
+                       isOn: $notificationManager.cancellationPlaySound)
+                    .disabled(!notificationManager.cancellationNotifyEnabled)
+                Toggle("Show cancelled meetings in Today's Meetings",
+                       isOn: $cancellationShowInTodayView)
+                Toggle("Show overlay notice when a meeting is cancelled",
+                       isOn: $cancellationShowOverlay)
+                Text("Reminders, voice prompts, and auto-recording are always suppressed for cancelled meetings — these settings only control how you're told about the cancellation. The overlay notice floats on screen like the countdown overlay and dismisses itself.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Button("Test Cancellation Notice") {
+                    let testMeeting = MeetingEvent(
+                        id: "cancel-test",
+                        title: "Sprint Demo (Test)",
+                        startDate: Date().addingTimeInterval(1800),
+                        endDate: Date().addingTimeInterval(5400),
+                        calendarName: "Preview",
+                        location: nil,
+                        isAllDay: false,
+                        url: nil,
+                        notes: nil,
+                        attendeeNames: [],
+                        attendeeCount: 0,
+                        organizerName: "Jon Lind",
+                        isCancelled: true
+                    )
+                    overlayController.showCancellation(for: testMeeting)
+                }
             }
 
             Section("Preview") {
