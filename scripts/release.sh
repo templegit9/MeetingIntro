@@ -123,11 +123,18 @@ TAG="v$VERSION"
 # to enumerate the user-facing enhancements — a subject line can't carry them.
 PREV_TAG="$(cd "$REPO_ROOT" && git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo '')"
 if [[ -n "$PREV_TAG" ]]; then
+    # NOTE: every grep needs `|| true` — grep exits 1 on no-match, which would
+    # kill the script under `set -e` (this exact bug aborted the first v2.3.3
+    # release run after notarization succeeded).
     ALL_SUBJECTS="$(cd "$REPO_ROOT" && git log "$PREV_TAG..HEAD" --pretty=format:'%s' -- MeetingIntro/ project.yml scripts/ Casks/ CLAUDE.md RELEASING.md 2>/dev/null \
-        | grep -v '^chore: bump version' | grep -v '^docs(claude-md)' | head -n 30)"
-    FEATS="$(echo "$ALL_SUBJECTS" | grep -E '^feat' | sed -E 's/^feat(\([^)]*\))?!?: */- /')"
-    FIXES="$(echo "$ALL_SUBJECTS" | grep -E '^fix' | sed -E 's/^fix(\([^)]*\))?!?: */- /')"
-    OTHER="$(echo "$ALL_SUBJECTS" | grep -vE '^(feat|fix)' | sed 's/^/- /')"
+        | { grep -v '^chore: bump version' || true; } | { grep -v '^docs(claude-md)' || true; } | head -n 30)"
+    FEATS="$(echo "$ALL_SUBJECTS" | { grep -E '^feat' || true; } | sed -E 's/^feat(\([^)]*\))?!?: */- /')"
+    FIXES="$(echo "$ALL_SUBJECTS" | { grep -E '^fix' || true; } | sed -E 's/^fix(\([^)]*\))?!?: */- /')"
+    OTHER="$(echo "$ALL_SUBJECTS" | { grep -vE '^(feat|fix)' || true; } | sed 's/^/- /')"
+    # sed adds "- " to empty lines too; clear vars that are only whitespace.
+    [[ "$(echo "$FEATS" | tr -d '[:space:]-')" == "" ]] && FEATS=""
+    [[ "$(echo "$FIXES" | tr -d '[:space:]-')" == "" ]] && FIXES=""
+    [[ "$(echo "$OTHER" | tr -d '[:space:]-')" == "" ]] && OTHER=""
     CHANGELOG_LINES=""
     [[ -n "$FEATS" ]] && CHANGELOG_LINES+="### New
 $FEATS
