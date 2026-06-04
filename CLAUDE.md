@@ -101,6 +101,8 @@ Panel height is computed at `show(for:)` time: **720pt** when `CountdownOverlayV
 
 Calling `show(for:)` while a panel exists is a no-op (`guard overlayWindow == nil`).
 
+**Countdown lifecycle (v2.3.3): the overlay does NOT close at meeting start.** At 00:00 it flips to "MEETING IN PROGRESS" and counts negative in red ("since start") until the user joins (Join also dismisses — joining is the acknowledgment), dismisses, or the meeting's **end** time passes (safety net, enforced both in the view's timer and in `CalendarManager.evaluateCountdownTrigger` — the poll-side auto-dismiss checks `endDate`, not `startDate`; changing it back to start-time would silently kill the negative-countdown feature on the next 30s poll).
+
 ### System handoff (`SystemHandoff/`)
 
 Runs on meeting start/end (currently-running meetings, not just upcoming):
