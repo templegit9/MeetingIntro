@@ -20,6 +20,10 @@ struct CountdownOverlayView: View {
         return 1.0 - (timeRemaining / totalDuration)
     }
 
+    /// The meeting's start time has passed — we're in the negative-countdown phase,
+    /// which runs until the user joins, dismisses, or the meeting ends.
+    private var hasStarted: Bool { timeRemaining < 0 }
+
     var body: some View {
         ZStack {
             // Background blur/glass
@@ -44,11 +48,11 @@ struct CountdownOverlayView: View {
 
                 // Meeting Title
                 VStack(spacing: 8) {
-                    Text("UPCOMING MEETING")
+                    Text(hasStarted ? "MEETING IN PROGRESS" : "UPCOMING MEETING")
                         .font(.caption)
                         .fontWeight(.semibold)
                         .tracking(2)
-                        .foregroundStyle(.white.opacity(0.6))
+                        .foregroundStyle(hasStarted ? .red.opacity(0.9) : .white.opacity(0.6))
 
                     Text(meeting.title)
                         .font(.system(size: 28, weight: .bold, design: .rounded))
@@ -89,15 +93,16 @@ struct CountdownOverlayView: View {
                         .rotationEffect(.degrees(-90))
                         .animation(.easeInOut(duration: 1), value: progress)
 
-                    // Time display
+                    // Time display — turns red and counts negative once the meeting
+                    // has started, until the user joins or dismisses.
                     VStack(spacing: 4) {
                         Text(formattedTime)
                             .font(.system(size: 48, weight: .bold, design: .monospaced))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(hasStarted ? .red : .white)
 
-                        Text(timeRemaining > 60 ? "minutes" : "seconds")
+                        Text(hasStarted ? "since start" : (timeRemaining > 60 ? "minutes" : "seconds"))
                             .font(.caption)
-                            .foregroundStyle(.white.opacity(0.6))
+                            .foregroundStyle(hasStarted ? .red.opacity(0.7) : .white.opacity(0.6))
                     }
                 }
                 .frame(width: 200, height: 200)
@@ -111,14 +116,18 @@ struct CountdownOverlayView: View {
                 }
 
                 // Start time info
-                Text("Starts at \(meeting.formattedStartTime)")
+                Text(hasStarted
+                     ? "Started at \(meeting.formattedStartTime) — join or dismiss"
+                     : "Starts at \(meeting.formattedStartTime)")
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.5))
 
                 // Join button — visible when a conference link was detected
                 if let joinURL = meeting.url, joinButtonEnabled {
                     Button {
+                        // Joining IS the acknowledgment — close the overlay with it.
                         NSWorkspace.shared.open(joinURL)
+                        onDismiss()
                     } label: {
                         Label("Join Meeting", systemImage: "video.fill")
                             .font(.headline)
@@ -160,7 +169,7 @@ struct CountdownOverlayView: View {
         .opacity(isAppearing ? 1 : 0)
         .scaleEffect(isAppearing ? 1 : 0.95)
         .onAppear {
-            timeRemaining = max(0, meeting.startDate.timeIntervalSinceNow)
+            timeRemaining = meeting.startDate.timeIntervalSinceNow
             startTimer()
             withAnimation(.easeOut(duration: 0.5)) {
                 isAppearing = true
@@ -176,11 +185,12 @@ struct CountdownOverlayView: View {
     private func startTimer() {
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
             Task { @MainActor in
-                timeRemaining = max(0, meeting.startDate.timeIntervalSinceNow)
-                if timeRemaining <= 0 {
+                // Goes negative once the meeting starts — the overlay stays up,
+                // counting time since start, until the user joins or dismisses.
+                timeRemaining = meeting.startDate.timeIntervalSinceNow
+                // Safety net: once the meeting has ENDED, joining is moot — close.
+                if Date() >= meeting.endDate {
                     timer?.invalidate()
-                    // Auto-dismiss after a brief delay
-                    try? await Task.sleep(nanoseconds: 2_000_000_000)
                     onDismiss()
                 }
             }
@@ -212,10 +222,10 @@ struct CountdownOverlayView: View {
     // MARK: - Formatting
 
     private var formattedTime: String {
-        let totalSeconds = Int(timeRemaining)
-        let minutes = totalSeconds / 60
-        let seconds = totalSeconds % 60
-        return String(format: "%02d:%02d", minutes, seconds)
+        let totalSeconds = Int(timeRemaining.rounded())
+        let prefix = totalSeconds < 0 ? "-" : ""
+        let absSeconds = abs(totalSeconds)
+        return String(format: "%@%02d:%02d", prefix, absSeconds / 60, absSeconds % 60)
     }
 }
 

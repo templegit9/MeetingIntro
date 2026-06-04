@@ -253,8 +253,10 @@ final class CalendarManager: ObservableObject {
         // Update nextMeeting to the soonest future meeting
         nextMeeting = upcomingMeetings.first { $0.timeUntilStart > 0 }
 
-        // If the countdown meeting has started, auto-dismiss
-        if let current = countdownMeeting, current.timeUntilStart <= 0 {
+        // Once the countdown meeting has ENDED, force-close the overlay — joining
+        // is moot. While the meeting is merely in progress, the overlay stays up
+        // with a negative countdown until the user joins or dismisses (v2.3.3).
+        if let current = countdownMeeting, current.endDate.timeIntervalSinceNow <= 0 {
             shouldShowCountdown = false
             countdownMeeting = nil
         }
