@@ -22,6 +22,8 @@ struct SettingsView: View {
 
     @State private var quickAddKeyDraft: String = ""
     @State private var quickAddCalendars: [CalendarInfo] = []
+    @State private var quickAddTesting = false
+    @State private var quickAddTestResult: (passed: Bool, message: String)?
 
     @AppStorage("cancellationShowInTodayView") private var cancellationShowInTodayView: Bool = true
     @AppStorage("cancellationShowOverlay") private var cancellationShowOverlay: Bool = false
@@ -207,31 +209,80 @@ struct SettingsView: View {
             }
 
             Section("Parsing") {
-                Text(quickAddConfig.hasLLMKey
-                     ? "Smart parsing is ON — text is sent to OpenRouter for parsing."
-                     : "On-device parsing only — nothing you type leaves this Mac. Add an OpenRouter key for smarter parsing (durations, locations, notes, messy phrasing).")
+                Text(quickAddConfig.llmEnabled
+                     ? (quickAddConfig.provider == .ollama
+                        ? "Smart parsing is ON via a local model — nothing you type leaves this Mac."
+                        : "Smart parsing is ON — text is sent to \(quickAddConfig.provider.displayName) for parsing.")
+                     : "On-device parsing only — nothing you type leaves this Mac. Pick a provider and add a key for smarter parsing.")
                     .font(.caption)
-                    .foregroundStyle(quickAddConfig.hasLLMKey ? .primary : .secondary)
-                SecureField("OpenRouter API key (sk-or-…)", text: $quickAddKeyDraft)
-                HStack {
-                    Button(quickAddConfig.hasLLMKey ? "Update key" : "Save key") {
-                        quickAddConfig.openRouterKey = quickAddKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-                    }
-                    .disabled(quickAddKeyDraft.trimmingCharacters(in: .whitespaces).isEmpty)
-                    if quickAddConfig.hasLLMKey {
-                        Button("Remove key") {
-                            quickAddConfig.openRouterKey = ""
-                            quickAddKeyDraft = ""
-                        }
-                        .tint(.red)
+                    .foregroundStyle(quickAddConfig.llmEnabled ? .primary : .secondary)
+
+                Picker("Provider", selection: Binding(
+                    get: { quickAddConfig.provider },
+                    set: { quickAddConfig.setProvider($0) }
+                )) {
+                    ForEach(QuickAddProvider.allCases) { p in
+                        Text(p.displayName).tag(p)
                     }
                 }
-                Text("Key is stored in the macOS Keychain, never in plain preferences.")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                TextField("Model", text: $quickAddConfig.modelID)
-                    .disabled(!quickAddConfig.hasLLMKey)
-                Text("Any OpenRouter model ID works — e.g. anthropic/claude-haiku-4.5, google/gemini-flash-1.5.")
+
+                if quickAddConfig.provider == .custom {
+                    TextField("API base URL (OpenAI-compatible)", text: $quickAddConfig.apiBaseURL)
+                }
+
+                if quickAddConfig.provider == .ollama {
+                    Text("Runs entirely on this Mac via Ollama — install from ollama.com, then `ollama pull \(quickAddConfig.modelID)`. No key, no network.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                } else {
+                    SecureField(quickAddConfig.provider.keyPlaceholder, text: $quickAddKeyDraft)
+                    HStack {
+                        Button(quickAddConfig.hasLLMKey ? "Update key" : "Save key") {
+                            quickAddConfig.openRouterKey = quickAddKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+                        }
+                        .disabled(quickAddKeyDraft.trimmingCharacters(in: .whitespaces).isEmpty)
+                        if quickAddConfig.hasLLMKey {
+                            Button("Remove key") {
+                                quickAddConfig.openRouterKey = ""
+                                quickAddKeyDraft = ""
+                            }
+                            .tint(.red)
+                        }
+                        if let console = quickAddConfig.provider.keyConsoleURL {
+                            Spacer()
+                            Button("Get a key ↗") {
+                                if let url = URL(string: console) { NSWorkspace.shared.open(url) }
+                            }
+                            .buttonStyle(.link)
+                            .font(.caption)
+                        }
+                    }
+                    Text("Key is stored in the macOS Keychain, never in plain preferences.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                HStack(spacing: 8) {
+                    TextField("Model", text: $quickAddConfig.modelID)
+                        .disabled(!quickAddConfig.llmEnabled)
+                    Button {
+                        testQuickAddModel()
+                    } label: {
+                        if quickAddTesting {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Label("Test", systemImage: "bolt.badge.checkmark")
+                        }
+                    }
+                    .disabled(!quickAddConfig.llmEnabled || quickAddTesting)
+                    .help("Send a sample phrase through this endpoint + model and show exactly what happens")
+                }
+                if let result = quickAddTestResult {
+                    Label(result.message, systemImage: result.passed ? "checkmark.circle.fill" : "xmark.circle.fill")
+                        .font(.caption)
+                        .foregroundStyle(result.passed ? .green : .orange)
+                        .textSelection(.enabled)
+                }
+                Text("Suggested for \(quickAddConfig.provider.displayName): \(quickAddConfig.provider.suggestedModel.isEmpty ? "any OpenAI-compatible model ID" : quickAddConfig.provider.suggestedModel). Avoid reasoning models — too slow for the 6-second live-parse window, and they often wrap output in thinking text instead of JSON.")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -668,6 +719,30 @@ struct SettingsView: View {
             }
         } message: {
             Text("MeetingIntro will record your microphone and the meeting audio you hear when each meeting with a conference link starts, and stop when it ends. Recordings save to your chosen folder.\n\nRecording laws vary by jurisdiction. In California, Massachusetts, Illinois, and most of the EU, you generally need participants to know they're being recorded. You're responsible for telling them.")
+        }
+    }
+
+    /// Sends a fixed sample phrase through the configured key + model and reports
+    /// the outcome (with timing) — the one-click diagnostic for "why did my parse
+    /// fall back to on-device?".
+    private func testQuickAddModel() {
+        quickAddTesting = true
+        quickAddTestResult = nil
+        let start = Date()
+        Task { @MainActor in
+            defer { quickAddTesting = false }
+            do {
+                let draft = try await OpenRouterParser.parse(
+                    "Lunch with Sam tomorrow 1pm",
+                    key: quickAddConfig.openRouterKey,
+                    model: quickAddConfig.modelID,
+                    baseURL: quickAddConfig.apiBaseURL
+                )
+                let secs = String(format: "%.1f", Date().timeIntervalSince(start))
+                quickAddTestResult = (true, "Works — parsed \"\(draft.title)\" in \(secs)s")
+            } catch {
+                quickAddTestResult = (false, error.localizedDescription)
+            }
         }
     }
 

@@ -22,4 +22,8 @@ struct EventDraft: Equatable {
     var location: String?
     var notes: String?
     var parserUsed: Parser
+    /// Human-readable assumptions the parser had to make for missing info
+    /// ("No start time given — assumed 9:00 AM"). Surfaced as warnings in the
+    /// preview so a silent guess never lands on the calendar unnoticed.
+    var assumptions: [String] = []
 }

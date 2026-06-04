@@ -131,6 +131,13 @@ struct QuickAddView: View {
                     .foregroundStyle(.tertiary)
                     .lineLimit(2)
             }
+            // Anything the parser had to guess gets called out — a silent
+            // assumption should never land on the calendar unnoticed.
+            ForEach(draft.assumptions, id: \.self) { assumption in
+                Label("\(assumption) — add it to the text to override", systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
             HStack {
                 Text(draft.parserUsed.displayName)
                     .font(.caption2)
