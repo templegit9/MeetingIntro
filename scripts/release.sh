@@ -114,12 +114,32 @@ echo "▶ Artifact SHA-256: $SHA256"
 echo "▶ Creating GitHub release v$VERSION"
 TAG="v$VERSION"
 
-# Build a "What's changed" section from commits since the previous tag. We bound
-# the list at 30 entries so a long gap between releases doesn't produce wall-of-
-# text release notes.
+# Build a "What's changed" section from commits since the previous tag, grouped
+# by conventional-commit type with release bookkeeping filtered out. Bounded at
+# 30 entries so a long gap between releases doesn't produce wall-of-text notes.
+#
+# NOTE: this auto-generated list is the FLOOR, not the ceiling. For feature-level
+# releases, hand-augment the notes after shipping (gh release edit <tag> --notes)
+# to enumerate the user-facing enhancements — a subject line can't carry them.
 PREV_TAG="$(cd "$REPO_ROOT" && git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo '')"
 if [[ -n "$PREV_TAG" ]]; then
-    CHANGELOG_LINES="$(cd "$REPO_ROOT" && git log "$PREV_TAG..HEAD" --pretty=format:'- %s' -- MeetingIntro/ project.yml scripts/ Casks/ CLAUDE.md RELEASING.md 2>/dev/null | head -n 30)"
+    ALL_SUBJECTS="$(cd "$REPO_ROOT" && git log "$PREV_TAG..HEAD" --pretty=format:'%s' -- MeetingIntro/ project.yml scripts/ Casks/ CLAUDE.md RELEASING.md 2>/dev/null \
+        | grep -v '^chore: bump version' | grep -v '^docs(claude-md)' | head -n 30)"
+    FEATS="$(echo "$ALL_SUBJECTS" | grep -E '^feat' | sed -E 's/^feat(\([^)]*\))?!?: */- /')"
+    FIXES="$(echo "$ALL_SUBJECTS" | grep -E '^fix' | sed -E 's/^fix(\([^)]*\))?!?: */- /')"
+    OTHER="$(echo "$ALL_SUBJECTS" | grep -vE '^(feat|fix)' | sed 's/^/- /')"
+    CHANGELOG_LINES=""
+    [[ -n "$FEATS" ]] && CHANGELOG_LINES+="### New
+$FEATS
+"
+    [[ -n "$FIXES" ]] && CHANGELOG_LINES+="
+### Fixes
+$FIXES
+"
+    [[ -n "$OTHER" ]] && CHANGELOG_LINES+="
+### Other
+$OTHER
+"
     if [[ -z "$CHANGELOG_LINES" ]]; then
         CHANGELOG_LINES="- (no user-facing changes since $PREV_TAG)"
     fi
