@@ -44,6 +44,9 @@ struct MeetingIntroApp: App {
     @StateObject private var recordingConfig: RecordingConfig
     @StateObject private var recordingController: RecordingController
     @StateObject private var recordingCoordinator: MeetingRecordingCoordinator
+    @StateObject private var quickAddConfig: QuickAddConfig
+    @StateObject private var quickAddService: QuickAddService
+    @StateObject private var quickAddPanel: QuickAddPanelController
 
     init() {
         let router = AudioRouter()
@@ -58,6 +61,12 @@ struct MeetingIntroApp: App {
         _recordingConfig = StateObject(wrappedValue: recConfig)
         _recordingController = StateObject(wrappedValue: recController)
         _recordingCoordinator = StateObject(wrappedValue: MeetingRecordingCoordinator(config: recConfig, controller: recController))
+
+        let qaConfig = QuickAddConfig()
+        let qaService = QuickAddService(config: qaConfig)
+        _quickAddConfig = StateObject(wrappedValue: qaConfig)
+        _quickAddService = StateObject(wrappedValue: qaService)
+        _quickAddPanel = StateObject(wrappedValue: QuickAddPanelController(service: qaService, config: qaConfig))
     }
 
     var body: some Scene {
@@ -78,7 +87,8 @@ struct MeetingIntroApp: App {
                 handoffCoordinator: handoffCoordinator,
                 recordingConfig: recordingConfig,
                 recordingController: recordingController,
-                recordingCoordinator: recordingCoordinator
+                recordingCoordinator: recordingCoordinator,
+                quickAddPanel: quickAddPanel
             )
         } label: {
             // When recording, swap the menu bar glyph to a red record symbol so the
@@ -109,7 +119,9 @@ struct MeetingIntroApp: App {
                 recordingConfig: recordingConfig,
                 recordingController: recordingController,
                 recordingCoordinator: recordingCoordinator,
-                overlayController: overlayController
+                overlayController: overlayController,
+                quickAddConfig: quickAddConfig,
+                quickAddPanel: quickAddPanel
             )
         }
     }
@@ -133,7 +145,8 @@ final class AppLifecycleManager: ObservableObject {
         contextMonitor: MeetingContextMonitor,
         smartConfig: SmartConfigManager,
         handoffCoordinator: MeetingHandoffCoordinator,
-        recordingCoordinator: MeetingRecordingCoordinator
+        recordingCoordinator: MeetingRecordingCoordinator,
+        quickAddPanel: QuickAddPanelController
     ) {
         // Wire the config manager into CalendarManager
         calendarManager.countdownConfigs = countdownConfig
@@ -143,6 +156,7 @@ final class AppLifecycleManager: ObservableObject {
         handoffCoordinator.attach(to: calendarManager)
         recordingCoordinator.notificationManager = notificationManager
         recordingCoordinator.attach(to: calendarManager)
+        quickAddPanel.calendarManager = calendarManager
         if let delegate = NSApplication.shared.delegate as? AppDelegate {
             delegate.recordingCoordinator = recordingCoordinator
         }
@@ -245,6 +259,7 @@ struct MenuBarView: View {
     @ObservedObject var recordingConfig: RecordingConfig
     @ObservedObject var recordingController: RecordingController
     @ObservedObject var recordingCoordinator: MeetingRecordingCoordinator
+    @ObservedObject var quickAddPanel: QuickAddPanelController
 
     @StateObject private var lifecycleManager = AppLifecycleManager()
     @AppStorage("cancellationShowInTodayView") private var showCancelledInTodayView: Bool = true
@@ -359,6 +374,11 @@ struct MenuBarView: View {
                 Divider()
             }
 
+            Button("New Event…") {
+                quickAddPanel.show()
+            }
+            .keyboardShortcut("n")
+
             Button("Refresh") {
                 Task { await calendarManager.refreshEvents() }
             }
@@ -389,7 +409,8 @@ struct MenuBarView: View {
                 contextMonitor: contextMonitor,
                 smartConfig: smartConfig,
                 handoffCoordinator: handoffCoordinator,
-                recordingCoordinator: recordingCoordinator
+                recordingCoordinator: recordingCoordinator,
+                quickAddPanel: quickAddPanel
             )
         }
     }

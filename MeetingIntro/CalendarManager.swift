@@ -328,4 +328,21 @@ final class CalendarManager: ObservableObject {
     var graphCalendarProvider: GraphCalendarProvider {
         graphProvider
     }
+
+    // MARK: - Event creation (Quick Add)
+
+    /// Create an event from a Quick Add draft. v1 writes go through EventKit only,
+    /// regardless of the active read provider — Graph write support needs an OAuth
+    /// scope upgrade (Calendars.Read → ReadWrite) and is a later phase. Refreshes
+    /// immediately so the Today view shows the new event without waiting for the
+    /// next poll.
+    func createEvent(from draft: EventDraft, calendarID: String?) async throws {
+        try eventKitProvider.createEvent(from: draft, calendarID: calendarID)
+        await refreshEvents()
+    }
+
+    /// Available EventKit calendars for the Quick Add target picker.
+    func eventKitCalendars() async -> [CalendarInfo] {
+        (try? await eventKitProvider.availableCalendars()) ?? []
+    }
 }

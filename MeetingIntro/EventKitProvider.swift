@@ -82,6 +82,54 @@ final class EventKitProvider: CalendarProvider {
         }
     }
 
+    // MARK: - Event creation (Quick Add)
+
+    enum CreateError: LocalizedError {
+        case notAuthorized
+        case calendarNotFound
+        case saveFailed(Error)
+
+        var errorDescription: String? {
+            switch self {
+            case .notAuthorized: return "Calendar access not granted."
+            case .calendarNotFound: return "The selected calendar no longer exists — pick another in Settings → Quick Add."
+            case .saveFailed(let e): return "Couldn't save the event: \(e.localizedDescription)"
+            }
+        }
+    }
+
+    /// Create a calendar event from a Quick Add draft. The EKEvent never leaves this
+    /// provider (CLAUDE.md boundary rule). Full Access (already granted for reading)
+    /// covers writes — no new permission prompt.
+    ///
+    /// Known EventKit limitation: attendees cannot be set programmatically (Apple
+    /// blocks it), so drafts never carry invitees in the EventKit v1 of Quick Add.
+    func createEvent(from draft: EventDraft, calendarID: String?) throws {
+        guard isAuthorized else { throw CreateError.notAuthorized }
+
+        let event = EKEvent(eventStore: eventStore)
+        event.title = draft.title
+        event.startDate = draft.startDate
+        event.endDate = draft.endDate
+        event.location = draft.location
+        event.notes = draft.notes
+
+        if let calendarID, !calendarID.isEmpty {
+            guard let calendar = eventStore.calendar(withIdentifier: calendarID) else {
+                throw CreateError.calendarNotFound
+            }
+            event.calendar = calendar
+        } else {
+            event.calendar = eventStore.defaultCalendarForNewEvents
+        }
+
+        do {
+            try eventStore.save(event, span: .thisEvent)
+        } catch {
+            throw CreateError.saveFailed(error)
+        }
+    }
+
     // MARK: - Private
 
     private func calendarsToSearch() -> [EKCalendar]? {

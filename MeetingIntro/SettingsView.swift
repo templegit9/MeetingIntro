@@ -17,10 +17,17 @@ struct SettingsView: View {
     @ObservedObject var recordingController: RecordingController
     @ObservedObject var recordingCoordinator: MeetingRecordingCoordinator
     @ObservedObject var overlayController: OverlayWindowController
+    @ObservedObject var quickAddConfig: QuickAddConfig
+    @ObservedObject var quickAddPanel: QuickAddPanelController
+
+    @State private var quickAddKeyDraft: String = ""
+    @State private var quickAddCalendars: [CalendarInfo] = []
 
     @AppStorage("cancellationShowInTodayView") private var cancellationShowInTodayView: Bool = true
     @AppStorage("cancellationShowOverlay") private var cancellationShowOverlay: Bool = false
     @AppStorage("cancellationOverlayPosition") private var cancellationOverlayPosition: String = OverlayWindowController.CancellationOverlayPosition.topRight.rawValue
+
+    @StateObject private var releaseNotes = ReleaseNotesManager()
 
     @State private var showRecordingDisclaimer = false
     @State private var recordingStats: (count: Int, sizeBytes: Int64) = (0, 0)
@@ -58,6 +65,7 @@ struct SettingsView: View {
             Group {
                 switch selectedSection {
                 case .calendar:  calendarTab
+                case .quickAdd:  quickAddTab
                 case .countdown: countdownTab
                 case .smart:     smartTab
                 case .voice:     voiceTab
@@ -65,6 +73,7 @@ struct SettingsView: View {
                 case .audio:     audioTab
                 case .handoff:   handoffTab
                 case .recording: recordingTab
+                case .whatsNew:  whatsNewTab
                 case .guide:     guideTab
                 case .about:     aboutTab
                 }
@@ -183,6 +192,72 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
             }
+        }
+    }
+
+    // MARK: - Quick Add Tab
+
+    private var quickAddTab: some View {
+        Form {
+            Section("Text to Calendar") {
+                Text("Create events by typing plain English — \"Coffee with Sam tomorrow 3pm\". Open from the menu bar: New Event… (⌘N while the menu is open).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Button("Try it now") { quickAddPanel.show() }
+            }
+
+            Section("Parsing") {
+                Text(quickAddConfig.hasLLMKey
+                     ? "Smart parsing is ON — text is sent to OpenRouter for parsing."
+                     : "On-device parsing only — nothing you type leaves this Mac. Add an OpenRouter key for smarter parsing (durations, locations, notes, messy phrasing).")
+                    .font(.caption)
+                    .foregroundStyle(quickAddConfig.hasLLMKey ? .primary : .secondary)
+                SecureField("OpenRouter API key (sk-or-…)", text: $quickAddKeyDraft)
+                HStack {
+                    Button(quickAddConfig.hasLLMKey ? "Update key" : "Save key") {
+                        quickAddConfig.openRouterKey = quickAddKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+                    }
+                    .disabled(quickAddKeyDraft.trimmingCharacters(in: .whitespaces).isEmpty)
+                    if quickAddConfig.hasLLMKey {
+                        Button("Remove key") {
+                            quickAddConfig.openRouterKey = ""
+                            quickAddKeyDraft = ""
+                        }
+                        .tint(.red)
+                    }
+                }
+                Text("Key is stored in the macOS Keychain, never in plain preferences.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                TextField("Model", text: $quickAddConfig.modelID)
+                    .disabled(!quickAddConfig.hasLLMKey)
+                Text("Any OpenRouter model ID works — e.g. anthropic/claude-haiku-4.5, google/gemini-flash-1.5.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Event Defaults") {
+                Picker("Create in calendar", selection: Binding(
+                    get: { quickAddConfig.defaultCalendarID ?? "" },
+                    set: { quickAddConfig.defaultCalendarID = $0.isEmpty ? nil : $0 }
+                )) {
+                    Text("System default").tag("")
+                    ForEach(quickAddCalendars) { cal in
+                        Text("\(cal.name) (\(cal.source))").tag(cal.id)
+                    }
+                }
+                Stepper(value: $quickAddConfig.defaultDurationMinutes, in: 5...240, step: 5) {
+                    Text("Default duration: \(quickAddConfig.defaultDurationMinutes) min")
+                }
+                Text("Events are created in your Mac calendars (EventKit). Note: macOS doesn't let apps add attendees or send invites — events are created without invitees.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+        .task {
+            quickAddCalendars = await calendarManager.eventKitCalendars()
         }
     }
 
@@ -759,6 +834,98 @@ struct SettingsView: View {
         .padding()
     }
 
+    // MARK: - What's New Tab
+
+    private var whatsNewTab: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                HStack {
+                    Text("What's New")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    Spacer()
+                    if releaseNotes.isLoading {
+                        ProgressView().controlSize(.small)
+                    }
+                    Button {
+                        Task { await releaseNotes.refreshIfNeeded(force: true) }
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                    .help("Refresh release notes")
+                }
+
+                if let error = releaseNotes.errorMessage {
+                    Label(error, systemImage: "wifi.exclamationmark")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                ForEach(releaseNotes.releases) { release in
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 8) {
+                            Text(release.tagName)
+                                .font(.headline)
+                            if release.tagName == "v\(currentAppVersion)" {
+                                Text("CURRENT")
+                                    .font(.caption2).fontWeight(.semibold)
+                                    .padding(.horizontal, 6).padding(.vertical, 2)
+                                    .background(Color.accentColor.opacity(0.2), in: Capsule())
+                                    .foregroundStyle(Color.accentColor)
+                            }
+                            Spacer()
+                            Text(release.publishedAt, style: .date)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        changelogBody(release.changelog)
+                    }
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 8))
+                }
+
+                if releaseNotes.releases.isEmpty && !releaseNotes.isLoading && releaseNotes.errorMessage == nil {
+                    Text("No release notes yet.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding()
+        }
+        .task { await releaseNotes.refreshIfNeeded() }
+    }
+
+    private var currentAppVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+    }
+
+    /// Lightweight renderer for the auto-generated changelog markdown:
+    /// "## Header" lines → small bold subheaders, "- item" lines → bullet rows,
+    /// everything else → plain body text.
+    private func changelogBody(_ changelog: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(Array(changelog.components(separatedBy: .newlines).enumerated()), id: \.offset) { _, line in
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                if trimmed.isEmpty {
+                    EmptyView()
+                } else if trimmed.hasPrefix("## ") {
+                    Text(trimmed.dropFirst(3))
+                        .font(.caption).fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 2)
+                } else if trimmed.hasPrefix("- ") {
+                    HStack(alignment: .top, spacing: 6) {
+                        Text("•").foregroundStyle(.secondary)
+                        Text(trimmed.dropFirst(2)).font(.caption)
+                    }
+                } else {
+                    Text(trimmed).font(.caption)
+                }
+            }
+        }
+    }
+
     // MARK: - Guide Tab
 
     private var guideTab: some View {
@@ -1072,6 +1239,7 @@ enum SettingsGroup: String, CaseIterable, Hashable {
 /// within each group.
 enum SettingsSection: String, CaseIterable, Hashable {
     case calendar
+    case quickAdd
     case countdown
     case smart
     case voice
@@ -1079,12 +1247,14 @@ enum SettingsSection: String, CaseIterable, Hashable {
     case audio
     case handoff
     case recording
+    case whatsNew
     case guide
     case about
 
     var title: String {
         switch self {
         case .calendar:  return "Calendar"
+        case .quickAdd:  return "Quick Add"
         case .countdown: return "Countdown"
         case .smart:     return "Smart"
         case .voice:     return "Voice"
@@ -1092,6 +1262,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
         case .audio:     return "Audio"
         case .handoff:   return "Handoff"
         case .recording: return "Recording"
+        case .whatsNew:  return "What's New"
         case .guide:     return "Guide"
         case .about:     return "About"
         }
@@ -1100,6 +1271,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
     var systemImage: String {
         switch self {
         case .calendar:  return "calendar"
+        case .quickAdd:  return "square.and.pencil"
         case .countdown: return "timer"
         case .smart:     return "brain"
         case .voice:     return "waveform"
@@ -1107,6 +1279,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
         case .audio:     return "music.note"
         case .handoff:   return "arrow.left.arrow.right.circle"
         case .recording: return "record.circle"
+        case .whatsNew:  return "sparkles"
         case .guide:     return "book"
         case .about:     return "info.circle"
         }
@@ -1114,10 +1287,10 @@ enum SettingsSection: String, CaseIterable, Hashable {
 
     var group: SettingsGroup {
         switch self {
-        case .calendar:                                  return .sources
+        case .calendar, .quickAdd:                       return .sources
         case .countdown, .smart, .voice, .sounds:        return .reminders
         case .audio, .handoff, .recording:               return .inMeeting
-        case .guide, .about:                             return .help
+        case .whatsNew, .guide, .about:                  return .help
         }
     }
 }
