@@ -131,6 +131,20 @@ Filename format: `YYYY-MM-DD HHmm - {sanitized title}.m4a`. Sanitization strips 
 - **Graceful app quit:** `AppDelegate.applicationShouldTerminate` returns `.terminateLater` while a recording is in progress, awaits `coordinator.stopManually()`, then calls `reply(toApplicationShouldTerminate:)`. Without this the `AVAssetWriter` is force-killed mid-write and the file is unrecoverable. The delegate is wired via `NSApplicationDelegateAdaptor`; `AppLifecycleManager.observe` injects the coordinator weak reference once the `@StateObject`s exist.
 - **Sleep/wake:** `NSWorkspace.willSleepNotification` → `controller.stop()` so the file is finalized before macOS suspends `SCStream` and `AVCaptureSession`. `NSWorkspace.didWakeNotification` clears `runningMeetingIDs` + the snapshot and reconciles against the calendar's currently-running meetings, so a meeting that's still going across a sleep gets a fresh recording in a new file. `AVAssetWriter` has no resume API; a new file is the cleanest recovery path.
 
+### Quick Add — text-to-calendar (`QuickAdd/`, v2.3.0)
+
+First **calendar-write** feature. Menu bar → "New Event…" opens a palette anchored beneath the status item (located by scanning `NSApp.windows` for a `StatusBarWindow` class — SwiftUI exposes no `NSStatusItem`); typing parses live into an `EventDraft`, Enter creates via EventKit.
+
+- **Hybrid parsing**: `DetectorParser` (NSDataDetector, on-device, always works) + optional `OpenRouterParser` (any OpenAI-compatible model via OpenRouter; key in **Keychain** under `openRouterKey`). The service shows the detector result instantly, then upgrades to the LLM result when it lands; every LLM failure silently falls back. **The LLM is an upgrade, never a gate.**
+- **`KeyablePanel`** (`canBecomeKey = true`) — the overlay panels deliberately can't take focus; Quick Add needs a focused text field. Dismisses on Esc / `didResignKey` / after create.
+- **Write path respects the provider boundary**: `EventKitProvider.createEvent(from:calendarID:)` builds + saves the `EKEvent` internally; `CalendarManager.createEvent` delegates and refreshes. Writes are EventKit-only regardless of the active read provider — Graph write needs an OAuth scope upgrade (`Calendars.Read` → `ReadWrite`) and is a later phase.
+- **EventKit cannot add attendees/send invites programmatically** (Apple blocks it) — drafts never carry invitees; the Settings copy says so.
+- The existing Full Access calendar grant covers writes — no new permission prompt or entitlement.
+
+### What's New tab (`ReleaseNotesManager.swift`, v2.3.0)
+
+Settings → Help → What's New fetches release notes live from the public GitHub Releases API (unauthenticated, 60 req/hr is plenty), strips the "## Install" boilerplate, caches the last good response in UserDefaults (1h TTL) so it renders offline. Changelogs stay current without app updates because the release script auto-generates the notes.
+
 ## Conventions
 
 - **No hardcoded values.** Every tunable lives in `UserDefaults` (or Keychain for credentials). If you add a feature, add a setting.
