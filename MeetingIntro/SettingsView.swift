@@ -411,7 +411,7 @@ struct SettingsView: View {
                     }
                 }
                 .disabled(!cancellationShowOverlay)
-                Text("Reminders, voice prompts, and auto-recording are always suppressed for cancelled meetings — these settings only control how you're told about the cancellation. The overlay notice floats on screen like the countdown overlay and dismisses itself.")
+                Text("Reminders, voice prompts, and auto-recording are always suppressed for cancelled meetings — these settings only control how you're told about the cancellation. The overlay notice stays on screen until you dismiss it (even across restarts and sleep), and politely hides while you're in a call or sharing your screen.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Button("Test Cancellation Notice") {

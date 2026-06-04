@@ -52,6 +52,10 @@ final class OverlayWindowController: ObservableObject {
         panel.hasShadow = true
         panel.titlebarAppearsTransparent = true
         panel.titleVisibility = .hidden
+        // The overlay is designed dark (white text on dark blur). Without forcing
+        // dark appearance, the .hudWindow material renders LIGHT in light mode and
+        // the white text washes out to invisible.
+        panel.appearance = NSAppearance(named: .darkAqua)
 
         // Center on screen
         if let screen = NSScreen.main {
@@ -96,22 +100,30 @@ final class OverlayWindowController: ObservableObject {
         }
     }
 
-    /// Show the compact cancellation notice panel. Position follows the user's
-    /// `cancellationOverlayPosition` setting — top-right toast by default, or
-    /// centered like the countdown overlay. Replaces any existing notice — a fresh
-    /// cancellation always wins. The view auto-dismisses itself after
-    /// `CancellationOverlayView.autoDismissAfter`.
-    func showCancellation(for meeting: MeetingEvent) {
+    /// IDs currently rendered in the cancellation notice — makes
+    /// `showCancellationCenter` idempotent so the state-driven subscriber can
+    /// call it on every publish without rebuild flicker.
+    private var currentNoticeIDs: Set<String> = []
+
+    /// Show (or update) the persistent cancellation notice. Renders the pending
+    /// cancellations as a dismissable list — NO auto-dismiss; the panel lives
+    /// until every item is acknowledged. The state-driven subscriber in
+    /// AppLifecycleManager calls `dismissCancellationNotice` when the pending
+    /// list empties or a smart-context hold (in a call / screen sharing) kicks in.
+    func showCancellationCenter(_ items: [MeetingEvent], onDismissItem: @escaping (String) -> Void) {
+        guard !items.isEmpty else { dismissCancellationNotice(); return }
+        let ids = Set(items.map(\.id))
+        if ids == currentNoticeIDs, cancellationWindow != nil { return }
+
         cancellationWindow?.close()
         cancellationWindow = nil
 
-        let view = CancellationOverlayView(meeting: meeting) { [weak self] in
-            Task { @MainActor [weak self] in self?.dismissCancellationNotice() }
-        }
+        let view = CancellationOverlayView(items: items, onDismissItem: onDismissItem)
         let hostingView = NSHostingView(rootView: view)
 
-        let panelWidth: CGFloat = 380
-        let panelHeight: CGFloat = 240
+        let panelWidth: CGFloat = 400
+        // Header + footer ≈ 110pt; ~58pt per row; cap so long lists scroll.
+        let panelHeight: CGFloat = min(110 + CGFloat(items.count) * 58, 420)
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight),
             styleMask: [.borderless, .nonactivatingPanel],
@@ -125,6 +137,9 @@ final class OverlayWindowController: ObservableObject {
         panel.isOpaque = false
         panel.backgroundColor = NSColor.black.withAlphaComponent(0.85)
         panel.hasShadow = true
+        // Dark-designed view (white text on dark blur) — force dark appearance so
+        // light mode doesn't render the .hudWindow material light and wash it out.
+        panel.appearance = NSAppearance(named: .darkAqua)
 
         // Position per user setting. Top-right toast keeps it clear of a
         // simultaneously-visible countdown overlay; center matches the meeting
@@ -146,10 +161,20 @@ final class OverlayWindowController: ObservableObject {
 
         panel.orderFrontRegardless()
         cancellationWindow = panel
+        currentNoticeIDs = ids
+    }
+
+    /// Settings "Test Cancellation Notice" hook — previews the panel with one
+    /// sample item whose Dismiss simply closes the preview.
+    func showCancellation(for meeting: MeetingEvent) {
+        showCancellationCenter([meeting]) { [weak self] _ in
+            Task { @MainActor [weak self] in self?.dismissCancellationNotice() }
+        }
     }
 
     func dismissCancellationNotice() {
         cancellationWindow?.close()
         cancellationWindow = nil
+        currentNoticeIDs = []
     }
 }

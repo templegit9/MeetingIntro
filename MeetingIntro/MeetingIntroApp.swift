@@ -202,10 +202,33 @@ final class AppLifecycleManager: ObservableObject {
                 for meeting in meetings where meeting.isCancelled {
                     if !calendarManager.notifiedCancellationIDs.contains(meeting.id) {
                         notificationManager.sendCancellationNotification(for: meeting)
-                        if UserDefaults.standard.bool(forKey: "cancellationShowOverlay") {
-                            overlayController.showCancellation(for: meeting)
-                        }
                         calendarManager.markCancellationNotified(meeting.id)
+                    }
+                }
+            }
+            .store(in: &cancellables)
+
+        // Cancellation notice — a persistent acknowledgment surface, not a toast.
+        // Driven by state (pendingCancellations = notified but not dismissed,
+        // persisted across restarts), so a cancellation that landed overnight is
+        // still on screen at lid-open and stays until the user clicks Dismiss.
+        // Smart-context hold: never float it over an active call or a shared
+        // screen — it reappears automatically when the hold clears.
+        Publishers.CombineLatest(calendarManager.$pendingCancellations, contextMonitor.$snapshot)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak calendarManager] pending, context in
+                guard let calendarManager else { return }
+                guard UserDefaults.standard.bool(forKey: "cancellationShowOverlay") else {
+                    overlayController.dismissCancellationNotice()
+                    return
+                }
+                let held = (smartConfig.suppressWhenInCall && context.isInActiveCall)
+                    || context.isScreenCaptured
+                if pending.isEmpty || held {
+                    overlayController.dismissCancellationNotice()
+                } else {
+                    overlayController.showCancellationCenter(pending) { id in
+                        calendarManager.dismissCancellation(id)
                     }
                 }
             }
