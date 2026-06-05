@@ -21,6 +21,11 @@ final class MeetingRecordingCoordinator: ObservableObject {
     /// no notification fires (Settings UI still surfaces state).
     var notificationManager: NotificationManager?
 
+    /// Transcription + notes pipeline; late-wired in AppLifecycleManager.observe.
+    /// Every finalized recording (meeting end, manual stop, pre-sleep stop) is
+    /// offered to it — the pipeline itself decides based on the auto toggle.
+    var notesPipeline: MeetingNotesPipeline?
+
     private var runningMeetingIDs: Set<String> = []
     private var cancellables = Set<AnyCancellable>()
 
@@ -65,7 +70,8 @@ final class MeetingRecordingCoordinator: ObservableObject {
     /// in a new file.
     private func handleWillSleep() async {
         guard controller.isRecording else { return }
-        await controller.stop()
+        // A partial transcript beats none — pre-sleep stops feed the pipeline too.
+        await stopAndEnqueueNotes()
         // Intentionally leave the RecordingSession snapshot in place so a crash during
         // sleep is still recoverable on next launch. The wake handler will clear it.
     }
@@ -99,10 +105,11 @@ final class MeetingRecordingCoordinator: ObservableObject {
             await beginRecording(meeting)
         }
 
-        // If our active recording's meeting ended, stop and clear the snapshot.
+        // If our active recording's meeting ended, stop, clear the snapshot, and
+        // hand the finalized file to the notes pipeline.
         if let activeSession = RecordingSession.load(),
            ended.contains(activeSession.meetingID) {
-            await controller.stop()
+            await stopAndEnqueueNotes()
             RecordingSession.clear()
         }
     }
@@ -163,9 +170,9 @@ final class MeetingRecordingCoordinator: ObservableObject {
 
     // MARK: - Settings UI hooks
 
-    /// Manual stop button in Settings.
+    /// Manual stop button in Settings / menu bar.
     func stopManually() async {
-        await controller.stop()
+        await stopAndEnqueueNotes()
         RecordingSession.clear()
     }
 
@@ -173,4 +180,15 @@ final class MeetingRecordingCoordinator: ObservableObject {
     /// recording is actually in progress, without holding a direct reference to the
     /// controller.
     var isRecording: Bool { controller.isRecording }
+
+    /// Stop the active recording and offer the finalized file to the notes
+    /// pipeline. Centralizes the capture-URL-before-stop dance (stop() nils
+    /// `currentFileURL` during teardown).
+    func stopAndEnqueueNotes() async {
+        let fileURL = controller.currentFileURL
+        await controller.stop()
+        if let fileURL {
+            notesPipeline?.enqueueIfAutoEnabled(audioURL: fileURL)
+        }
+    }
 }

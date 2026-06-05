@@ -1,4 +1,12 @@
 name: MeetingIntro
+
+# First external dependency (v2.4.0): WhisperKit for on-device transcription.
+# Source-only SPM package — no embedded binaries, notarization unaffected.
+packages:
+  WhisperKit:
+    url: https://github.com/argmaxinc/WhisperKit
+    from: 0.9.0
+
 options:
   bundleIdPrefix: com.oluyinka
   deploymentTarget:
@@ -16,6 +24,8 @@ targets:
         excludes:
           - "*.entitlements"
           - "Info.plist"
+    dependencies:
+      - package: WhisperKit
     info:
       path: MeetingIntro/Info.plist
       properties:

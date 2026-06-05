@@ -47,6 +47,8 @@ struct MeetingIntroApp: App {
     @StateObject private var quickAddConfig: QuickAddConfig
     @StateObject private var quickAddService: QuickAddService
     @StateObject private var quickAddPanel: QuickAddPanelController
+    @StateObject private var notesConfig: MeetingNotesConfig
+    @StateObject private var notesPipeline: MeetingNotesPipeline
 
     init() {
         let router = AudioRouter()
@@ -67,6 +69,10 @@ struct MeetingIntroApp: App {
         _quickAddConfig = StateObject(wrappedValue: qaConfig)
         _quickAddService = StateObject(wrappedValue: qaService)
         _quickAddPanel = StateObject(wrappedValue: QuickAddPanelController(service: qaService, config: qaConfig))
+
+        let nConfig = MeetingNotesConfig()
+        _notesConfig = StateObject(wrappedValue: nConfig)
+        _notesPipeline = StateObject(wrappedValue: MeetingNotesPipeline(notesConfig: nConfig, quickAddConfig: qaConfig))
     }
 
     var body: some Scene {
@@ -88,7 +94,8 @@ struct MeetingIntroApp: App {
                 recordingConfig: recordingConfig,
                 recordingController: recordingController,
                 recordingCoordinator: recordingCoordinator,
-                quickAddPanel: quickAddPanel
+                quickAddPanel: quickAddPanel,
+                notesPipeline: notesPipeline
             )
         } label: {
             // When recording, swap the menu bar glyph to a red record symbol so the
@@ -121,9 +128,20 @@ struct MeetingIntroApp: App {
                 recordingCoordinator: recordingCoordinator,
                 overlayController: overlayController,
                 quickAddConfig: quickAddConfig,
-                quickAddPanel: quickAddPanel
+                quickAddPanel: quickAddPanel,
+                notesConfig: notesConfig
             )
         }
+
+        // MARK: - Meeting Notes viewer
+        Window("Meeting Notes", id: "meetingNotes") {
+            MeetingNotesWindow(
+                pipeline: notesPipeline,
+                notesConfig: notesConfig,
+                recordingConfig: recordingConfig
+            )
+        }
+        .defaultSize(width: 920, height: 620)
     }
 }
 
@@ -146,7 +164,8 @@ final class AppLifecycleManager: ObservableObject {
         smartConfig: SmartConfigManager,
         handoffCoordinator: MeetingHandoffCoordinator,
         recordingCoordinator: MeetingRecordingCoordinator,
-        quickAddPanel: QuickAddPanelController
+        quickAddPanel: QuickAddPanelController,
+        notesPipeline: MeetingNotesPipeline
     ) {
         // Wire the config manager into CalendarManager
         calendarManager.countdownConfigs = countdownConfig
@@ -155,8 +174,10 @@ final class AppLifecycleManager: ObservableObject {
         notificationManager.requestPermission()
         handoffCoordinator.attach(to: calendarManager)
         recordingCoordinator.notificationManager = notificationManager
+        recordingCoordinator.notesPipeline = notesPipeline
         recordingCoordinator.attach(to: calendarManager)
         quickAddPanel.calendarManager = calendarManager
+        notesPipeline.notificationManager = notificationManager
         if let delegate = NSApplication.shared.delegate as? AppDelegate {
             delegate.recordingCoordinator = recordingCoordinator
         }
@@ -283,6 +304,9 @@ struct MenuBarView: View {
     @ObservedObject var recordingController: RecordingController
     @ObservedObject var recordingCoordinator: MeetingRecordingCoordinator
     @ObservedObject var quickAddPanel: QuickAddPanelController
+    @ObservedObject var notesPipeline: MeetingNotesPipeline
+
+    @Environment(\.openWindow) private var openWindow
 
     @StateObject private var lifecycleManager = AppLifecycleManager()
     @AppStorage("cancellationShowInTodayView") private var showCancelledInTodayView: Bool = true
@@ -402,6 +426,12 @@ struct MenuBarView: View {
             }
             .keyboardShortcut("n")
 
+            Button("Meeting Notes…") {
+                openWindow(id: "meetingNotes")
+                NSApp.activate(ignoringOtherApps: true)
+            }
+            .keyboardShortcut("m")
+
             Button("Refresh") {
                 Task { await calendarManager.refreshEvents() }
             }
@@ -433,7 +463,8 @@ struct MenuBarView: View {
                 smartConfig: smartConfig,
                 handoffCoordinator: handoffCoordinator,
                 recordingCoordinator: recordingCoordinator,
-                quickAddPanel: quickAddPanel
+                quickAddPanel: quickAddPanel,
+                notesPipeline: notesPipeline
             )
         }
     }

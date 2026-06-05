@@ -129,6 +129,22 @@ final class NotificationManager: ObservableObject {
         }
     }
 
+    /// Post a notification when a recording's transcript + notes are ready.
+    func sendNotesReadyNotification(title: String) {
+        guard isEnabled else { return }
+        let content = UNMutableNotificationContent()
+        content.title = "Meeting notes ready"
+        content.subtitle = title
+        content.body = "Open Meeting Notes from the menu bar to read the summary, decisions, and action items."
+        content.sound = .default
+        let request = UNNotificationRequest(
+            identifier: "notes_ready_\(title)_\(Date().timeIntervalSince1970)",
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request) { _ in }
+    }
+
     /// Post a one-shot notification when an auto-recording starts. Keyed per meeting
     /// so a brief sleep/wake (which produces a new recording file for the same meeting)
     /// doesn't double-notify within the same calendar event.

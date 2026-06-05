@@ -19,6 +19,10 @@ struct SettingsView: View {
     @ObservedObject var overlayController: OverlayWindowController
     @ObservedObject var quickAddConfig: QuickAddConfig
     @ObservedObject var quickAddPanel: QuickAddPanelController
+    @ObservedObject var notesConfig: MeetingNotesConfig
+
+    @Environment(\.openWindow) private var openWindow
+    @State private var groqKeyDraft: String = ""
 
     @State private var quickAddKeyDraft: String = ""
     @State private var quickAddCalendars: [CalendarInfo] = []
@@ -699,6 +703,70 @@ struct SettingsView: View {
                 Text("\(recordingStats.count) recording\(recordingStats.count == 1 ? "" : "s"), \(formatBytes(recordingStats.sizeBytes))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+
+            Section("Transcription & Notes") {
+                Toggle("Generate transcript + meeting notes after each recording",
+                       isOn: $notesConfig.autoGenerate)
+
+                Picker("Transcription engine", selection: $notesConfig.engine) {
+                    ForEach(MeetingNotesConfig.Engine.allCases) { engine in
+                        Text(engine.displayName).tag(engine)
+                    }
+                }
+                Text(notesConfig.engine == .whisperKit
+                     ? "Audio never leaves this Mac. The model downloads once on first use and runs on the Neural Engine — roughly 3–5 minutes per hour of audio."
+                     : "Audio is uploaded to Groq for transcription — roughly 30 seconds per hour of audio. Free tier available.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if notesConfig.engine == .whisperKit {
+                    Picker("Model", selection: $notesConfig.whisperModel) {
+                        ForEach(MeetingNotesConfig.whisperModelOptions, id: \.self) { Text($0).tag($0) }
+                    }
+                    Text("base (~150 MB) is fast and decent; large-v3_turbo (~1.6 GB) is noticeably better on accents and crosstalk.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                } else {
+                    SecureField("Groq API key (gsk_…)", text: $groqKeyDraft)
+                    HStack {
+                        Button(notesConfig.groqKey.isEmpty ? "Save key" : "Update key") {
+                            notesConfig.groqKey = groqKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+                        }
+                        .disabled(groqKeyDraft.trimmingCharacters(in: .whitespaces).isEmpty)
+                        if quickAddConfig.provider == .groq && quickAddConfig.hasLLMKey && notesConfig.groqKey != quickAddConfig.openRouterKey {
+                            Button("Use Quick Add key") {
+                                notesConfig.groqKey = quickAddConfig.openRouterKey
+                            }
+                        }
+                        if !notesConfig.groqKey.isEmpty {
+                            Button("Remove key") {
+                                notesConfig.groqKey = ""
+                                groqKeyDraft = ""
+                            }
+                            .tint(.red)
+                        }
+                        Spacer()
+                        Button("Get a key ↗") {
+                            if let url = URL(string: "https://console.groq.com/keys") { NSWorkspace.shared.open(url) }
+                        }
+                        .buttonStyle(.link)
+                        .font(.caption)
+                    }
+                    if !notesConfig.groqKey.isEmpty {
+                        Label("Key saved in Keychain", systemImage: "checkmark.circle.fill")
+                            .font(.caption2).foregroundStyle(.green)
+                    }
+                }
+
+                Text("Notes are written by your Quick Add AI provider — currently \(quickAddConfig.provider.displayName) · \(quickAddConfig.modelID). Change it under Quick Add.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Button("Open Meeting Notes") {
+                    openWindow(id: "meetingNotes")
+                    NSApp.activate(ignoringOtherApps: true)
+                }
             }
 
             if let error = recordingCoordinator.lastError {
