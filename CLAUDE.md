@@ -128,6 +128,16 @@ Permissions required (added to `project.yml` `info.properties` so they land in t
 
 Filename format: `YYYY-MM-DD HHmm - {sanitized title}.m4a`. Sanitization strips `/\:?<>|*"`, collapses whitespace, truncates to 80 chars, suffixes `-2`/`-3`/… on collision.
 
+### Transcription + meeting notes (`MeetingNotes/`, v2.4.0)
+
+Post-processing pipeline: finished recording → transcript → AI notes. **The dual-track recording is the speaker-attribution trick**: stereo track = system audio (them), mono track = mic (you) — `AudioTrackExporter` identifies tracks by **channel count** (not order; verified empirically) and exports each to 16 kHz mono 32 kbps AAC (1 hr ≈ 14 MB, under Groq's 25 MB cap). Each track transcribes separately, segments merge chronologically with You/Them labels (same-speaker gaps < 3 s coalesce).
+
+- **Engines** (`TranscriptionEngine` protocol): `WhisperKitEngine` — on-device via the **WhisperKit SPM package** (the app's first external dependency, declared in `project.yml` `packages:`; source-only so notarization is unaffected; instance cached per model; models download to Application Support on first use). `GroqWhisperEngine` — `whisper-large-v3-turbo` multipart upload, `verbose_json`. Key in Keychain (`groqTranscriptionKey`). **No silent engine fallback** — a surprise 1.6 GB model download is not a fallback; failures surface verbatim in JobState.
+- **`NotesGenerator` + `LLMClient`**: notes written by the **Quick Add provider config** (shared; local Ollama = fully offline pipeline). `LLMClient` is deliberately separate from `OpenRouterParser` — the parser is tuned for the 6 s live-parse window with parse-specific error hints and was heavily field-debugged; the client uses 120-180 s timeouts and generic errors. Don't merge them.
+- **`MeetingNotesPipeline`** (@MainActor): serial queue, publishes `jobs: [path: JobState]`. Auto-trigger via `MeetingRecordingCoordinator.stopAndEnqueueNotes()` — centralizes the capture-`currentFileURL`-before-`stop()` dance (stop nils it) and runs on meeting-end, manual, AND pre-sleep stops. Gated on `notesConfig.autoGenerate`.
+- **Sidecars are the durable store**: `<name>.transcript.md` + `<name>.notes.md` next to the `.m4a`. `RecordingDocument` derives all status from file existence — no database.
+- **Viewer**: `Window("Meeting Notes", id: "meetingNotes")` scene (menu bar ⌘M / Settings button; `openWindow` + `NSApp.activate`). List + Transcript/Notes tabs with lightweight per-line markdown rendering (`AttributedString(markdown:)` is inline-only — headers/tables handled manually).
+
 **Visibility and lifecycle (v2.1.1):**
 - Menu bar icon swaps to `record.circle.fill` while recording — at-a-glance signal that the active capture belongs to MeetingIntro vs some other app.
 - Menu bar dropdown shows "🔴 Recording" + meeting title + inline Stop button at the top — manual stop without opening Settings.
