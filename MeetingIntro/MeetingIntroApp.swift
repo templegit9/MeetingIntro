@@ -365,6 +365,7 @@ struct MenuBarView: View {
 
     @StateObject private var lifecycleManager = AppLifecycleManager()
     @AppStorage("cancellationShowInTodayView") private var showCancelledInTodayView: Bool = true
+    @AppStorage("nextMeetingHighlightHex") private var nextMeetingHighlightHex: String = defaultNextMeetingHighlightHex
 
     /// Today's meetings as displayed — cancelled ones filtered out when the user
     /// has turned off "show cancelled meetings in Today's Meetings". Display-side
@@ -375,18 +376,54 @@ struct MenuBarView: View {
             : calendarManager.todaysMeetings.filter { !$0.isCancelled }
     }
 
+    /// The next meeting to START — soonest future, non-cancelled. This is the row
+    /// the user most cares about, so it gets the highlight treatment.
+    private var nextMeetingID: String? {
+        displayedTodaysMeetings
+            .filter { !$0.isCancelled && $0.startDate > Date() }
+            .min(by: { $0.startDate < $1.startDate })?
+            .id
+    }
+
+    /// "in 1h 15m" / "in 45m" / "in 2h" — relative time until a meeting starts.
+    private func relativeStart(_ meeting: MeetingEvent) -> String {
+        let secs = Int(meeting.startDate.timeIntervalSinceNow)
+        guard secs > 0 else { return "now" }
+        let h = secs / 3600, m = (secs % 3600) / 60
+        if h > 0 && m > 0 { return "in \(h)h \(m)m" }
+        if h > 0 { return "in \(h)h" }
+        return "in \(max(1, m))m"
+    }
+
     /// One meeting row as a single concatenated `Text`. NSMenu (the `.menu` extra
     /// style) flattens container views — an HStack of Texts becomes one menu item
     /// PER Text, splitting time/title/icon onto separate lines. Text concatenation
     /// is the only way to get a styled single-row layout inside NSMenu.
+    ///
+    /// Temporal styling: the NEXT meeting gets ▸ + bold + the user's highlight
+    /// color + a countdown; ended meetings dim to tertiary; in-progress keeps the
+    /// green dot.
     private func meetingRowText(for meeting: MeetingEvent) -> Text {
+        let highlight = Color(hex: nextMeetingHighlightHex)
+        let isNext = meeting.id == nextMeetingID
+        let isPast = !meeting.isCancelled && meeting.endDate < Date()
+        let inProgress = meeting.startDate <= Date() && Date() < meeting.endDate
+
+        let prefix = Text(isNext ? "▸ " : "  ")
+            .font(.caption)
+            .foregroundColor(isNext ? highlight : .clear)
+
         let time = Text(meeting.formattedStartTime)
             .font(.system(.caption, design: .monospaced))
-            .foregroundColor(.secondary)
+            .foregroundColor(isNext ? highlight : (isPast ? .secondary : .secondary))
 
         var title = Text(meeting.title).font(.body)
         if meeting.isCancelled {
             title = title.strikethrough().foregroundColor(.secondary)
+        } else if isNext {
+            title = title.fontWeight(.semibold)
+        } else if isPast {
+            title = title.foregroundColor(.secondary)
         }
 
         // Trailing status glyph. Priority: cancelled → recording → live now → has link.
@@ -398,7 +435,7 @@ struct MenuBarView: View {
                   recordingController.currentMeetingTitle == meeting.title {
             status = Text("  ") + Text(Image(systemName: "record.circle.fill"))
                 .font(.caption).foregroundColor(.red)
-        } else if meeting.startDate <= Date() && Date() < meeting.endDate {
+        } else if inProgress {
             status = Text("  ") + Text(Image(systemName: "circle.fill"))
                 .font(.system(size: 7)).foregroundColor(.green)
         } else if meeting.url != nil {
@@ -408,7 +445,12 @@ struct MenuBarView: View {
             status = Text("")
         }
 
-        return time + Text(" ") + title + status
+        // Countdown only on the next meeting.
+        let countdown = isNext
+            ? Text(" · \(relativeStart(meeting))").font(.caption2).foregroundColor(highlight)
+            : Text("")
+
+        return prefix + time + Text(" ") + title + status + countdown
     }
 
     var body: some View {

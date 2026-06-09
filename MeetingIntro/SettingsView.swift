@@ -27,6 +27,8 @@ struct SettingsView: View {
     @State private var editingMirror: Mirror?
     @State private var showMirrorSheet = false
 
+    @AppStorage("nextMeetingHighlightHex") private var nextMeetingHighlightHex: String = defaultNextMeetingHighlightHex
+
     @State private var diagCategoryFilter: DiagnosticLog.Category?
     @State private var diagSearch: String = ""
 
@@ -509,6 +511,18 @@ struct SettingsView: View {
             Section("Join Meeting Button") {
                 Toggle("Show \"Join Meeting\" button when a link is detected", isOn: $countdownConfig.joinButtonEnabled)
                 Text("MeetingIntro scans the event's URL field, description, and location for Zoom, Teams, Google Meet, Webex, and GoToMeeting links.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Today's Meetings (menu bar)") {
+                ColorPicker("Next-meeting highlight color", selection: Binding(
+                    get: { Color(hex: nextMeetingHighlightHex) },
+                    set: { nextMeetingHighlightHex = $0.hexString }
+                ), supportsOpacity: false)
+                Button("Reset to default") { nextMeetingHighlightHex = defaultNextMeetingHighlightHex }
+                    .controlSize(.small)
+                Text("In the menu bar dropdown, the next upcoming meeting is marked with ▸, bolded, shown in this color with a countdown; already-ended meetings are dimmed.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1627,7 +1641,20 @@ extension Color {
         }
         self.init(red: r, green: g, blue: b)
     }
+
+    /// "#RRGGBB" for persistence. Falls back to the default highlight blue if the
+    /// color can't be resolved to RGB (e.g. a dynamic system color).
+    var hexString: String {
+        guard let components = NSColor(self).usingColorSpace(.sRGB) else { return "#4F8CF7" }
+        let r = Int((components.redComponent * 255).rounded())
+        let g = Int((components.greenComponent * 255).rounded())
+        let b = Int((components.blueComponent * 255).rounded())
+        return String(format: "#%02X%02X%02X", r, g, b)
+    }
 }
+
+/// Default highlight color for the next upcoming meeting in the dropdown.
+let defaultNextMeetingHighlightHex = "#4F8CF7"
 
 // MARK: - Sidebar sections
 
