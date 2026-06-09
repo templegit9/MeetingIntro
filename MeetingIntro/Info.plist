@@ -26,5 +26,9 @@
 	<string>MeetingIntro needs access to your calendars to monitor upcoming meetings and trigger countdown reminders.</string>
 	<key>NSFocusStatusUsageDescription</key>
 	<string>MeetingIntro uses your Focus status to silence voice reminders and audio alerts while you're in Do Not Disturb.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>MeetingIntro records your microphone alongside meeting audio when Auto-Record is enabled, so you can review what was said after the meeting.</string>
+	<key>NSScreenCaptureUsageDescription</key>
+	<string>MeetingIntro captures meeting audio playback via ScreenCaptureKit. No video is recorded — audio only.</string>
 </dict>
 </plist>
