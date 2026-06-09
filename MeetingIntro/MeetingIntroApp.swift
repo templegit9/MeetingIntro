@@ -319,7 +319,12 @@ final class AppLifecycleManager: ObservableObject {
                         let threshold = TimeInterval(trigger.minutes * 60)
                         guard meeting.timeUntilStart <= threshold else { continue }
                         let secondsSinceCrossed = threshold - meeting.timeUntilStart
-                        guard secondsSinceCrossed <= 60 else { continue }
+                        // Normal poll: only the freshly-crossed threshold. Catch-up
+                        // poll (post-sleep): also the single most-imminent threshold
+                        // missed during sleep — collapsed to one so a wake doesn't
+                        // dump every backed-up reminder for the meeting.
+                        let catchUp = calendarManager.catchUpThresholdMinutes(for: meeting) == trigger.minutes
+                        guard secondsSinceCrossed <= 60 || catchUp else { continue }
 
                         let decision = decide(trigger)
                         diagnosticLog.info(.reminder, "Reminder \(trigger.minutes)m fired for \(meeting.title) — notify=\(decision.sendNotification) voice=\(decision.playVoice) overlay=\(decision.showOverlay)")

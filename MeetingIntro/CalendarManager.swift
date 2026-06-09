@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import EventKit
 import Foundation
@@ -124,6 +125,15 @@ final class CalendarManager: ObservableObject {
 
     private var pollTimer: Timer?
     private var eventStoreObserver: NSObjectProtocol?
+    private var wakeObserver: NSObjectProtocol?
+
+    /// Timestamp of the previous poll. A large gap means the Mac was asleep (the
+    /// 30s timer doesn't fire during sleep), so the next poll is a "catch-up".
+    private var lastPollDate: Date?
+    /// True for the duration of a catch-up poll (gap > 90s since the last poll).
+    /// Read by the reminder fan-out so a reminder whose window fell during sleep
+    /// still fires on wake — but collapsed to the single most-imminent threshold.
+    private(set) var lastPollWasCatchUp = false
     /// Tracks which (meetingID, minutesBefore) combos have already been triggered.
     private var triggeredCombinations: Set<String> = []
 
@@ -166,8 +176,32 @@ final class CalendarManager: ObservableObject {
             }
         }
 
+        // Re-poll immediately on wake rather than waiting up to 30s for the next
+        // timer tick. The refresh sees a large gap since the last poll and runs as a
+        // catch-up (firing the most-imminent reminder missed during sleep).
+        if wakeObserver == nil {
+            wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
+                forName: NSWorkspace.didWakeNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor [weak self] in await self?.refreshEvents() }
+            }
+        }
+
         // Also fetch immediately
         Task { await refreshEvents() }
+    }
+
+    /// On a catch-up poll (post-sleep), the single most-imminent enabled threshold a
+    /// still-upcoming meeting has already crossed — the one reminder worth firing
+    /// late. Returns nil on normal polls or when nothing applies. Collapsing to the
+    /// minimum avoids waking to a stack of every backed-up threshold (15/10/5/2 min).
+    func catchUpThresholdMinutes(for event: MeetingEvent) -> Int? {
+        guard lastPollWasCatchUp, event.timeUntilStart > 0, !event.isCancelled else { return nil }
+        return countdownMinutesList
+            .filter { event.timeUntilStart <= TimeInterval($0 * 60) }
+            .min()
     }
 
     /// Stop polling.
@@ -180,6 +214,18 @@ final class CalendarManager: ObservableObject {
 
     /// Refresh events from the active provider.
     func refreshEvents() async {
+        // Detect a catch-up poll: a gap far larger than the 30s timer interval means
+        // the Mac was asleep (timers don't fire during sleep). Set this BEFORE
+        // assigning `upcomingMeetings` so the reminder fan-out sink reads the right
+        // value. A reminder whose window fell during sleep is otherwise dropped by
+        // the freshness gate; on a catch-up poll we let the single most-imminent one
+        // through (see `catchUpThresholdMinutes`).
+        let now0 = Date()
+        if let last = lastPollDate {
+            lastPollWasCatchUp = now0.timeIntervalSince(last) > 90
+        }
+        lastPollDate = now0
+
         // Clear any prior error before re-evaluating. If the refresh fails for a real
         // reason we set it again below; if it succeeds, we don't carry a stale "access
         // was denied" message after the user has actually granted access.
@@ -239,8 +285,13 @@ final class CalendarManager: ObservableObject {
                 // meeting still ahead would dump every stale threshold ("15 min before")
                 // even though those windows already passed during sleep.
                 let secondsSinceCrossed = thresholdSeconds - event.timeUntilStart
+                // Normal poll: fire only the threshold crossed within the last cycle.
+                // Catch-up poll (post-sleep): also fire the most-imminent threshold
+                // missed during sleep, even though it crossed more than 60s ago.
+                let freshlyCrossed = secondsSinceCrossed <= 60
+                let catchUp = catchUpThresholdMinutes(for: event) == minutes
                 if event.timeUntilStart <= thresholdSeconds &&
-                   secondsSinceCrossed <= 60 &&
+                   (freshlyCrossed || catchUp) &&
                    !triggeredCombinations.contains(comboKey) {
                     triggeredCombinations.insert(comboKey)
 

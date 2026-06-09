@@ -32,6 +32,11 @@ final class MeetingRecordingCoordinator: ObservableObject {
     private var runningMeetingIDs: Set<String> = []
     private var cancellables = Set<AnyCancellable>()
 
+    /// Whether we've already logged the missing-Screen-Recording-permission warning
+    /// this session. Without this the coordinator logs an identical error on every
+    /// meeting start, drowning the diagnostic log. Reset once permission is granted.
+    private var loggedPermissionWarning = false
+
     init(config: RecordingConfig, controller: RecordingController) {
         self.config = config
         self.controller = controller
@@ -125,6 +130,20 @@ final class MeetingRecordingCoordinator: ObservableObject {
     }
 
     private func beginRecording(_ meeting: MeetingEvent) async {
+        // Screen Recording permission is required for the system-audio track. If it's
+        // missing, surface a clear, actionable message and log a single warning per
+        // session rather than an identical error on every meeting start. The Settings
+        // → Recording banner walks the user to System Settings to grant it.
+        guard RecordingController.hasScreenRecordingPermission else {
+            lastError = "Recording needs Screen Recording permission. Grant it in Settings → Recording (or System Settings → Privacy & Security → Screen Recording), then it'll record automatically."
+            if !loggedPermissionWarning {
+                loggedPermissionWarning = true
+                diagnosticLog?.warn(.recording, "Skipping recording — Screen Recording permission not granted. Grant in System Settings → Privacy & Security → Screen Recording.")
+            }
+            return
+        }
+        loggedPermissionWarning = false
+
         let directory = config.resolveSaveDirectory()
         do {
             let fileURL = try await controller.start(for: meeting, saveDirectory: directory)

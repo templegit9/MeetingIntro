@@ -1,5 +1,6 @@
 import AVFoundation
 import Combine
+import CoreGraphics
 import CoreMedia
 import Foundation
 import ScreenCaptureKit
@@ -46,6 +47,31 @@ final class RecordingController: NSObject, ObservableObject {
     @Published private(set) var currentMeetingTitle: String?
     @Published private(set) var currentFileURL: URL?
 
+    // MARK: - Permissions
+
+    /// Whether MeetingIntro currently holds Screen Recording permission — required by
+    /// `SCStream` to capture system audio. `CGPreflightScreenCaptureAccess` reads the
+    /// TCC state without side effects (no prompt). System audio capture is the only
+    /// public API on macOS 14 that grabs app playback, so without this the recording
+    /// has no "Them" track and fails to start.
+    static var hasScreenRecordingPermission: Bool {
+        CGPreflightScreenCaptureAccess()
+    }
+
+    /// Trigger the system Screen Recording permission prompt (first call) or no-op if
+    /// already decided. Returns the resulting grant state. macOS only surfaces the
+    /// prompt once per app; after that the user must toggle it in System Settings, so
+    /// the Settings UI also offers a direct deep link.
+    @discardableResult
+    static func requestScreenRecordingPermission() -> Bool {
+        CGRequestScreenCaptureAccess()
+    }
+
+    /// Whether microphone capture is currently authorized (the "You" track).
+    static var hasMicrophonePermission: Bool {
+        AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
+    }
+
     private var stream: SCStream?
     private var sysHandler: SystemAudioHandler?
     private var micSession: AVCaptureSession?
@@ -61,6 +87,14 @@ final class RecordingController: NSObject, ObservableObject {
 
     func start(for meeting: MeetingEvent, saveDirectory: URL) async throws -> URL {
         if isRecording { throw RecordingError.alreadyRecording }
+
+        // Pre-flight Screen Recording permission before touching the filesystem or
+        // ScreenCaptureKit. Without it the SCShareableContent call below throws after
+        // we've already created (and have to clean up) the output file — and the
+        // coordinator would retry that churn on every meeting start.
+        guard Self.hasScreenRecordingPermission else {
+            throw RecordingError.permissionDenied("Screen Recording")
+        }
 
         try FileManager.default.createDirectory(at: saveDirectory, withIntermediateDirectories: true)
         let fileURL = Self.uniqueFileURL(in: saveDirectory, title: meeting.title)

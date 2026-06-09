@@ -55,6 +55,9 @@ struct SettingsView: View {
 
     @State private var showRecordingDisclaimer = false
     @State private var recordingStats: (count: Int, sizeBytes: Int64) = (0, 0)
+    /// Bumped when the app reactivates so the recording permission rows re-read TCC
+    /// state after the user grants access in System Settings.
+    @State private var permissionTick = 0
 
     @State private var selectedProvider: CalendarProviderType = .eventKit
     @State private var selectedSection: SettingsSection = .calendar
@@ -820,6 +823,27 @@ struct SettingsView: View {
                 }
             }
 
+            if recordingConfig.isEnabled {
+                Section("Permissions") {
+                    permissionRow(
+                        title: "Screen Recording",
+                        granted: RecordingController.hasScreenRecordingPermission,
+                        detail: "Required to capture the meeting audio you hear (the other participants).",
+                        grant: {
+                            // First call surfaces the system prompt; if already decided,
+                            // macOS ignores it, so also deep-link to the settings pane.
+                            RecordingController.requestScreenRecordingPermission()
+                            openScreenRecordingSettings()
+                        })
+                    permissionRow(
+                        title: "Microphone",
+                        granted: RecordingController.hasMicrophonePermission,
+                        detail: "Required to capture your own voice. Prompted automatically on first recording.",
+                        grant: { openMicrophoneSettings() })
+                }
+                .id(permissionTick)
+            }
+
             Section("Save Location") {
                 HStack {
                     Image(systemName: "folder")
@@ -919,6 +943,10 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .padding()
         .onAppear { refreshRecordingStats() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            // User may have just granted permission in System Settings — re-read TCC.
+            permissionTick += 1
+        }
         .alert("Before you enable recording", isPresented: $showRecordingDisclaimer) {
             Button("Cancel", role: .cancel) {}
             Button("I understand, enable recording") {
@@ -927,6 +955,38 @@ struct SettingsView: View {
             }
         } message: {
             Text("MeetingIntro will record your microphone and the meeting audio you hear when each meeting with a conference link starts, and stop when it ends. Recordings save to your chosen folder.\n\nRecording laws vary by jurisdiction. In California, Massachusetts, Illinois, and most of the EU, you generally need participants to know they're being recorded. You're responsible for telling them.")
+        }
+    }
+
+    /// One permission status row: green check + "Granted", or an orange warning with a
+    /// Grant button that prompts / deep-links to the right System Settings pane.
+    @ViewBuilder
+    private func permissionRow(title: String, granted: Bool, detail: String, grant: @escaping () -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Image(systemName: granted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                    .foregroundStyle(granted ? .green : .orange)
+                Text(title).fontWeight(.medium)
+                Spacer()
+                if granted {
+                    Text("Granted").font(.caption).foregroundStyle(.green)
+                } else {
+                    Button("Grant…", action: grant)
+                }
+            }
+            Text(detail).font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    private func openScreenRecordingSettings() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    private func openMicrophoneSettings() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
+            NSWorkspace.shared.open(url)
         }
     }
 
