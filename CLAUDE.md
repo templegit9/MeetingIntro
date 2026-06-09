@@ -169,6 +169,17 @@ Settings → Help → What's New fetches release notes live from the public GitH
 
 **Hidden Diagnostics tab** (Android developer-options mechanic): `SettingsSection.diagnostics` is filtered out of the sidebar until `diagnosticsUnlocked` (UserDefaults) is set by tapping the version line in About **3×**. The log captures regardless of tab visibility; a "Hide Diagnostics" button re-hides. The tab shows a live filterable stream + a notification-authorization banner with an Open-System-Settings deep link.
 
+### Calendar mirror / sync (`CalendarSync/`, v2.5.0)
+
+One-way continuous mirror: source calendar(s) → a destination, every poll. **The app's first autonomous recurring write to real calendars** — treat changes here with the caution that implies.
+
+- **State lives in the calendar, not a DB.** Each mirror event carries `event.url = meetingintro-mirror://<mirrorID>/<base64 sourceID>` (`MirrorMarker`). Reconcile = diff source events against destination events bearing this marker. **Only marker-carrying events are ever modified/deleted** — real events are untouchable. This survives reinstall and never drifts.
+- **`CalendarMirrorEngine.reconcileAll()`** rides `CalendarManager.onPollComplete` (the 30s poll). Per mirror: fetch sources in a 30-day window (all-day included; marker-carrying events excluded → no mirror-of-mirror), diff by source id, create/update/delete, single batched `eventStore.commit()`.
+- **Three guardrails — do not weaken without re-review**: (1) marker-only-touch; (2) **delete circuit-breaker** — a reconcile removing >50 copies OR >90% of existing copies *pauses* the mirror (sets `paused`) instead of executing, guarding against a source transiently returning zero events; (3) every action logged to `DiagnosticLog` (`.calendar`).
+- **Engine + CalendarManager share ONE `EventKitProvider`** (hence `eventKitProvider` is internal, not private) — an EKEvent fetched from one `EKEventStore` can't be saved via another.
+- **Destinations**: new dedicated calendar (EventKit can only create on **iCloud or Local** — Google/Exchange reject `saveCalendar`; the UI tells users to create the calendar there first and mirror into it as an *existing* destination) or an existing writable calendar (read-only/subscribed rejected). Detail mode: `full` or opaque `busy`. Attendees never copied (EventKit limit, same as Quick Add).
+- Late-wired like the coordinators: `mirrorEngine.attach(config:calendarManager:)` in `observe()`.
+
 ## Conventions
 
 - **No hardcoded values.** Every tunable lives in `UserDefaults` (or Keychain for credentials). If you add a feature, add a setting.
