@@ -15,6 +15,9 @@ final class OverlayWindowController: ObservableObject {
     private var calendarManager: CalendarManager?
     private var audioManager: AudioManager?
 
+    /// Diagnostic log — injected in AppLifecycleManager.observe.
+    var diagnosticLog: DiagnosticLog?
+
     func configure(calendarManager: CalendarManager, audioManager: AudioManager) {
         self.calendarManager = calendarManager
         self.audioManager = audioManager
@@ -22,7 +25,11 @@ final class OverlayWindowController: ObservableObject {
 
     /// Show the countdown overlay for the given meeting.
     func show(for meeting: MeetingEvent) {
-        guard overlayWindow == nil else { return }
+        guard overlayWindow == nil else {
+            diagnosticLog?.debug(.overlay, "Countdown overlay show skipped (already showing) — \(meeting.title)")
+            return
+        }
+        diagnosticLog?.info(.overlay, "Showing countdown overlay — \(meeting.title)")
 
         let overlayView = CountdownOverlayView(meeting: meeting) { [weak self] in
             self?.dismiss()

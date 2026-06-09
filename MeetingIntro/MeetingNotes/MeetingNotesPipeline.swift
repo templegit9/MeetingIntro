@@ -23,6 +23,7 @@ final class MeetingNotesPipeline: ObservableObject {
     private let notesConfig: MeetingNotesConfig
     private let quickAddConfig: QuickAddConfig
     var notificationManager: NotificationManager?
+    var diagnosticLog: DiagnosticLog?
 
     private var queue: [RecordingDocument] = []
     private var isProcessing = false
@@ -67,6 +68,7 @@ final class MeetingNotesPipeline: ObservableObject {
     private func process(_ document: RecordingDocument) async {
         let setStage: @MainActor (String) -> Void = { [weak self] stage in
             self?.jobs[document.id] = .running(stage)
+            self?.diagnosticLog?.info(.notes, "[\(document.baseName)] \(stage)")
         }
         do {
             // 1. Split the dual-track recording into per-speaker mono files.
@@ -111,9 +113,11 @@ final class MeetingNotesPipeline: ObservableObject {
             try notes.write(to: document.notesURL, atomically: true, encoding: .utf8)
 
             jobs[document.id] = .done
+            diagnosticLog?.info(.notes, "[\(document.baseName)] Notes ready")
             notificationManager?.sendNotesReadyNotification(title: document.displayTitle)
         } catch {
             jobs[document.id] = .failed(error.localizedDescription)
+            diagnosticLog?.error(.notes, "[\(document.baseName)] Failed: \(error.localizedDescription)")
         }
     }
 }

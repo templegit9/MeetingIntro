@@ -1,14 +1,36 @@
 import AppKit
 import SwiftUI
 import Combine
+import UserNotifications
 
 /// Holds a weak reference to the recording coordinator so the OS-level
 /// `applicationShouldTerminate` callback can block app quit until a recording is
 /// finalized. The coordinator is injected by `AppLifecycleManager.observe` once the
 /// `@StateObject`s exist.
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
     weak var recordingCoordinator: MeetingRecordingCoordinator?
+    weak var diagnosticLog: DiagnosticLog?
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // CRITICAL: without a delegate, macOS silently drops notifications posted
+        // while the app is foreground/active — and a menu-bar app the user clicks
+        // into is "active" constantly, so reminders + cancellation notices never
+        // appeared. Setting this delegate + opting in via willPresent is the fix.
+        UNUserNotificationCenter.current().delegate = self
+    }
+
+    /// Show notifications even when MeetingIntro is the active app.
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        Task { @MainActor in
+            diagnosticLog?.info(.notification, "Foreground present: \(notification.request.content.title) — \(notification.request.content.subtitle)")
+        }
+        completionHandler([.banner, .list, .sound])
+    }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard let coord = recordingCoordinator, coord.isRecording else {
@@ -49,6 +71,7 @@ struct MeetingIntroApp: App {
     @StateObject private var quickAddPanel: QuickAddPanelController
     @StateObject private var notesConfig: MeetingNotesConfig
     @StateObject private var notesPipeline: MeetingNotesPipeline
+    @StateObject private var diagnosticLog = DiagnosticLog()
 
     init() {
         let router = AudioRouter()
@@ -95,7 +118,8 @@ struct MeetingIntroApp: App {
                 recordingController: recordingController,
                 recordingCoordinator: recordingCoordinator,
                 quickAddPanel: quickAddPanel,
-                notesPipeline: notesPipeline
+                notesPipeline: notesPipeline,
+                diagnosticLog: diagnosticLog
             )
         } label: {
             // When recording, swap the menu bar glyph to a red record symbol so the
@@ -129,7 +153,8 @@ struct MeetingIntroApp: App {
                 overlayController: overlayController,
                 quickAddConfig: quickAddConfig,
                 quickAddPanel: quickAddPanel,
-                notesConfig: notesConfig
+                notesConfig: notesConfig,
+                diagnosticLog: diagnosticLog
             )
         }
 
@@ -165,11 +190,17 @@ final class AppLifecycleManager: ObservableObject {
         handoffCoordinator: MeetingHandoffCoordinator,
         recordingCoordinator: MeetingRecordingCoordinator,
         quickAddPanel: QuickAddPanelController,
-        notesPipeline: MeetingNotesPipeline
+        notesPipeline: MeetingNotesPipeline,
+        diagnosticLog: DiagnosticLog
     ) {
         // Wire the config manager into CalendarManager
         calendarManager.countdownConfigs = countdownConfig
+        calendarManager.diagnosticLog = diagnosticLog
         notificationManager.soundManager = mixkitSounds
+        notificationManager.diagnosticLog = diagnosticLog
+        overlayController.diagnosticLog = diagnosticLog
+        recordingCoordinator.diagnosticLog = diagnosticLog
+        notesPipeline.diagnosticLog = diagnosticLog
         overlayController.configure(calendarManager: calendarManager, audioManager: audioManager)
         notificationManager.requestPermission()
         handoffCoordinator.attach(to: calendarManager)
@@ -180,7 +211,12 @@ final class AppLifecycleManager: ObservableObject {
         notesPipeline.notificationManager = notificationManager
         if let delegate = NSApplication.shared.delegate as? AppDelegate {
             delegate.recordingCoordinator = recordingCoordinator
+            delegate.diagnosticLog = diagnosticLog
         }
+
+        // Triage header — the first thing to read when something's wrong.
+        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+        diagnosticLog.info(.lifecycle, "MeetingIntro \(appVersion) launched on macOS \(ProcessInfo.processInfo.operatingSystemVersionString)")
 
         // Single decision point for all three channels (overlay / notification / voice).
         // The closure reads the live snapshot each time it's called, so toggling Focus or
@@ -222,6 +258,7 @@ final class AppLifecycleManager: ObservableObject {
                 guard let calendarManager else { return }
                 for meeting in meetings where meeting.isCancelled {
                     if !calendarManager.notifiedCancellationIDs.contains(meeting.id) {
+                        diagnosticLog.info(.cancellation, "Detected cancellation, firing notice — \(meeting.title)")
                         notificationManager.sendCancellationNotification(for: meeting)
                         calendarManager.markCancellationNotified(meeting.id)
                     }
@@ -245,9 +282,13 @@ final class AppLifecycleManager: ObservableObject {
                 }
                 let held = (smartConfig.suppressWhenInCall && context.isInActiveCall)
                     || context.isScreenCaptured
-                if pending.isEmpty || held {
+                if pending.isEmpty {
+                    overlayController.dismissCancellationNotice()
+                } else if held {
+                    diagnosticLog.info(.overlay, "Cancellation overlay held (\(context.isInActiveCall ? "in call" : "screen sharing")) — \(pending.count) pending")
                     overlayController.dismissCancellationNotice()
                 } else {
+                    diagnosticLog.info(.overlay, "Showing cancellation overlay — \(pending.count) pending")
                     overlayController.showCancellationCenter(pending) { id in
                         calendarManager.dismissCancellation(id)
                     }
@@ -271,6 +312,7 @@ final class AppLifecycleManager: ObservableObject {
                         guard secondsSinceCrossed <= 60 else { continue }
 
                         let decision = decide(trigger)
+                        diagnosticLog.info(.reminder, "Reminder \(trigger.minutes)m fired for \(meeting.title) — notify=\(decision.sendNotification) voice=\(decision.playVoice) overlay=\(decision.showOverlay)")
 
                         if decision.sendNotification {
                             notificationManager.sendCountdownNotification(for: meeting, minutesBefore: trigger.minutes)
@@ -305,6 +347,7 @@ struct MenuBarView: View {
     @ObservedObject var recordingCoordinator: MeetingRecordingCoordinator
     @ObservedObject var quickAddPanel: QuickAddPanelController
     @ObservedObject var notesPipeline: MeetingNotesPipeline
+    @ObservedObject var diagnosticLog: DiagnosticLog
 
     @Environment(\.openWindow) private var openWindow
 
@@ -464,7 +507,8 @@ struct MenuBarView: View {
                 handoffCoordinator: handoffCoordinator,
                 recordingCoordinator: recordingCoordinator,
                 quickAddPanel: quickAddPanel,
-                notesPipeline: notesPipeline
+                notesPipeline: notesPipeline,
+                diagnosticLog: diagnosticLog
             )
         }
     }

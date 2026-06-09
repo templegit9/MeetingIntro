@@ -18,6 +18,7 @@
 		383CE6338C41F88BF51B7F8C /* HandoffStateSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B298FA1587E1C1B7A432A3C /* HandoffStateSnapshot.swift */; };
 		3CEA795EFAD5F9E28F297D07 /* CalendarProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DD250C84523C24862974C5D /* CalendarProvider.swift */; };
 		3E9D73F063725D3F92C907AC /* AudioTrackExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4FCAC00891AF0B9BD3EC21D /* AudioTrackExporter.swift */; };
+		40A9E9C56EF2073C8FAC3675 /* DiagnosticLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 463397CA545A59897240FF4C /* DiagnosticLog.swift */; };
 		49251E5644AADF6152292412 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 992F1CBAD1FD8A706D9AEC26 /* WhisperKit */; };
 		4AB46FF6A5BBC1A5EE9B08DC /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71EA4E2BE1890659874BD76D /* KeychainStore.swift */; };
 		4FAA179DD289F0BA7A5C83E8 /* ConferenceLinkExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28D229B727F2C87F6712FCC4 /* ConferenceLinkExtractor.swift */; };
@@ -73,6 +74,7 @@
 		28D229B727F2C87F6712FCC4 /* ConferenceLinkExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConferenceLinkExtractor.swift; sourceTree = "<group>"; };
 		2BA29FA390A4A1D580C895A8 /* CountdownConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountdownConfig.swift; sourceTree = "<group>"; };
 		4291882B0E4FE689BCFF6CA7 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		463397CA545A59897240FF4C /* DiagnosticLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticLog.swift; sourceTree = "<group>"; };
 		5673A02C0FAC799726EA0BCF /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		570F13DE8551AC2384BF9DB7 /* MeetingDetailsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDetailsPanel.swift; sourceTree = "<group>"; };
 		67C9C4B04514972B0139B4A6 /* MeetingRecordingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingRecordingCoordinator.swift; sourceTree = "<group>"; };
@@ -163,6 +165,14 @@
 			path = MeetingContext;
 			sourceTree = "<group>";
 		};
+		9F8B693406514CD312377E68 /* Diagnostics */ = {
+			isa = PBXGroup;
+			children = (
+				463397CA545A59897240FF4C /* DiagnosticLog.swift */,
+			);
+			path = Diagnostics;
+			sourceTree = "<group>";
+		};
 		D702A85B21AE11B8710BA07D /* MeetingNotes */ = {
 			isa = PBXGroup;
 			children = (
@@ -212,6 +222,7 @@
 				EF585F8BEF5487338065E75D /* ReleaseNotesManager.swift */,
 				4291882B0E4FE689BCFF6CA7 /* SettingsView.swift */,
 				9C58BE975466982E750F7FDA /* VoiceReminderManager.swift */,
+				9F8B693406514CD312377E68 /* Diagnostics */,
 				6533CA6AB49E16C366CCF8E8 /* MeetingContext */,
 				D702A85B21AE11B8710BA07D /* MeetingNotes */,
 				DA9AFE03F16D3C57F321FDEC /* QuickAdd */,
@@ -322,6 +333,7 @@
 				4FAA179DD289F0BA7A5C83E8 /* ConferenceLinkExtractor.swift in Sources */,
 				06F32CFDCF41BE6E7F8D56FE /* CountdownConfig.swift in Sources */,
 				D195FE28659E1B2C38932999 /* CountdownOverlayView.swift in Sources */,
+				40A9E9C56EF2073C8FAC3675 /* DiagnosticLog.swift in Sources */,
 				7ED2557749FC1DDB68203F28 /* EventDraft.swift in Sources */,
 				A37C805D6770F7294432E384 /* EventKitProvider.swift in Sources */,
 				E6BC699DC42179C53C65FDAB /* FocusModeController.swift in Sources */,
@@ -441,7 +453,7 @@
 				INFOPLIST_FILE = MeetingIntro/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.3.3;
+				MARKETING_VERSION = 2.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.oluyinka.MeetingIntro;
 				SDKROOT = macosx;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -520,7 +532,7 @@
 				INFOPLIST_FILE = MeetingIntro/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.3.3;
+				MARKETING_VERSION = 2.4.0;
 				OTHER_CODE_SIGN_FLAGS = "--timestamp --options runtime";
 				PRODUCT_BUNDLE_IDENTIFIER = com.oluyinka.MeetingIntro;
 				SDKROOT = macosx;

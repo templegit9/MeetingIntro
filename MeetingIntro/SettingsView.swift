@@ -20,6 +20,17 @@ struct SettingsView: View {
     @ObservedObject var quickAddConfig: QuickAddConfig
     @ObservedObject var quickAddPanel: QuickAddPanelController
     @ObservedObject var notesConfig: MeetingNotesConfig
+    @ObservedObject var diagnosticLog: DiagnosticLog
+
+    @State private var diagCategoryFilter: DiagnosticLog.Category?
+    @State private var diagSearch: String = ""
+
+    /// Diagnostics is a hidden tab (Android developer-options style): tap the
+    /// version line in About 3× to reveal it. The log captures the whole time
+    /// regardless — only the tab's visibility is gated. Persisted once unlocked.
+    @AppStorage("diagnosticsUnlocked") private var diagnosticsUnlocked: Bool = false
+    @State private var versionTapCount: Int = 0
+    @State private var unlockHint: String?
 
     @Environment(\.openWindow) private var openWindow
     @State private var groqKeyDraft: String = ""
@@ -58,7 +69,7 @@ struct SettingsView: View {
             List(selection: $selectedSection) {
                 ForEach(SettingsGroup.allCases, id: \.self) { group in
                     Section(group.title) {
-                        ForEach(SettingsSection.allCases.filter { $0.group == group }, id: \.self) { section in
+                        ForEach(SettingsSection.allCases.filter { $0.group == group && ($0 != .diagnostics || diagnosticsUnlocked) }, id: \.self) { section in
                             Label(section.title, systemImage: section.systemImage)
                                 .tag(section)
                         }
@@ -80,6 +91,7 @@ struct SettingsView: View {
                 case .handoff:   handoffTab
                 case .recording: recordingTab
                 case .whatsNew:  whatsNewTab
+                case .diagnostics: diagnosticsTab
                 case .guide:     guideTab
                 case .about:     aboutTab
                 }
@@ -1039,6 +1051,25 @@ struct SettingsView: View {
         .task { await releaseNotes.refreshIfNeeded() }
     }
 
+    /// Android-style hidden-feature unlock: 3 taps on the version reveals
+    /// Diagnostics, with countdown feedback. No-op once already unlocked.
+    private func handleVersionTap() {
+        guard !diagnosticsUnlocked else { return }
+        versionTapCount += 1
+        let remaining = 3 - versionTapCount
+        withAnimation {
+            if remaining <= 0 {
+                diagnosticsUnlocked = true
+                unlockHint = "Diagnostics unlocked — see the Help section"
+                diagnosticLog.info(.lifecycle, "Diagnostics tab revealed by user")
+            } else if remaining == 1 {
+                unlockHint = "1 more tap to reveal Diagnostics…"
+            } else {
+                unlockHint = "\(remaining) more taps to reveal Diagnostics…"
+            }
+        }
+    }
+
     private var currentAppVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
     }
@@ -1066,6 +1097,120 @@ struct SettingsView: View {
                     Text(trimmed).font(.caption)
                 }
             }
+        }
+    }
+
+    // MARK: - Diagnostics Tab
+
+    private var filteredDiagnostics: [DiagnosticLog.Entry] {
+        diagnosticLog.entries.reversed().filter { entry in
+            (diagCategoryFilter == nil || entry.category == diagCategoryFilter) &&
+            (diagSearch.isEmpty || entry.message.localizedCaseInsensitiveContains(diagSearch))
+        }
+    }
+
+    private var diagnosticsTab: some View {
+        VStack(spacing: 0) {
+            // Notification authorization banner — the #1 silent-failure cause.
+            if !notificationManager.notificationsAuthorized {
+                HStack(spacing: 8) {
+                    Image(systemName: "bell.slash.fill").foregroundStyle(.orange)
+                    Text("Notifications are turned off (\(NotificationManager.describe(notificationManager.authorizationStatus))) — reminders and cancellation notices won't appear.")
+                        .font(.caption)
+                    Spacer()
+                    Button("Open System Settings") {
+                        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.notifications") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+                    .controlSize(.small)
+                }
+                .padding(10)
+                .background(Color.orange.opacity(0.12))
+            }
+
+            HStack(spacing: 8) {
+                TextField("Search log…", text: $diagSearch)
+                    .textFieldStyle(.roundedBorder)
+                Picker("", selection: $diagCategoryFilter) {
+                    Text("All").tag(DiagnosticLog.Category?.none)
+                    ForEach(DiagnosticLog.Category.allCases, id: \.self) { cat in
+                        Text(cat.rawValue.capitalized).tag(DiagnosticLog.Category?.some(cat))
+                    }
+                }
+                .labelsHidden()
+                .frame(width: 140)
+                Button {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(diagnosticLog.exportText(), forType: .string)
+                } label: { Image(systemName: "doc.on.doc") }
+                .help("Copy full log")
+                Button {
+                    NSWorkspace.shared.activateFileViewerSelecting([DiagnosticLog.logDirectory])
+                } label: { Image(systemName: "folder") }
+                .help("Reveal log files in Finder")
+                Button {
+                    diagnosticLog.clear()
+                } label: { Image(systemName: "trash") }
+                .help("Clear the log")
+            }
+            .padding(.horizontal, 10)
+            .padding(.top, 10)
+
+            HStack {
+                Text("Logs are kept for 7 days, then deleted automatically.")
+                    .font(.caption2).foregroundStyle(.tertiary)
+                Spacer()
+                Button("Hide Diagnostics") {
+                    versionTapCount = 0
+                    unlockHint = nil
+                    diagnosticsUnlocked = false
+                }
+                .controlSize(.small)
+                .help("Re-hide this tab — tap the version in About 3× to bring it back")
+            }
+            .padding(.horizontal, 10)
+            .padding(.bottom, 6)
+
+            Divider()
+
+            if filteredDiagnostics.isEmpty {
+                ContentUnavailableView("No log entries", systemImage: "stethoscope",
+                                       description: Text("Events will appear here as the app runs."))
+                    .frame(maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 3) {
+                        ForEach(filteredDiagnostics) { entry in
+                            HStack(alignment: .top, spacing: 8) {
+                                Circle().fill(levelColor(entry.level)).frame(width: 7, height: 7).padding(.top, 4)
+                                Text(entry.timestamp, format: .dateTime.hour().minute().second())
+                                    .font(.system(.caption2, design: .monospaced))
+                                    .foregroundStyle(.secondary)
+                                Text(entry.category.rawValue)
+                                    .font(.caption2).fontWeight(.medium)
+                                    .foregroundStyle(.tertiary)
+                                    .frame(width: 84, alignment: .leading)
+                                Text(entry.message)
+                                    .font(.caption)
+                                    .textSelection(.enabled)
+                                Spacer(minLength: 0)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                }
+            }
+        }
+    }
+
+    private func levelColor(_ level: DiagnosticLog.Level) -> Color {
+        switch level {
+        case .debug: return .secondary
+        case .info: return .green
+        case .warning: return .orange
+        case .error: return .red
         }
     }
 
@@ -1148,9 +1293,21 @@ struct SettingsView: View {
                 Text("MeetingIntro")
                     .font(.system(size: 24, weight: .bold, design: .rounded))
 
+                // Tap the version 3× to reveal the hidden Diagnostics tab
+                // (Android developer-options mechanic). The log captures the whole
+                // time regardless — this only unhides the viewer.
                 Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .contentShape(Rectangle())
+                    .onTapGesture { handleVersionTap() }
+
+                if let hint = unlockHint {
+                    Text(hint)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .transition(.opacity)
+                }
             }
 
             Text("Never be late to a meeting again.\nGet countdown overlays and voice reminders\nbefore your meetings start.")
@@ -1391,6 +1548,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
     case handoff
     case recording
     case whatsNew
+    case diagnostics
     case guide
     case about
 
@@ -1406,6 +1564,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
         case .handoff:   return "Handoff"
         case .recording: return "Recording"
         case .whatsNew:  return "What's New"
+        case .diagnostics: return "Diagnostics"
         case .guide:     return "Guide"
         case .about:     return "About"
         }
@@ -1423,6 +1582,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
         case .handoff:   return "arrow.left.arrow.right.circle"
         case .recording: return "record.circle"
         case .whatsNew:  return "sparkles"
+        case .diagnostics: return "stethoscope"
         case .guide:     return "book"
         case .about:     return "info.circle"
         }
@@ -1433,7 +1593,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
         case .calendar, .quickAdd:                       return .sources
         case .countdown, .smart, .voice, .sounds:        return .reminders
         case .audio, .handoff, .recording:               return .inMeeting
-        case .whatsNew, .guide, .about:                  return .help
+        case .whatsNew, .diagnostics, .guide, .about:    return .help
         }
     }
 }

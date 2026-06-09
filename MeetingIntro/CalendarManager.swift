@@ -46,6 +46,9 @@ final class CalendarManager: ObservableObject {
     /// CalendarManager reads enabled minutes from it.
     var countdownConfigs: CountdownConfigManager?
 
+    /// Diagnostic log — injected in AppLifecycleManager.observe.
+    var diagnosticLog: DiagnosticLog?
+
     /// Hook consulted before showing the overlay for a trigger. Returning `false`
     /// suppresses the overlay even when the trigger has `showOverlay = true` — used by
     /// `ReminderEscalationPolicy` to gate firings on live context (in-call, Focus, etc).
@@ -190,6 +193,7 @@ final class CalendarManager: ObservableObject {
 
             let events = try await activeProvider.fetchUpcomingEvents(within: lookAheadInterval)
             upcomingMeetings = events
+            diagnosticLog?.debug(.calendar, "Poll: \(events.count) events in window (\(activeProviderType.rawValue))")
             let now = Date()
             meetingsCurrentlyRunning = events.filter { $0.startDate <= now && now < $0.endDate && !$0.isCancelled }
             todaysMeetings = events
@@ -206,6 +210,7 @@ final class CalendarManager: ObservableObject {
             evaluateCountdownTrigger()
         } catch {
             errorMessage = error.localizedDescription
+            diagnosticLog?.error(.calendar, "Poll failed: \(error.localizedDescription)")
         }
     }
 

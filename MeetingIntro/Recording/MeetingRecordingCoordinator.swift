@@ -26,6 +26,9 @@ final class MeetingRecordingCoordinator: ObservableObject {
     /// offered to it — the pipeline itself decides based on the auto toggle.
     var notesPipeline: MeetingNotesPipeline?
 
+    /// Diagnostic log — injected in AppLifecycleManager.observe.
+    var diagnosticLog: DiagnosticLog?
+
     private var runningMeetingIDs: Set<String> = []
     private var cancellables = Set<AnyCancellable>()
 
@@ -125,6 +128,7 @@ final class MeetingRecordingCoordinator: ObservableObject {
         let directory = config.resolveSaveDirectory()
         do {
             let fileURL = try await controller.start(for: meeting, saveDirectory: directory)
+            diagnosticLog?.info(.recording, "Recording started — \(meeting.title)")
             RecordingSession(
                 meetingID: meeting.id,
                 meetingTitle: meeting.title,
@@ -136,6 +140,7 @@ final class MeetingRecordingCoordinator: ObservableObject {
             notificationManager?.sendRecordingStartedNotification(for: meeting)
         } catch {
             lastError = error.localizedDescription
+            diagnosticLog?.error(.recording, "Recording failed to start: \(error.localizedDescription)")
         }
     }
 
@@ -188,6 +193,7 @@ final class MeetingRecordingCoordinator: ObservableObject {
         let fileURL = controller.currentFileURL
         await controller.stop()
         if let fileURL {
+            diagnosticLog?.info(.recording, "Recording stopped, enqueuing for notes — \(fileURL.lastPathComponent)")
             notesPipeline?.enqueueIfAutoEnabled(audioURL: fileURL)
         }
     }
