@@ -72,6 +72,8 @@ struct MeetingIntroApp: App {
     @StateObject private var notesConfig: MeetingNotesConfig
     @StateObject private var notesPipeline: MeetingNotesPipeline
     @StateObject private var diagnosticLog = DiagnosticLog()
+    @StateObject private var mirrorConfig = MirrorConfigManager()
+    @StateObject private var mirrorEngine = CalendarMirrorEngine()
 
     init() {
         let router = AudioRouter()
@@ -119,7 +121,9 @@ struct MeetingIntroApp: App {
                 recordingCoordinator: recordingCoordinator,
                 quickAddPanel: quickAddPanel,
                 notesPipeline: notesPipeline,
-                diagnosticLog: diagnosticLog
+                diagnosticLog: diagnosticLog,
+                mirrorConfig: mirrorConfig,
+                mirrorEngine: mirrorEngine
             )
         } label: {
             // When recording, swap the menu bar glyph to a red record symbol so the
@@ -154,7 +158,9 @@ struct MeetingIntroApp: App {
                 quickAddConfig: quickAddConfig,
                 quickAddPanel: quickAddPanel,
                 notesConfig: notesConfig,
-                diagnosticLog: diagnosticLog
+                diagnosticLog: diagnosticLog,
+                mirrorConfig: mirrorConfig,
+                mirrorEngine: mirrorEngine
             )
         }
 
@@ -191,7 +197,9 @@ final class AppLifecycleManager: ObservableObject {
         recordingCoordinator: MeetingRecordingCoordinator,
         quickAddPanel: QuickAddPanelController,
         notesPipeline: MeetingNotesPipeline,
-        diagnosticLog: DiagnosticLog
+        diagnosticLog: DiagnosticLog,
+        mirrorConfig: MirrorConfigManager,
+        mirrorEngine: CalendarMirrorEngine
     ) {
         // Wire the config manager into CalendarManager
         calendarManager.countdownConfigs = countdownConfig
@@ -209,6 +217,8 @@ final class AppLifecycleManager: ObservableObject {
         recordingCoordinator.attach(to: calendarManager)
         quickAddPanel.calendarManager = calendarManager
         notesPipeline.notificationManager = notificationManager
+        mirrorEngine.diagnosticLog = diagnosticLog
+        mirrorEngine.attach(config: mirrorConfig, calendarManager: calendarManager)
         if let delegate = NSApplication.shared.delegate as? AppDelegate {
             delegate.recordingCoordinator = recordingCoordinator
             delegate.diagnosticLog = diagnosticLog
@@ -348,6 +358,8 @@ struct MenuBarView: View {
     @ObservedObject var quickAddPanel: QuickAddPanelController
     @ObservedObject var notesPipeline: MeetingNotesPipeline
     @ObservedObject var diagnosticLog: DiagnosticLog
+    @ObservedObject var mirrorConfig: MirrorConfigManager
+    @ObservedObject var mirrorEngine: CalendarMirrorEngine
 
     @Environment(\.openWindow) private var openWindow
 
@@ -508,7 +520,9 @@ struct MenuBarView: View {
                 recordingCoordinator: recordingCoordinator,
                 quickAddPanel: quickAddPanel,
                 notesPipeline: notesPipeline,
-                diagnosticLog: diagnosticLog
+                diagnosticLog: diagnosticLog,
+                mirrorConfig: mirrorConfig,
+                mirrorEngine: mirrorEngine
             )
         }
     }

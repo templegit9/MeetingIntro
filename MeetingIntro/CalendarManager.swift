@@ -49,6 +49,10 @@ final class CalendarManager: ObservableObject {
     /// Diagnostic log — injected in AppLifecycleManager.observe.
     var diagnosticLog: DiagnosticLog?
 
+    /// Called at the end of each successful refresh — the calendar-mirror engine
+    /// hooks here so reconciliation rides the existing 30s poll.
+    var onPollComplete: (() -> Void)?
+
     /// Hook consulted before showing the overlay for a trigger. Returning `false`
     /// suppresses the overlay even when the trigger has `showOverlay = true` — used by
     /// `ReminderEscalationPolicy` to gate firings on live context (in-call, Focus, etc).
@@ -89,7 +93,10 @@ final class CalendarManager: ObservableObject {
 
     // MARK: - Providers
 
-    private let eventKitProvider = EventKitProvider()
+    /// Internal (not private) so the calendar-mirror engine reconciles against the
+    /// SAME EKEventStore this manager reads from — an EKEvent fetched from one store
+    /// can't be saved via another.
+    let eventKitProvider = EventKitProvider()
     private let graphProvider = GraphCalendarProvider()
 
     /// The currently active provider type.
@@ -208,6 +215,7 @@ final class CalendarManager: ObservableObject {
             errorMessage = nil
 
             evaluateCountdownTrigger()
+            onPollComplete?()
         } catch {
             errorMessage = error.localizedDescription
             diagnosticLog?.error(.calendar, "Poll failed: \(error.localizedDescription)")

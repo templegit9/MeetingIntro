@@ -21,6 +21,11 @@ struct SettingsView: View {
     @ObservedObject var quickAddPanel: QuickAddPanelController
     @ObservedObject var notesConfig: MeetingNotesConfig
     @ObservedObject var diagnosticLog: DiagnosticLog
+    @ObservedObject var mirrorConfig: MirrorConfigManager
+    @ObservedObject var mirrorEngine: CalendarMirrorEngine
+
+    @State private var editingMirror: Mirror?
+    @State private var showMirrorSheet = false
 
     @State private var diagCategoryFilter: DiagnosticLog.Category?
     @State private var diagSearch: String = ""
@@ -83,6 +88,7 @@ struct SettingsView: View {
                 switch selectedSection {
                 case .calendar:  calendarTab
                 case .quickAdd:  quickAddTab
+                case .calendarSync: calendarSyncTab
                 case .countdown: countdownTab
                 case .smart:     smartTab
                 case .voice:     voiceTab
@@ -326,6 +332,114 @@ struct SettingsView: View {
         .task {
             quickAddCalendars = await calendarManager.eventKitCalendars()
         }
+    }
+
+    // MARK: - Calendar Sync Tab
+
+    private var calendarSyncTab: some View {
+        Form {
+            Section("Calendar Sync") {
+                Text("Mirror events from one or more calendars into another — one-way and continuous. A colleague checking the destination sees your true availability without you copying anything. The destination is a read-only reflection; edit in the source.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Button {
+                    editingMirror = nil
+                    showMirrorSheet = true
+                } label: { Label("Add Mirror", systemImage: "plus") }
+            }
+
+            if mirrorConfig.mirrors.isEmpty {
+                Section {
+                    Text("No mirrors yet.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            } else {
+                Section("Your Mirrors") {
+                    ForEach(mirrorConfig.mirrors) { mirror in
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text(mirror.name).fontWeight(.medium)
+                                Text(mirror.detailMode.displayName)
+                                    .font(.caption2)
+                                    .padding(.horizontal, 6).padding(.vertical, 1)
+                                    .background(Color.accentColor.opacity(0.15), in: Capsule())
+                                    .foregroundStyle(Color.accentColor)
+                                Spacer()
+                                Toggle("", isOn: Binding(
+                                    get: { mirror.enabled },
+                                    set: { on in toggleMirror(mirror, enabled: on) }
+                                )).labelsHidden()
+                            }
+                            Text("\(mirror.sourceCalendarIDs.count) source\(mirror.sourceCalendarIDs.count == 1 ? "" : "s") → \(mirrorEngine.destinationName(for: mirror) ?? "destination")")
+                                .font(.caption).foregroundStyle(.secondary)
+                            if mirror.paused, let err = mirror.lastError {
+                                Label(err, systemImage: "pause.circle.fill")
+                                    .font(.caption2).foregroundStyle(.orange)
+                                Button("Re-enable") { reEnableMirror(mirror) }
+                                    .controlSize(.small)
+                            } else if let err = mirror.lastError {
+                                Label(err, systemImage: "exclamationmark.triangle.fill")
+                                    .font(.caption2).foregroundStyle(.orange)
+                            } else if let last = mirror.lastSync {
+                                Text("Last synced \(last, format: .relative(presentation: .named))")
+                                    .font(.caption2).foregroundStyle(.tertiary)
+                            }
+                            HStack(spacing: 12) {
+                                Button("Sync now") { mirrorEngine.reconcileAll() }
+                                    .controlSize(.small)
+                                Button("Edit") { editingMirror = mirror; showMirrorSheet = true }
+                                    .controlSize(.small)
+                                Button("Delete") { deleteMirror(mirror) }
+                                    .controlSize(.small).tint(.red)
+                            }
+                            .padding(.top, 2)
+                        }
+                        .padding(.vertical, 3)
+                    }
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+        .sheet(isPresented: $showMirrorSheet) {
+            MirrorEditSheet(
+                existing: editingMirror,
+                calendars: quickAddCalendars,
+                isWritable: { mirrorEngine.isWritable($0) },
+                creatableSources: mirrorEngine.creatableSources(),
+                defaultSourceID: mirrorEngine.defaultCreatableSourceID(),
+                createCalendar: { name, sourceID in mirrorEngine.createDedicatedCalendar(named: name, sourceID: sourceID) },
+                onSave: { mirror in saveMirror(mirror); showMirrorSheet = false },
+                onCancel: { showMirrorSheet = false }
+            )
+        }
+        .task { quickAddCalendars = await calendarManager.eventKitCalendars() }
+    }
+
+    private func toggleMirror(_ mirror: Mirror, enabled: Bool) {
+        mirrorConfig.update(mirror.id) {
+            $0.enabled = enabled
+            if enabled { $0.paused = false; $0.lastError = nil }
+        }
+        if !enabled, mirror.deleteCopiesOnDisable {
+            mirrorEngine.tearDown(mirror)
+        } else if enabled {
+            mirrorEngine.reconcileAll()
+        }
+    }
+
+    private func reEnableMirror(_ mirror: Mirror) {
+        mirrorConfig.update(mirror.id) { $0.paused = false; $0.lastError = nil }
+        mirrorEngine.reconcileAll()
+    }
+
+    private func deleteMirror(_ mirror: Mirror) {
+        if mirror.deleteCopiesOnDisable { mirrorEngine.tearDown(mirror) }
+        mirrorConfig.remove(mirror.id)
+    }
+
+    private func saveMirror(_ mirror: Mirror) {
+        mirrorConfig.upsert(mirror)
+        mirrorEngine.reconcileAll()
     }
 
     // MARK: - Countdown Tab
@@ -1540,6 +1654,7 @@ enum SettingsGroup: String, CaseIterable, Hashable {
 enum SettingsSection: String, CaseIterable, Hashable {
     case calendar
     case quickAdd
+    case calendarSync
     case countdown
     case smart
     case voice
@@ -1556,6 +1671,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
         switch self {
         case .calendar:  return "Calendar"
         case .quickAdd:  return "Quick Add"
+        case .calendarSync: return "Calendar Sync"
         case .countdown: return "Countdown"
         case .smart:     return "Smart"
         case .voice:     return "Voice"
@@ -1574,6 +1690,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
         switch self {
         case .calendar:  return "calendar"
         case .quickAdd:  return "square.and.pencil"
+        case .calendarSync: return "arrow.triangle.2.circlepath"
         case .countdown: return "timer"
         case .smart:     return "brain"
         case .voice:     return "waveform"
@@ -1590,7 +1707,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
 
     var group: SettingsGroup {
         switch self {
-        case .calendar, .quickAdd:                       return .sources
+        case .calendar, .quickAdd, .calendarSync:        return .sources
         case .countdown, .smart, .voice, .sounds:        return .reminders
         case .audio, .handoff, .recording:               return .inMeeting
         case .whatsNew, .diagnostics, .guide, .about:    return .help
