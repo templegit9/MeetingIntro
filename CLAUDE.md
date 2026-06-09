@@ -161,6 +161,14 @@ First **calendar-write** feature. Menu bar → "New Event…" opens a palette an
 
 Settings → Help → What's New fetches release notes live from the public GitHub Releases API (unauthenticated, 60 req/hr is plenty), strips the "## Install" boilerplate, caches the last good response in UserDefaults (1h TTL) so it renders offline. Changelogs stay current without app updates because the release script auto-generates the notes.
 
+### Notification delivery + Diagnostics (`Diagnostics/`, v2.4.1)
+
+**Load-bearing gotcha**: a menu-bar (`LSUIElement`) app is "active" whenever the user clicks into it, and macOS **silently drops notifications posted while the sending app is foreground** unless it sets a `UNUserNotificationCenterDelegate` and returns presentation options from `willPresent`. We shipped v1.0.0–v2.4.0 without one, so reminders + cancellation notices vanished whenever MeetingIntro had focus. `AppDelegate` (in `MeetingIntroApp.swift`) now conforms to `UNUserNotificationCenterDelegate`, sets `UNUserNotificationCenter.current().delegate = self` in `applicationDidFinishLaunching`, and `willPresent` returns `[.banner, .list, .sound]`. **Do not remove this.** `NotificationManager` also stores the auth result in `@Published authorizationStatus` (was discarded) so a denied permission is visible instead of silently failing.
+
+**`DiagnosticLog`**: app-wide `@MainActor ObservableObject` (injected explicitly in `observe()`, no `.shared`). In-memory ring (2000) + daily rotating file in `~/Library/Application Support/MeetingIntro/Diagnostics/`, **7-day retention pruned both on launch and once per calendar day** (a never-quit menu-bar app wouldn't prune on launch alone — the per-day check on write covers it). Verbose, always-on; `Category` + `Level` tagged. Every suppression logs its reason (dedup / freshness gate / smart-context hold / notifications-disabled / delivery error) — this is the triage trail when "it didn't fire."
+
+**Hidden Diagnostics tab** (Android developer-options mechanic): `SettingsSection.diagnostics` is filtered out of the sidebar until `diagnosticsUnlocked` (UserDefaults) is set by tapping the version line in About **3×**. The log captures regardless of tab visibility; a "Hide Diagnostics" button re-hides. The tab shows a live filterable stream + a notification-authorization banner with an Open-System-Settings deep link.
+
 ## Conventions
 
 - **No hardcoded values.** Every tunable lives in `UserDefaults` (or Keychain for credentials). If you add a feature, add a setting.
