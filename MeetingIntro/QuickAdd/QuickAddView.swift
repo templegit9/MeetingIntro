@@ -91,6 +91,8 @@ struct QuickAddView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(14)
+                } else if !templateSuggestions.isEmpty {
+                    templateHint
                 } else {
                     Text("Couldn't find a date or time in that yet…")
                         .font(.caption)
@@ -125,6 +127,9 @@ struct QuickAddView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            if !config.meetingLinks.isEmpty {
+                linkControl(draft)
+            }
             if let notes = draft.notes, !notes.isEmpty {
                 Text(notes)
                     .font(.caption2)
@@ -150,6 +155,71 @@ struct QuickAddView: View {
             .padding(.top, 2)
         }
         .padding(14)
+    }
+
+    /// Templates whose trigger matches the `/frag` typed so far.
+    private var templateSuggestions: [QuickAddTemplate] {
+        TemplateExpander.matches(forPrefix: service.inputText, templates: config.templates)
+    }
+
+    private var templateHint: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Templates").font(.caption2).foregroundStyle(.tertiary)
+            ForEach(templateSuggestions) { t in
+                Button {
+                    service.inputText = "/\(t.trigger) "
+                } label: {
+                    HStack(spacing: 6) {
+                        Text("/\(t.trigger)")
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(Color.accentColor)
+                        Text(t.title).font(.caption).foregroundStyle(.secondary)
+                        Spacer()
+                        Text("\(t.durationMinutes) min").font(.caption2).foregroundStyle(.tertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+            Text("Add a date/time after the trigger — e.g. /\(templateSuggestions.first?.trigger ?? "standup") tomorrow 9am")
+                .font(.caption2).foregroundStyle(.tertiary)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Link attachment row: shows the attached meeting link (or "No meeting link")
+    /// with a menu to switch which saved link, or remove it. Smart-attach pre-selects
+    /// the default link for meeting-like phrases; this is the explicit override.
+    private func linkControl(_ draft: EventDraft) -> some View {
+        Menu {
+            Button {
+                service.linkChoice = .none
+            } label: {
+                Label("No link", systemImage: draft.url == nil ? "checkmark" : "")
+            }
+            Divider()
+            ForEach(config.meetingLinks) { link in
+                Button {
+                    service.linkChoice = .specific(link.id)
+                } label: {
+                    Label(link.name + (link.isDefault ? " (default)" : ""),
+                          systemImage: draft.attachedLinkName == link.name ? "checkmark" : "")
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: draft.url != nil ? "video.fill" : "video.slash.fill")
+                    .foregroundStyle(draft.url != nil ? Color.accentColor : .secondary)
+                Text(draft.attachedLinkName ?? (draft.url != nil ? "Meeting link" : "No meeting link"))
+                    .foregroundStyle(draft.url != nil ? .primary : .secondary)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            .font(.caption)
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
     }
 
     private func dateLine(_ draft: EventDraft) -> String {

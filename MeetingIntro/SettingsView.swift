@@ -46,6 +46,9 @@ struct SettingsView: View {
     @State private var quickAddCalendars: [CalendarInfo] = []
     @State private var quickAddTesting = false
     @State private var quickAddTestResult: (passed: Bool, message: String)?
+    @State private var newLinkName: String = ""
+    @State private var newLinkURL: String = ""
+    @State private var editingTemplate: QuickAddTemplate?
 
     @AppStorage("cancellationShowInTodayView") private var cancellationShowInTodayView: Bool = true
     @AppStorage("cancellationShowOverlay") private var cancellationShowOverlay: Bool = false
@@ -331,11 +334,108 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+
+            Section("Meeting Links") {
+                Text("Save your join links (personal Zoom room, Teams meeting, phone bridge). When you create a meeting-like event — \"sync with Sam\", \"1:1\" — MeetingIntro attaches your default link automatically (you can switch or remove it in the preview). That makes the overlay Join button, audio handoff, and auto-record work for events you create yourself.")
+                    .font(.caption).foregroundStyle(.secondary)
+
+                ForEach(quickAddConfig.meetingLinks) { link in
+                    HStack(spacing: 8) {
+                        Button {
+                            quickAddConfig.setDefaultLink(link.id)
+                        } label: {
+                            Image(systemName: link.isDefault ? "star.fill" : "star")
+                                .foregroundStyle(link.isDefault ? .yellow : .secondary)
+                        }
+                        .buttonStyle(.plain)
+                        .help(link.isDefault ? "Default link for smart-attach" : "Make default")
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(link.name).font(.callout)
+                            Text(link.url).font(.caption2).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                        }
+                        Spacer()
+                        Button(role: .destructive) {
+                            quickAddConfig.removeLink(link.id)
+                        } label: { Image(systemName: "trash") }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.red)
+                    }
+                }
+
+                HStack(spacing: 8) {
+                    TextField("Name (e.g. Personal Zoom)", text: $newLinkName)
+                    TextField("https://…", text: $newLinkURL)
+                    Button("Add") {
+                        let name = newLinkName.trimmingCharacters(in: .whitespaces)
+                        let url = newLinkURL.trimmingCharacters(in: .whitespaces)
+                        guard !name.isEmpty, !url.isEmpty else { return }
+                        quickAddConfig.addLink(name: name, url: url)
+                        newLinkName = ""; newLinkURL = ""
+                    }
+                    .disabled(newLinkName.trimmingCharacters(in: .whitespaces).isEmpty
+                              || newLinkURL.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+                if quickAddConfig.meetingLinks.isEmpty {
+                    Text("No links yet — add one above to enable smart-attach.")
+                        .font(.caption2).foregroundStyle(.tertiary)
+                }
+            }
+
+            Section("Event Templates") {
+                Text("Type a shorthand like /standup into Quick Add and it expands to a full event — title, duration, and a meeting link — then you just add the date/time (/standup tomorrow 9am).")
+                    .font(.caption).foregroundStyle(.secondary)
+
+                ForEach(quickAddConfig.templates) { t in
+                    Button {
+                        editingTemplate = t
+                    } label: {
+                        HStack(spacing: 8) {
+                            Text("/\(t.trigger)")
+                                .font(.system(.callout, design: .monospaced))
+                                .foregroundStyle(Color.accentColor)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(t.title).font(.callout).foregroundStyle(.primary)
+                                Text("\(t.durationMinutes) min" + (quickAddConfig.link(id: t.linkID).map { " · \($0.name)" } ?? ""))
+                                    .font(.caption2).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right").font(.caption2).foregroundStyle(.tertiary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Button {
+                    editingTemplate = QuickAddTemplate(trigger: "", title: "", durationMinutes: quickAddConfig.defaultDurationMinutes)
+                } label: {
+                    Label("New template", systemImage: "plus")
+                }
+            }
         }
         .formStyle(.grouped)
         .padding()
         .task {
             quickAddCalendars = await calendarManager.eventKitCalendars()
+        }
+        .sheet(item: $editingTemplate) { template in
+            TemplateEditSheet(
+                template: template,
+                links: quickAddConfig.meetingLinks,
+                existingTriggers: quickAddConfig.templates.filter { $0.id != template.id }.map { $0.trigger },
+                onSave: { saved in
+                    if quickAddConfig.templates.contains(where: { $0.id == saved.id }) {
+                        quickAddConfig.updateTemplate(saved)
+                    } else {
+                        quickAddConfig.addTemplate(saved)
+                    }
+                    editingTemplate = nil
+                },
+                onDelete: quickAddConfig.templates.contains(where: { $0.id == template.id }) ? {
+                    quickAddConfig.removeTemplate(template.id)
+                    editingTemplate = nil
+                } : nil,
+                onCancel: { editingTemplate = nil }
+            )
         }
     }
 

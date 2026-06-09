@@ -26,4 +26,11 @@ struct EventDraft: Equatable {
     /// ("No start time given — assumed 9:00 AM"). Surfaced as warnings in the
     /// preview so a silent guess never lands on the calendar unnoticed.
     var assumptions: [String] = []
+    /// Join link attached to the event (from a saved meeting link, or one parsed
+    /// out of the text). Written to `EKEvent.url`, so the overlay Join button,
+    /// audio handoff, and auto-record all pick it up for self-created meetings.
+    var url: String? = nil
+    /// Display name of the saved link that was attached, if any — shown as an
+    /// informational row in the preview (distinct from the orange assumptions).
+    var attachedLinkName: String? = nil
 }

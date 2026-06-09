@@ -193,8 +193,20 @@ final class QuickAddService: ObservableObject {
     @Published private(set) var draft: EventDraft?
     @Published private(set) var isParsing: Bool = false
 
+    /// User's link choice from the preview controls. Changing it re-applies to the
+    /// current draft without re-parsing (no network round-trip just to toggle a link).
+    @Published var linkChoice: LinkChoice = .auto {
+        didSet { if oldValue != linkChoice { reapplyLink() } }
+    }
+
     private let config: QuickAddConfig
     private var parseTask: Task<Void, Never>?
+    /// The template matched on the current input, if any — its chosen link is the
+    /// "auto" default for this draft (overriding the heuristic + global default).
+    private var activeTemplate: QuickAddTemplate?
+    /// The draft as produced by the parser, before link application — so toggling
+    /// the link choice can re-derive from a clean base.
+    private var baseDraft: EventDraft?
 
     init(config: QuickAddConfig) {
         self.config = config
@@ -205,6 +217,9 @@ final class QuickAddService: ObservableObject {
         parseTask?.cancel()
         inputText = ""
         draft = nil
+        baseDraft = nil
+        activeTemplate = nil
+        linkChoice = .auto
         isParsing = false
     }
 
@@ -213,18 +228,31 @@ final class QuickAddService: ObservableObject {
         let text = inputText
         guard !text.trimmingCharacters(in: .whitespaces).isEmpty else {
             draft = nil
+            baseDraft = nil
+            activeTemplate = nil
             isParsing = false
             return
         }
+        // A fresh input resets the link choice to auto so the per-event override
+        // doesn't bleed across different events typed into the same panel.
+        linkChoice = .auto
         parseTask = Task { @MainActor [weak self] in
             guard let self else { return }
             // Debounce: wait for a typing pause before parsing (and before any network call).
             try? await Task.sleep(nanoseconds: 400_000_000)
             if Task.isCancelled { return }
 
+            // Expand a /trigger template (if any) into the text we actually parse.
+            let (parseText, template) = TemplateExpander.expand(text, templates: self.config.templates)
+            self.activeTemplate = template
+            let duration = template?.durationMinutes ?? self.config.defaultDurationMinutes
+
             // Instant on-device result first so the preview feels alive...
-            let detectorDraft = DetectorParser.parse(text, defaultDurationMinutes: self.config.defaultDurationMinutes)
-            self.draft = detectorDraft
+            if let detectorDraft = DetectorParser.parse(parseText, defaultDurationMinutes: duration) {
+                self.publish(self.applyTemplate(template, to: detectorDraft))
+            } else {
+                self.publish(nil)
+            }
 
             // ...then upgrade via the LLM when configured (key set, or a custom
             // base URL like a local Ollama that needs no key).
@@ -233,17 +261,73 @@ final class QuickAddService: ObservableObject {
             defer { self.isParsing = false }
             do {
                 let llmDraft = try await OpenRouterParser.parse(
-                    text,
+                    parseText,
                     key: self.config.openRouterKey,
                     model: self.config.modelID,
                     baseURL: self.config.apiBaseURL
                 )
                 if !Task.isCancelled && self.inputText == text {
-                    self.draft = llmDraft
+                    self.publish(self.applyTemplate(template, to: llmDraft))
                 }
             } catch {
                 // Keep the detector draft (or nil) — the LLM is an upgrade, never a gate.
             }
         }
+    }
+
+    /// Overlay a template's fixed fields (title, duration, location) onto a parsed
+    /// draft. The typed text supplied date/time; the template supplies the rest.
+    private func applyTemplate(_ template: QuickAddTemplate?, to draft: EventDraft) -> EventDraft {
+        guard let template else { return draft }
+        var d = draft
+        d.title = template.title
+        d.endDate = d.startDate.addingTimeInterval(TimeInterval(template.durationMinutes * 60))
+        if let loc = template.location, !loc.isEmpty { d.location = loc }
+        return d
+    }
+
+    /// Store the parser/template output as the base draft and apply the link choice.
+    private func publish(_ draft: EventDraft?) {
+        baseDraft = draft
+        self.draft = draft.map(applyingLink)
+    }
+
+    /// Re-derive the link on the current base draft (called when the user flips the
+    /// link toggle/picker — no re-parse needed).
+    private func reapplyLink() {
+        guard let base = baseDraft else { return }
+        draft = applyingLink(base)
+    }
+
+    /// Resolve and attach the effective link per the current `linkChoice`:
+    /// - `.none` → strip any attached library link.
+    /// - `.specific(id)` → that saved link.
+    /// - `.auto` → the active template's link if it has one; else the default link
+    ///   when the phrase reads like a meeting (heuristic). A link the *parser* found
+    ///   in the text is preserved and never overwritten.
+    private func applyingLink(_ draft: EventDraft) -> EventDraft {
+        var d = draft
+        // Don't clobber a join URL the parser pulled out of the text itself.
+        let parserFoundURL = d.url != nil && d.attachedLinkName == nil
+        if parserFoundURL { return d }
+
+        let chosen: SavedMeetingLink?
+        switch linkChoice {
+        case .none:
+            chosen = nil
+        case .specific(let id):
+            chosen = config.link(id: id)
+        case .auto:
+            if let template = activeTemplate, let id = template.linkID {
+                chosen = config.link(id: id)
+            } else if MeetingLinkHeuristic.isLikelyMeeting(inputText), let def = config.defaultLink {
+                chosen = def
+            } else {
+                chosen = nil
+            }
+        }
+        d.url = chosen?.url
+        d.attachedLinkName = chosen?.name
+        return d
     }
 }

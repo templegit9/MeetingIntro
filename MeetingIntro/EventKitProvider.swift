@@ -113,6 +113,11 @@ final class EventKitProvider: CalendarProvider {
         event.endDate = draft.endDate
         event.location = draft.location
         event.notes = draft.notes
+        // Attach the join link so the overlay Join button, audio handoff, and
+        // auto-record pick it up (they read MeetingEvent.url ← EKEvent.url).
+        if let urlString = draft.url, let url = URL(string: urlString) {
+            event.url = url
+        }
 
         if let calendarID, !calendarID.isEmpty {
             guard let calendar = eventStore.calendar(withIdentifier: calendarID) else {
