@@ -430,6 +430,28 @@ struct MenuBarView: View {
         }
     }
 
+    /// Open Settings and force it to the front. `SettingsLink` alone opens the window
+    /// but doesn't activate the app — on an LSUIElement (menu-bar) app that means it
+    /// pops up *behind* whatever you were using. We open via the standard
+    /// `showSettingsWindow:` action, activate the app, and explicitly order the
+    /// Settings window front (also handling the re-open-while-buried case).
+    private func openSettingsWindow() {
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        // After the window exists, pull it fully to the front above other apps.
+        DispatchQueue.main.async {
+            NSApp.activate(ignoringOtherApps: true)
+            if let settings = NSApp.windows.first(where: { window in
+                let title = window.title.localizedCaseInsensitiveContains("settings")
+                let id = window.identifier?.rawValue.localizedCaseInsensitiveContains("settings") ?? false
+                return (title || id) && window.canBecomeKey
+            }) {
+                settings.makeKeyAndOrderFront(nil)
+                settings.orderFrontRegardless()
+            }
+        }
+    }
+
     /// "in 1h 15m" / "in 45m" / "in 2h" — relative time until a meeting starts.
     private func relativeStart(_ meeting: MeetingEvent) -> String {
         let secs = Int(meeting.startDate.timeIntervalSinceNow)
@@ -605,10 +627,8 @@ struct MenuBarView: View {
             }
             .keyboardShortcut("r")
 
-            SettingsLink {
-                Text("Settings…")
-            }
-            .keyboardShortcut(",")
+            Button("Settings…") { openSettingsWindow() }
+                .keyboardShortcut(",")
 
             Divider()
 

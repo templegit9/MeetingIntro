@@ -55,6 +55,7 @@ struct SettingsView: View {
     @AppStorage("cancellationOverlayPosition") private var cancellationOverlayPosition: String = OverlayWindowController.CancellationOverlayPosition.topRight.rawValue
 
     @StateObject private var releaseNotes = ReleaseNotesManager()
+    @StateObject private var updater = AppUpdater()
 
     @State private var showRecordingDisclaimer = false
     @State private var recordingStats: (count: Int, sizeBytes: Int64) = (0, 0)
@@ -1391,6 +1392,61 @@ struct SettingsView: View {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
     }
 
+    /// Icon button beside the version: check for / install updates via Homebrew.
+    @ViewBuilder
+    private var updateControl: some View {
+        switch updater.state {
+        case .checking, .updating:
+            ProgressView().controlSize(.small)
+        case .available:
+            Button { Task { await updater.update() } } label: {
+                Image(systemName: "arrow.down.circle.fill")
+                    .foregroundStyle(Color.accentColor)
+            }
+            .buttonStyle(.plain)
+            .help("Update to the latest version")
+        case .upToDate:
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+                .help("You're on the latest version")
+        case .failed:
+            Button { Task { await updater.check() } } label: {
+                Image(systemName: "exclamationmark.arrow.triangle.2.circlepath")
+                    .foregroundStyle(.orange)
+            }
+            .buttonStyle(.plain)
+            .help("Update check failed — click to retry")
+        case .updated:
+            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+        case .idle:
+            Button { Task { await updater.check() } } label: {
+                Image(systemName: "arrow.triangle.2.circlepath")
+            }
+            .buttonStyle(.plain)
+            .help("Check for updates")
+        }
+    }
+
+    /// One-line status under the version for the states worth spelling out.
+    @ViewBuilder
+    private var updateStatusLine: some View {
+        switch updater.state {
+        case .available(let v):
+            Button("Update available — install v\(v)") { Task { await updater.update() } }
+                .font(.caption)
+                .buttonStyle(.link)
+        case .updating:
+            Text("Updating via Homebrew…").font(.caption2).foregroundStyle(.secondary)
+        case .updated:
+            Text("Updated — relaunching…").font(.caption2).foregroundStyle(.green)
+        case .failed(let msg):
+            Text(msg).font(.caption2).foregroundStyle(.orange)
+                .multilineTextAlignment(.center).textSelection(.enabled)
+        default:
+            EmptyView()
+        }
+    }
+
     /// Lightweight renderer for the auto-generated changelog markdown:
     /// "## Header" lines → small bold subheaders, "- item" lines → bullet rows,
     /// everything else → plain body text.
@@ -1613,11 +1669,14 @@ struct SettingsView: View {
                 // Tap the version 3× to reveal the hidden Diagnostics tab
                 // (Android developer-options mechanic). The log captures the whole
                 // time regardless — this only unhides the viewer.
-                Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .contentShape(Rectangle())
-                    .onTapGesture { handleVersionTap() }
+                HStack(spacing: 8) {
+                    Text("Version \(currentAppVersion)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .contentShape(Rectangle())
+                        .onTapGesture { handleVersionTap() }
+                    updateControl
+                }
 
                 if let hint = unlockHint {
                     Text(hint)
@@ -1625,6 +1684,8 @@ struct SettingsView: View {
                         .foregroundStyle(.tertiary)
                         .transition(.opacity)
                 }
+
+                updateStatusLine
             }
 
             Text("Never be late to a meeting again.\nGet countdown overlays and voice reminders\nbefore your meetings start.")
@@ -1676,6 +1737,10 @@ struct SettingsView: View {
                 .padding(.bottom, 12)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .task {
+            // Check once when About opens (don't re-check if we already know).
+            if case .idle = updater.state { await updater.check() }
+        }
     }
 
     // MARK: - Voice Reminder Tab
