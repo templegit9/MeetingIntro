@@ -68,7 +68,29 @@ struct MeetingDetailsPanel: View {
                 .foregroundStyle(.white.opacity(0.75))
                 .lineLimit(3)
                 .frame(maxWidth: .infinity, alignment: .leading)
+
+            // Everyone's RSVP breakdown, when the calendar reported it.
+            if let c = meeting.responseCounts, c.total > 0 {
+                Text(rsvpSummary(c))
+                    .font(.system(size: 11))
+                    .foregroundStyle(.white.opacity(0.6))
+            }
+            // The user's own response, when it's a real invitation.
+            if let mine = meeting.myResponse.label {
+                Text("Your response: \(mine)")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.7))
+            }
         }
+    }
+
+    private func rsvpSummary(_ c: ResponseCounts) -> String {
+        var parts: [String] = []
+        if c.accepted > 0 { parts.append("\(c.accepted) accepted") }
+        if c.declined > 0 { parts.append("\(c.declined) declined") }
+        if c.tentative > 0 { parts.append("\(c.tentative) tentative") }
+        if c.noResponse > 0 { parts.append("\(c.noResponse) no reply") }
+        return parts.joined(separator: " · ")
     }
 
     private var joinURLSection: some View {

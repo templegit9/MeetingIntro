@@ -45,18 +45,39 @@ final class SmartConfigManager: ObservableObject {
         didSet { UserDefaults.standard.set(escalateWhenFullscreen, forKey: Self.k_escalateWhenFullscreen) }
     }
 
+    /// RSVP gate: skip reminders + auto-record for invitations the user declined.
+    /// On by default — the unambiguous win (no nagging about a meeting you bailed on).
+    @Published var skipDeclinedMeetings: Bool {
+        didSet { UserDefaults.standard.set(skipDeclinedMeetings, forKey: Self.k_skipDeclinedMeetings) }
+    }
+    /// Stricter opt-in: also skip invitations the user hasn't responded to. Off by
+    /// default — risks silencing a meeting you simply forgot to accept.
+    @Published var skipNoResponseMeetings: Bool {
+        didSet { UserDefaults.standard.set(skipNoResponseMeetings, forKey: Self.k_skipNoResponseMeetings) }
+    }
+
     init() {
         let d = UserDefaults.standard
         self.suppressWhenInCall = d.object(forKey: Self.k_suppressWhenInCall) as? Bool ?? true
         self.visualOnlyWhenFocus = d.object(forKey: Self.k_visualOnlyWhenFocus) as? Bool ?? true
         self.noVoiceWhenScreenSharing = d.object(forKey: Self.k_noVoiceWhenScreenSharing) as? Bool ?? true
         self.escalateWhenFullscreen = d.object(forKey: Self.k_escalateWhenFullscreen) as? Bool ?? false
+        self.skipDeclinedMeetings = d.object(forKey: Self.k_skipDeclinedMeetings) as? Bool ?? true
+        self.skipNoResponseMeetings = d.object(forKey: Self.k_skipNoResponseMeetings) as? Bool ?? false
+    }
+
+    /// Convenience for the gate sites — true if this event should go quiet.
+    func suppresses(_ meeting: MeetingEvent) -> Bool {
+        meeting.suppressedByResponse(skipDeclined: skipDeclinedMeetings,
+                                     skipNoResponse: skipNoResponseMeetings)
     }
 
     private static let k_suppressWhenInCall = "smart_suppressWhenInCall"
     private static let k_visualOnlyWhenFocus = "smart_visualOnlyWhenFocus"
     private static let k_noVoiceWhenScreenSharing = "smart_noVoiceWhenScreenSharing"
     private static let k_escalateWhenFullscreen = "smart_escalateWhenFullscreen"
+    private static let k_skipDeclinedMeetings = "smart_skipDeclinedMeetings"
+    private static let k_skipNoResponseMeetings = "smart_skipNoResponseMeetings"
 }
 
 /// Pure decision function. Given a trigger config, the live context snapshot, and the

@@ -48,6 +48,7 @@ final class EventKitProvider: CalendarProvider {
                 )
                 let title = event.title ?? "Untitled Meeting"
                 let cancelled = event.status == .canceled || CancellationTitlePrefix.matches(title)
+                let (myResponse, counts) = Self.responseInfo(for: event)
                 return MeetingEvent(
                     id: event.eventIdentifier ?? UUID().uuidString,
                     title: title,
@@ -61,10 +62,53 @@ final class EventKitProvider: CalendarProvider {
                     attendeeNames: Array(attendees.prefix(10)),
                     attendeeCount: attendees.count,
                     organizerName: event.organizer?.name,
-                    isCancelled: cancelled
+                    isCancelled: cancelled,
+                    myResponse: myResponse,
+                    responseCounts: counts
                 )
             }
             .sorted { $0.startDate < $1.startDate }
+    }
+
+    /// Derive the current user's RSVP + everyone's tally from an EKEvent's
+    /// participants. The current user is the attendee with `isCurrentUser == true`;
+    /// if you're the organizer (or there are no attendees) it's `.organizer`. If
+    /// attendees exist but none is flagged current-user (multi-account edge case),
+    /// we return `.unknown` so the response gate never silences it.
+    private static func responseInfo(for event: EKEvent) -> (ResponseStatus, ResponseCounts?) {
+        let attendees = event.attendees ?? []
+        if event.organizer?.isCurrentUser == true {
+            return (.organizer, counts(from: attendees))
+        }
+        guard !attendees.isEmpty else { return (.unknown, nil) }
+        let me = attendees.first(where: { $0.isCurrentUser })
+        let mine = me.map { map($0.participantStatus) } ?? .unknown
+        return (mine, counts(from: attendees))
+    }
+
+    private static func counts(from attendees: [EKParticipant]) -> ResponseCounts? {
+        guard !attendees.isEmpty else { return nil }
+        var c = ResponseCounts()
+        for a in attendees {
+            switch map(a.participantStatus) {
+            case .accepted:   c.accepted += 1
+            case .declined:   c.declined += 1
+            case .tentative:  c.tentative += 1
+            case .noResponse: c.noResponse += 1
+            default:          break
+            }
+        }
+        return c
+    }
+
+    private static func map(_ status: EKParticipantStatus) -> ResponseStatus {
+        switch status {
+        case .accepted:  return .accepted
+        case .declined:  return .declined
+        case .tentative: return .tentative
+        case .pending:   return .noResponse
+        default:         return .unknown   // .unknown, .delegated, .completed, .inProcess
+        }
     }
 
     func availableCalendars() async throws -> [CalendarInfo] {

@@ -60,6 +60,12 @@ final class CalendarManager: ObservableObject {
     /// Default behavior (when the hook is nil) is to respect the trigger flag directly.
     var shouldFireOverlay: ((CountdownTrigger) -> Bool)?
 
+    /// RSVP gate: returns true if a meeting should be suppressed because the user
+    /// declined / didn't respond (per their settings). Injected in
+    /// `AppLifecycleManager.observe` from `SmartConfigManager` so CalendarManager
+    /// stays free of a MeetingContext dependency. nil → never suppress.
+    var responseGate: ((MeetingEvent) -> Bool)?
+
     /// Convenience: list of all enabled countdown minutes.
     var countdownMinutesList: [Int] {
         countdownConfigs?.enabledMinutes ?? [2]
@@ -275,7 +281,7 @@ final class CalendarManager: ObservableObject {
         // For each meeting, check each configured countdown time. Cancelled
         // meetings are skipped — their reminders fire as a one-shot system
         // notification at detection time instead (see AppLifecycleManager).
-        for event in upcomingMeetings where event.timeUntilStart > 0 && !event.isCancelled {
+        for event in upcomingMeetings where event.timeUntilStart > 0 && !event.isCancelled && !(responseGate?(event) ?? false) {
             for minutes in countdownMinutesList {
                 let thresholdSeconds = TimeInterval(minutes * 60)
                 let comboKey = "\(event.id)_\(minutes)"

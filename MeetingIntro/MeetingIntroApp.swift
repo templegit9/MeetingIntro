@@ -240,6 +240,11 @@ final class AppLifecycleManager: ObservableObject {
         }
         calendarManager.shouldFireOverlay = { decide($0).showOverlay }
 
+        // RSVP gate (shared by overlay, notification/voice, and recording). Reads the
+        // live settings each call. Personal events / organizer / unknown never match.
+        calendarManager.responseGate = { smartConfig.suppresses($0) }
+        recordingCoordinator.responseSuppressed = { smartConfig.suppresses($0) }
+
         // Start polling AFTER the hook is set, so the first poll uses the policy.
         calendarManager.startPolling()
 
@@ -314,7 +319,17 @@ final class AppLifecycleManager: ObservableObject {
         // time (above) and skip the original-start-time reminders entirely.
         calendarManager.$upcomingMeetings
             .sink { meetings in
+                let maxThreshold = TimeInterval((countdownConfig.triggers.map(\.minutes).max() ?? 0) * 60)
                 for meeting in meetings where meeting.timeUntilStart > 0 && !meeting.isCancelled {
+                    // RSVP gate: skip invitations the user declined / didn't answer.
+                    if smartConfig.suppresses(meeting) {
+                        // Log only when a reminder would actually have fired (avoids
+                        // spamming the same suppression every 30s poll all day).
+                        if meeting.timeUntilStart <= maxThreshold {
+                            diagnosticLog.info(.reminder, "Suppressed \(meeting.title) — RSVP \(meeting.myResponse.rawValue) with skip settings on")
+                        }
+                        continue
+                    }
                     for trigger in countdownConfig.triggers {
                         let threshold = TimeInterval(trigger.minutes * 60)
                         guard meeting.timeUntilStart <= threshold else { continue }
@@ -450,12 +465,23 @@ struct MenuBarView: View {
             status = Text("")
         }
 
+        // RSVP marker for non-accepted invitations only (declined / tentative /
+        // no-response). Accepted, organizer, and unknown stay clean.
+        let rsvp: Text
+        if !meeting.isCancelled, let glyph = meeting.myResponse.todayGlyph {
+            let color: Color = meeting.myResponse == .declined ? .red.opacity(0.7)
+                : (meeting.myResponse == .tentative ? .orange : .secondary)
+            rsvp = Text(" ") + Text(Image(systemName: glyph)).font(.caption2).foregroundColor(color)
+        } else {
+            rsvp = Text("")
+        }
+
         // Countdown only on the next meeting.
         let countdown = isNext
             ? Text(" · \(relativeStart(meeting))").font(.caption2).foregroundColor(highlight)
             : Text("")
 
-        return prefix + time + Text(" ") + title + status + countdown
+        return prefix + time + Text(" ") + title + status + rsvp + countdown
     }
 
     var body: some View {

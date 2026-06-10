@@ -675,7 +675,8 @@ struct SettingsView: View {
                         attendeeNames: [],
                         attendeeCount: 0,
                         organizerName: "Jon Lind",
-                        isCancelled: true
+                        isCancelled: true,
+                        myResponse: .organizer
                     )
                     overlayController.showCancellation(for: testMeeting)
                 }
@@ -697,7 +698,9 @@ struct SettingsView: View {
                         attendeeNames: ["Alice Wong", "Ben Patel", "Chiamaka Eze", "Diego Ortiz", "Emma Schultz", "Fatima Bello", "Grace Liu", "Henry Park"],
                         attendeeCount: 8,
                         organizerName: "Alice Wong",
-                        isCancelled: false
+                        isCancelled: false,
+                        myResponse: .accepted,
+                        responseCounts: ResponseCounts(accepted: 5, declined: 1, tentative: 0, noResponse: 2)
                     )
                     showCountdownOverlay(for: testMeeting)
                 }
@@ -722,6 +725,17 @@ struct SettingsView: View {
                        isOn: $smartConfig.escalateWhenFullscreen)
 
                 Text("MeetingIntro reads four live signals to decide which channels should fire. Rules are evaluated top-to-bottom — the first matching rule wins.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Meeting Responses (RSVP)") {
+                Toggle("Skip meetings I've declined",
+                       isOn: $smartConfig.skipDeclinedMeetings)
+                Toggle("…and ones I haven't responded to",
+                       isOn: $smartConfig.skipNoResponseMeetings)
+                    .disabled(!smartConfig.skipDeclinedMeetings)
+                Text("Quietens reminders **and** auto-recording for invitations you've declined (and optionally not answered). Tentative invites still remind. Personal events, meetings you organize, and anything without RSVP data are never affected — this only applies to real invitations.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

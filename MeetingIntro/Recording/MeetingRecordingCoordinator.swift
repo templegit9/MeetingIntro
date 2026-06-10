@@ -29,6 +29,11 @@ final class MeetingRecordingCoordinator: ObservableObject {
     /// Diagnostic log — injected in AppLifecycleManager.observe.
     var diagnosticLog: DiagnosticLog?
 
+    /// RSVP gate: returns true if a meeting should NOT be recorded because the user
+    /// declined / didn't respond (per their Smart settings). Injected in
+    /// AppLifecycleManager.observe from SmartConfigManager; nil → never suppress.
+    var responseSuppressed: ((MeetingEvent) -> Bool)?
+
     private var runningMeetingIDs: Set<String> = []
     private var cancellables = Set<AnyCancellable>()
 
@@ -123,10 +128,16 @@ final class MeetingRecordingCoordinator: ObservableObject {
     }
 
     private func shouldRecord(_ meeting: MeetingEvent) -> Bool {
-        config.isEnabled
-            && config.hasAcceptedDisclaimer
-            && meeting.url != nil
-            && !meeting.isCancelled
+        guard config.isEnabled,
+              config.hasAcceptedDisclaimer,
+              meeting.url != nil,
+              !meeting.isCancelled else { return false }
+        // RSVP gate: don't record a meeting the user declined / didn't answer.
+        if responseSuppressed?(meeting) ?? false {
+            diagnosticLog?.info(.recording, "Not recording \(meeting.title) — RSVP \(meeting.myResponse.rawValue) with skip settings on")
+            return false
+        }
+        return true
     }
 
     private func beginRecording(_ meeting: MeetingEvent) async {

@@ -98,7 +98,7 @@ final class GraphCalendarProvider: CalendarProvider {
         let startStr = formatter.string(from: now)
         let endStr = formatter.string(from: endDate)
 
-        let urlString = "https://graph.microsoft.com/v1.0/me/calendarview?startdatetime=\(startStr)&enddatetime=\(endStr)&$select=id,subject,start,end,location,isAllDay,organizer,body,attendees,onlineMeeting,isOnlineMeeting,isCancelled&$orderby=start/dateTime"
+        let urlString = "https://graph.microsoft.com/v1.0/me/calendarview?startdatetime=\(startStr)&enddatetime=\(endStr)&$select=id,subject,start,end,location,isAllDay,organizer,body,attendees,onlineMeeting,isOnlineMeeting,isCancelled,responseStatus&$orderby=start/dateTime"
 
         guard let url = URL(string: urlString) else {
             throw CalendarProviderError.unknown(underlying: URLError(.badURL))
@@ -148,6 +148,8 @@ final class GraphCalendarProvider: CalendarProvider {
                 )
                 let title = event.subject ?? "Untitled Meeting"
                 let cancelled = (event.isCancelled ?? false) || CancellationTitlePrefix.matches(title)
+                let myResponse = Self.mapResponse(event.responseStatus?.response)
+                let counts = Self.responseCounts(from: event.attendees)
                 return MeetingEvent(
                     id: event.id,
                     title: title,
@@ -161,7 +163,9 @@ final class GraphCalendarProvider: CalendarProvider {
                     attendeeNames: Array(attendeeNames.prefix(10)),
                     attendeeCount: attendeeNames.count,
                     organizerName: event.organizer?.emailAddress?.name,
-                    isCancelled: cancelled
+                    isCancelled: cancelled,
+                    myResponse: myResponse,
+                    responseCounts: counts
                 )
             }
             .sorted { $0.startDate < $1.startDate }
@@ -305,6 +309,34 @@ final class GraphCalendarProvider: CalendarProvider {
         return content
     }
 
+    /// Map a Graph `responseStatus.response` string to our unified enum.
+    fileprivate static func mapResponse(_ response: String?) -> ResponseStatus {
+        switch response?.lowercased() {
+        case "accepted":            return .accepted
+        case "declined":            return .declined
+        case "tentativelyaccepted": return .tentative
+        case "notresponded":        return .noResponse
+        case "organizer":           return .organizer
+        default:                    return .unknown   // "none" or absent
+        }
+    }
+
+    /// Tally attendee responses for the details-panel summary; nil when no attendees.
+    fileprivate static func responseCounts(from attendees: [GraphAttendee]?) -> ResponseCounts? {
+        guard let attendees, !attendees.isEmpty else { return nil }
+        var c = ResponseCounts()
+        for a in attendees {
+            switch mapResponse(a.status?.response) {
+            case .accepted:   c.accepted += 1
+            case .declined:   c.declined += 1
+            case .tentative:  c.tentative += 1
+            case .noResponse: c.noResponse += 1
+            default:          break
+            }
+        }
+        return c
+    }
+
     private func graphColorToHex(_ color: String?) -> String {
         let colorMap: [String: String] = [
             "auto": "#007AFF", "lightBlue": "#5AC8FA", "lightGreen": "#34C759",
@@ -341,6 +373,7 @@ struct GraphEvent: Codable {
     let isOnlineMeeting: Bool?
     let organizer: GraphRecipient?
     let isCancelled: Bool?
+    let responseStatus: GraphResponseStatus?
 }
 
 struct GraphBody: Codable {
@@ -351,6 +384,15 @@ struct GraphBody: Codable {
 struct GraphAttendee: Codable {
     let emailAddress: GraphEmailAddress?
     let type: String?
+    let status: GraphResponseStatus?
+}
+
+/// Graph `responseStatus` — `response` is one of: none, organizer, tentativelyAccepted,
+/// accepted, declined, notResponded. Used both for the event (my response) and per
+/// attendee (their response).
+struct GraphResponseStatus: Codable {
+    let response: String?
+    let time: String?
 }
 
 struct GraphRecipient: Codable {
