@@ -1,4 +1,49 @@
+import AppKit
 import SwiftUI
+
+/// Brings the Settings window to the front and activates the app. `SettingsLink`
+/// reliably *opens* the Settings scene, but on an `LSUIElement` (menu-bar) app it
+/// opens behind whatever you were using because the app isn't activated. This
+/// background accessor fixes that — on first appear, and again whenever the window
+/// becomes visible (the re-open-while-buried case) via the occlusion notification,
+/// without re-fronting on every SwiftUI state update.
+private struct SettingsWindowActivator: NSViewRepresentable {
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            guard let window = view.window else { return }
+            context.coordinator.observe(window)
+            Self.bringToFront(window)
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
+
+    static func bringToFront(_ window: NSWindow) {
+        guard !window.isKeyWindow else { return }
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
+    }
+
+    final class Coordinator {
+        private var observer: NSObjectProtocol?
+        func observe(_ window: NSWindow) {
+            guard observer == nil else { return }
+            observer = NotificationCenter.default.addObserver(
+                forName: NSWindow.didChangeOcclusionStateNotification,
+                object: window, queue: .main
+            ) { [weak window] _ in
+                guard let window, window.occlusionState.contains(.visible) else { return }
+                SettingsWindowActivator.bringToFront(window)
+            }
+        }
+        deinit { if let observer { NotificationCenter.default.removeObserver(observer) } }
+    }
+}
 
 /// Settings window for configuring calendar source, countdown, and audio.
 struct SettingsView: View {
@@ -115,6 +160,7 @@ struct SettingsView: View {
         }
         .frame(minWidth: 760, idealWidth: 820, minHeight: 540, idealHeight: 600)
         .onAppear { loadSettings() }
+        .background(SettingsWindowActivator())
     }
 
     // MARK: - Calendar Tab
