@@ -405,6 +405,31 @@ struct MenuBarView: View {
             .id
     }
 
+    /// Whether to offer the RSVP submenu: the active provider can write responses
+    /// (Graph, write-scoped) AND this is a real invitation (you're a participant,
+    /// not the organizer; status is a respondable one).
+    private func isRSVPable(_ meeting: MeetingEvent) -> Bool {
+        guard calendarManager.supportsRSVPWrite, !meeting.isCancelled else { return false }
+        switch meeting.myResponse {
+        case .accepted, .declined, .tentative, .noResponse: return true
+        case .organizer, .unknown: return false
+        }
+    }
+
+    /// One Accept/Tentative/Decline submenu item, checkmarked when it's the current
+    /// response. Tapping it writes the RSVP via Graph and refreshes.
+    private func rsvpButton(_ meeting: MeetingEvent, _ status: ResponseStatus, _ label: String) -> some View {
+        Button {
+            Task { try? await calendarManager.respond(to: meeting.id, status: status) }
+        } label: {
+            if meeting.myResponse == status {
+                Label(label, systemImage: "checkmark")
+            } else {
+                Text(label)
+            }
+        }
+    }
+
     /// "in 1h 15m" / "in 45m" / "in 2h" — relative time until a meeting starts.
     private func relativeStart(_ meeting: MeetingEvent) -> String {
         let secs = Int(meeting.startDate.timeIntervalSinceNow)
@@ -433,17 +458,21 @@ struct MenuBarView: View {
             .font(.caption)
             .foregroundColor(isNext ? highlight : .clear)
 
+        // Past meetings stay de-emphasized; everything else gets full-contrast time
+        // (the old always-.secondary washed out badly in light mode).
         let time = Text(meeting.formattedStartTime)
-            .font(.system(.caption, design: .monospaced))
-            .foregroundColor(isNext ? highlight : (isPast ? .secondary : .secondary))
+            .font(.system(.caption, design: .monospaced).weight(.medium))
+            .foregroundColor(isNext ? highlight : (isPast ? .secondary : .primary))
 
         var title = Text(meeting.title).font(.body)
         if meeting.isCancelled {
             title = title.strikethrough().foregroundColor(.secondary)
         } else if isNext {
-            title = title.fontWeight(.semibold)
+            title = title.fontWeight(.semibold).foregroundColor(.primary)
         } else if isPast {
             title = title.foregroundColor(.secondary)
+        } else {
+            title = title.foregroundColor(.primary)
         }
 
         // Trailing status glyph. Priority: cancelled → recording → live now → has link.
@@ -531,7 +560,18 @@ struct MenuBarView: View {
                     .font(.system(.caption, weight: .semibold))
                     .foregroundColor(.secondary)
                 ForEach(displayedTodaysMeetings.prefix(8)) { meeting in
-                    meetingRowText(for: meeting)
+                    if isRSVPable(meeting) {
+                        // Invitation on a write-capable account → submenu to respond.
+                        Menu {
+                            rsvpButton(meeting, .accepted, "Accept")
+                            rsvpButton(meeting, .tentative, "Tentative")
+                            rsvpButton(meeting, .declined, "Decline")
+                        } label: {
+                            meetingRowText(for: meeting)
+                        }
+                    } else {
+                        meetingRowText(for: meeting)
+                    }
                 }
                 if displayedTodaysMeetings.count > 8 {
                     Text("+ \(displayedTodaysMeetings.count - 8) more")

@@ -218,6 +218,21 @@ struct SettingsView: View {
                 }
             }
 
+            // Write access (RSVP) needs the Calendars.ReadWrite scope. A token from
+            // before v2.7.0 is read-only until the user re-authorizes once.
+            if calendarManager.graphCalendarProvider.isAuthorized
+                && !calendarManager.graphCalendarProvider.supportsResponding {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("Re-authorize to accept/decline invites from MeetingIntro", systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                        .font(.caption)
+                    Button(isSigningIn ? "Waiting for browser…" : "Re-authorize (write access)") {
+                        Task { await signInGraph() }
+                    }
+                    .disabled(isSigningIn)
+                }
+            }
+
             if let message = graphAuthMessage {
                 Text(message)
                     .font(.caption)

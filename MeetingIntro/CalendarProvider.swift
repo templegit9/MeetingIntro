@@ -144,6 +144,14 @@ protocol CalendarProvider {
 
     /// Returns the list of available calendar names (for filtering in settings).
     func availableCalendars() async throws -> [CalendarInfo]
+
+    /// Whether this provider can write an RSVP response. EventKit can't (Apple
+    /// blocks programmatic invitation responses); Graph can, once write-scoped.
+    var supportsResponding: Bool { get }
+
+    /// Respond to an invitation (accept / decline / tentativelyAccept). Throws
+    /// `.notSupported` on backends that can't write the response.
+    func respond(to eventID: String, status: ResponseStatus) async throws
 }
 
 // MARK: - CalendarInfo
@@ -175,6 +183,7 @@ enum CalendarProviderError: LocalizedError {
     case notAuthenticated
     case networkError(underlying: Error)
     case noCalendarsAvailable
+    case notSupported
     case unknown(underlying: Error)
 
     var errorDescription: String? {
@@ -187,6 +196,8 @@ enum CalendarProviderError: LocalizedError {
             return "Network error: \(error.localizedDescription)"
         case .noCalendarsAvailable:
             return "No calendars found. Please check your calendar account settings."
+        case .notSupported:
+            return "Responding to invitations isn't supported for this calendar. Apple's EventKit can't RSVP — use a Microsoft 365 (Graph) account, or respond in Calendar."
         case .unknown(let error):
             return "An unexpected error occurred: \(error.localizedDescription)"
         }

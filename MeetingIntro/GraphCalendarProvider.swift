@@ -15,6 +15,13 @@ final class GraphCalendarProvider: CalendarProvider {
 
     private static let accessTokenAccount = "graphAccessToken"
     private static let tokenExpirationAccount = "graphTokenExpiration"
+    private static let refreshTokenAccount = "graphRefreshToken"
+    private static let grantedScopeAccount = "graphGrantedScope"
+
+    /// OAuth scope. `Calendars.ReadWrite` (v2.7.0, was `.Read`) so we can RSVP to
+    /// invitations; `offline_access` yields a refresh token. Used by both the
+    /// device-code request and the refresh request so they stay consistent.
+    private static let oauthScope = "https://graph.microsoft.com/Calendars.ReadWrite offline_access"
 
     /// Cached OAuth2 access token. Backed by Keychain; on first read after upgrading
     /// from a UserDefaults-storing build, the legacy value is migrated and cleared.
@@ -60,13 +67,39 @@ final class GraphCalendarProvider: CalendarProvider {
         }
     }
 
+    /// Long-lived refresh token (from `offline_access`). Lets us mint new access
+    /// tokens without making the user sign in again — previously discarded, which
+    /// is why Graph silently died ~1h after login.
+    private var refreshToken: String? {
+        get { KeychainStore.get(Self.refreshTokenAccount) }
+        set {
+            if let value = newValue { KeychainStore.set(value, for: Self.refreshTokenAccount) }
+            else { KeychainStore.delete(Self.refreshTokenAccount) }
+        }
+    }
+
+    /// The scope string the current tokens were granted under. Lets us detect that a
+    /// token predating the ReadWrite upgrade can't RSVP yet (→ prompt to re-authorize).
+    private var grantedScope: String {
+        get { KeychainStore.get(Self.grantedScopeAccount) ?? "" }
+        set { KeychainStore.set(newValue, for: Self.grantedScopeAccount) }
+    }
+
     /// Set of calendar IDs the user has chosen to monitor (empty = all).
     var selectedCalendarIDs: Set<String> = []
 
     var isAuthorized: Bool {
-        guard let token = accessToken, !token.isEmpty,
-              let expiration = tokenExpiration else { return false }
-        return expiration > Date()
+        // A live access token, or a refresh token we can mint one from.
+        if let token = accessToken, !token.isEmpty, let expiration = tokenExpiration, expiration > Date() {
+            return true
+        }
+        return (refreshToken?.isEmpty == false)
+    }
+
+    /// Whether we can write RSVP responses — authorized AND the granted scope
+    /// includes write access. Read-only legacy tokens report false until re-auth.
+    var supportsResponding: Bool {
+        isAuthorized && grantedScope.lowercased().contains("calendars.readwrite")
     }
 
     // MARK: - CalendarProvider
@@ -81,13 +114,48 @@ final class GraphCalendarProvider: CalendarProvider {
         let token = try await performDeviceCodeAuth()
         self.accessToken = token.accessToken
         self.tokenExpiration = token.expiration
+        if let rt = token.refreshToken { self.refreshToken = rt }
+        self.grantedScope = token.scope ?? Self.oauthScope
         return true
     }
 
-    func fetchUpcomingEvents(within interval: TimeInterval) async throws -> [MeetingEvent] {
-        guard isAuthorized else {
+    /// Returns a usable access token, transparently refreshing via the refresh token
+    /// when the cached one has expired. Throws `.notAuthenticated` only when there's
+    /// no way to obtain a valid token (no refresh token, or refresh failed).
+    private func validToken() async throws -> String {
+        if let token = accessToken, !token.isEmpty, let exp = tokenExpiration, exp > Date().addingTimeInterval(60) {
+            return token
+        }
+        guard let refresh = refreshToken, !refresh.isEmpty else {
             throw CalendarProviderError.notAuthenticated
         }
+        return try await refreshAccessToken(using: refresh)
+    }
+
+    /// Exchange the refresh token for a new access token (and rotated refresh token).
+    private func refreshAccessToken(using refresh: String) async throws -> String {
+        let tokenUrl = URL(string: "https://login.microsoftonline.com/common/oauth2/v2.0/token")!
+        var request = URLRequest(url: tokenUrl)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.httpBody = "grant_type=refresh_token&client_id=\(clientId)&refresh_token=\(refresh)&scope=\(Self.oauthScope)"
+            .data(using: .utf8)
+
+        let (data, _) = try await URLSession.shared.data(for: request)
+        guard let tokenResponse = try? JSONDecoder().decode(TokenResponse.self, from: data) else {
+            // Refresh token rejected/expired — force a fresh sign-in.
+            signOut()
+            throw CalendarProviderError.notAuthenticated
+        }
+        self.accessToken = tokenResponse.accessToken
+        self.tokenExpiration = Date().addingTimeInterval(TimeInterval(tokenResponse.expiresIn))
+        if let rt = tokenResponse.refreshToken { self.refreshToken = rt }
+        if let scope = tokenResponse.scope { self.grantedScope = scope }
+        return tokenResponse.accessToken
+    }
+
+    func fetchUpcomingEvents(within interval: TimeInterval) async throws -> [MeetingEvent] {
+        let token = try await validToken()
 
         let now = Date()
         let endDate = now.addingTimeInterval(interval)
@@ -105,7 +173,7 @@ final class GraphCalendarProvider: CalendarProvider {
         }
 
         var request = URLRequest(url: url)
-        request.setValue("Bearer \(accessToken ?? "")", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -172,13 +240,11 @@ final class GraphCalendarProvider: CalendarProvider {
     }
 
     func availableCalendars() async throws -> [CalendarInfo] {
-        guard isAuthorized else {
-            throw CalendarProviderError.notAuthenticated
-        }
+        let token = try await validToken()
 
         let url = URL(string: "https://graph.microsoft.com/v1.0/me/calendars?$select=id,name,color")!
         var request = URLRequest(url: url)
-        request.setValue("Bearer \(accessToken ?? "")", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
         let (data, _) = try await URLSession.shared.data(for: request)
         let decoded = try JSONDecoder().decode(GraphCalendarsResponse.self, from: data)
@@ -198,6 +264,50 @@ final class GraphCalendarProvider: CalendarProvider {
     func signOut() {
         accessToken = nil
         tokenExpiration = nil
+        refreshToken = nil
+        grantedScope = ""
+    }
+
+    // MARK: - RSVP write
+
+    /// Respond to an invitation. Graph endpoints are POST /me/events/{id}/{accept|
+    /// decline|tentativelyAccept}; they return 202 Accepted (not 200). `sendResponse`
+    /// asks Graph to email the organizer, matching Calendar.app behavior.
+    func respond(to eventID: String, status: ResponseStatus) async throws {
+        let action: String
+        switch status {
+        case .accepted:  action = "accept"
+        case .declined:  action = "decline"
+        case .tentative: action = "tentativelyAccept"
+        default: throw CalendarProviderError.notSupported   // organizer/unknown/noResponse aren't responses you can send
+        }
+        guard supportsResponding else { throw CalendarProviderError.notSupported }
+
+        let token = try await validToken()
+        let url = URL(string: "https://graph.microsoft.com/v1.0/me/events/\(eventID)/\(action)")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["sendResponse": true])
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw CalendarProviderError.networkError(underlying: URLError(.badServerResponse))
+        }
+        switch http.statusCode {
+        case 200, 202, 204:
+            return
+        case 401:
+            self.accessToken = nil
+            throw CalendarProviderError.notAuthenticated
+        case 403:
+            // Token lacks write scope — force re-auth for write.
+            grantedScope = ""
+            throw CalendarProviderError.notSupported
+        default:
+            throw CalendarProviderError.networkError(underlying: URLError(.init(rawValue: http.statusCode)))
+        }
     }
 
     // MARK: - Device Code Flow
@@ -205,6 +315,8 @@ final class GraphCalendarProvider: CalendarProvider {
     private struct TokenResult {
         let accessToken: String
         let expiration: Date
+        let refreshToken: String?
+        let scope: String?
     }
 
     private func performDeviceCodeAuth() async throws -> TokenResult {
@@ -214,7 +326,7 @@ final class GraphCalendarProvider: CalendarProvider {
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
-        let body = "client_id=\(clientId)&scope=https://graph.microsoft.com/Calendars.Read offline_access"
+        let body = "client_id=\(clientId)&scope=\(Self.oauthScope)"
         request.httpBody = body.data(using: .utf8)
 
         let (data, _) = try await URLSession.shared.data(for: request)
@@ -262,7 +374,9 @@ final class GraphCalendarProvider: CalendarProvider {
             if let tokenResponse = try? JSONDecoder().decode(TokenResponse.self, from: data) {
                 return TokenResult(
                     accessToken: tokenResponse.accessToken,
-                    expiration: Date().addingTimeInterval(TimeInterval(tokenResponse.expiresIn))
+                    expiration: Date().addingTimeInterval(TimeInterval(tokenResponse.expiresIn)),
+                    refreshToken: tokenResponse.refreshToken,
+                    scope: tokenResponse.scope
                 )
             }
 
@@ -448,10 +562,14 @@ struct DeviceCodeResponse: Codable {
 struct TokenResponse: Codable {
     let accessToken: String
     let expiresIn: Int
+    let refreshToken: String?
+    let scope: String?
 
     enum CodingKeys: String, CodingKey {
         case accessToken = "access_token"
         case expiresIn = "expires_in"
+        case refreshToken = "refresh_token"
+        case scope
     }
 }
 

@@ -417,4 +417,21 @@ final class CalendarManager: ObservableObject {
     func eventKitCalendars() async -> [CalendarInfo] {
         (try? await eventKitProvider.availableCalendars()) ?? []
     }
+
+    // MARK: - RSVP
+
+    /// Whether the active provider can write an RSVP response (Graph, write-scoped).
+    var supportsRSVPWrite: Bool { activeProvider.supportsResponding }
+
+    /// Respond to an invitation, then refresh so the new status shows immediately.
+    func respond(to eventID: String, status: ResponseStatus) async throws {
+        do {
+            try await activeProvider.respond(to: eventID, status: status)
+            diagnosticLog?.info(.calendar, "RSVP \(status.rawValue) sent for event \(eventID)")
+        } catch {
+            diagnosticLog?.error(.calendar, "RSVP \(status.rawValue) failed: \(error.localizedDescription)")
+            throw error
+        }
+        await refreshEvents()
+    }
 }

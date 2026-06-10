@@ -111,6 +111,14 @@ final class EventKitProvider: CalendarProvider {
         }
     }
 
+    /// EventKit provides no public API to respond to invitations — Apple routes that
+    /// through Calendar.app only (same family as the can't-add-attendees limit).
+    var supportsResponding: Bool { false }
+
+    func respond(to eventID: String, status: ResponseStatus) async throws {
+        throw CalendarProviderError.notSupported
+    }
+
     func availableCalendars() async throws -> [CalendarInfo] {
         if !isAuthorized {
             _ = try await requestAccess()
