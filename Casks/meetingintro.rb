@@ -7,7 +7,7 @@ cask "meetingintro" do
   desc "Menu bar app that plays a countdown overlay before calendar meetings"
   homepage "https://github.com/templegit9/MeetingIntro"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "MeetingIntro.app"
 
