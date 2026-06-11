@@ -183,6 +183,25 @@ struct MeetingIntroApp: App {
 final class AppLifecycleManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
+    // Cancellation-overlay hold bookkeeping (smart-context hold on the notice).
+    /// When the smart-context hold first engaged for the current pending set (nil = not held).
+    private var cancellationHoldStartedAt: Date?
+    /// Last logged hold state, so we log "held"/"showing" only on transition, not every tick.
+    private var lastLoggedCancellationHold: Bool?
+    /// When the current continuous in-call episode began (nil = not in a call).
+    private var inCallSince: Date?
+    /// Whether we've already emitted the "stuck suppression" warn for the current episode.
+    private var loggedStuckSuppressionWarn = false
+
+    /// After this long, surface a held cancellation notice anyway — an acknowledgment
+    /// surface must never hide indefinitely (overnight cancellations were stuck ~11.5h
+    /// in the v2.7.0 regression). Date() comparison spans system sleep, so a notice
+    /// held before lid-close is past the bound by lid-open.
+    private static let cancellationHoldMaxInterval: TimeInterval = 30 * 60
+    /// Emit a WARN once if in-call suppression persists past this — greppable signal
+    /// that all-channel muting has been latched abnormally long.
+    private static let stuckSuppressionWarnInterval: TimeInterval = 90 * 60
+
     func observe(
         calendarManager: CalendarManager,
         overlayController: OverlayWindowController,
@@ -289,24 +308,63 @@ final class AppLifecycleManager: ObservableObject {
         // screen — it reappears automatically when the hold clears.
         Publishers.CombineLatest(calendarManager.$pendingCancellations, contextMonitor.$snapshot)
             .receive(on: DispatchQueue.main)
-            .sink { [weak calendarManager] pending, context in
-                guard let calendarManager else { return }
+            .sink { [weak self, weak calendarManager] pending, context in
+                guard let self, let calendarManager else { return }
+
+                // Track continuous in-call episodes and warn if all-channel suppression
+                // latches abnormally long (additive triage trail — naming the signal).
+                self.trackInCallSuppression(context: context, diagnosticLog: diagnosticLog)
+
                 guard UserDefaults.standard.bool(forKey: "cancellationShowOverlay") else {
+                    self.cancellationHoldStartedAt = nil
+                    self.lastLoggedCancellationHold = nil
                     overlayController.dismissCancellationNotice()
                     return
                 }
-                let held = (smartConfig.suppressWhenInCall && context.isInActiveCall)
-                    || context.isScreenCaptured
+
                 if pending.isEmpty {
+                    self.cancellationHoldStartedAt = nil
+                    self.lastLoggedCancellationHold = nil
                     overlayController.dismissCancellationNotice()
-                } else if held {
-                    diagnosticLog.info(.overlay, "Cancellation overlay held (\(context.isInActiveCall ? "in call" : "screen sharing")) — \(pending.count) pending")
-                    overlayController.dismissCancellationNotice()
-                } else {
-                    diagnosticLog.info(.overlay, "Showing cancellation overlay — \(pending.count) pending")
-                    overlayController.showCancellationCenter(pending) { id in
-                        calendarManager.dismissCancellation(id)
+                    return
+                }
+
+                let smartHeld = (smartConfig.suppressWhenInCall && context.isInActiveCall)
+                    || context.isScreenCaptured
+
+                // Safety valve: an acknowledgment surface must never hide indefinitely.
+                // Once the hold has persisted past the bound, surface it anyway.
+                if smartHeld {
+                    let startedAt = self.cancellationHoldStartedAt ?? Date()
+                    self.cancellationHoldStartedAt = startedAt
+                    let elapsed = Date().timeIntervalSince(startedAt)
+                    if elapsed >= Self.cancellationHoldMaxInterval {
+                        if self.lastLoggedCancellationHold != false {
+                            diagnosticLog.warn(.overlay, "Cancellation overlay hold exceeded \(Int(Self.cancellationHoldMaxInterval / 60))m — surfacing anyway (\(pending.count) pending)")
+                            self.lastLoggedCancellationHold = false
+                        }
+                        overlayController.showCancellationCenter(pending) { id in
+                            calendarManager.dismissCancellation(id)
+                        }
+                        return
                     }
+                    // Still within the hold window — keep hidden, log only on transition.
+                    if self.lastLoggedCancellationHold != true {
+                        diagnosticLog.info(.overlay, "Cancellation overlay held (\(context.isInActiveCall ? "in call" : "screen sharing")) — \(pending.count) pending")
+                        self.lastLoggedCancellationHold = true
+                    }
+                    overlayController.dismissCancellationNotice()
+                    return
+                }
+
+                // Not held — show, logging only on transition out of a hold.
+                self.cancellationHoldStartedAt = nil
+                if self.lastLoggedCancellationHold != false {
+                    diagnosticLog.info(.overlay, "Showing cancellation overlay — \(pending.count) pending")
+                    self.lastLoggedCancellationHold = false
+                }
+                overlayController.showCancellationCenter(pending) { id in
+                    calendarManager.dismissCancellation(id)
                 }
             }
             .store(in: &cancellables)
@@ -354,6 +412,26 @@ final class AppLifecycleManager: ObservableObject {
                 }
             }
             .store(in: &cancellables)
+    }
+
+    /// Tracks how long the system has continuously asserted "in a call" and emits a single
+    /// WARN naming the asserting signal once the episode passes the bound. The v2.7.0 stuck
+    /// suppression produced an entire broken day with zero WARN/ERROR — this makes an
+    /// abnormally long all-channel mute greppable.
+    private func trackInCallSuppression(context: MeetingContextSnapshot, diagnosticLog: DiagnosticLog) {
+        guard context.isInActiveCall else {
+            inCallSince = nil
+            loggedStuckSuppressionWarn = false
+            return
+        }
+        let since = inCallSince ?? Date()
+        inCallSince = since
+        let elapsed = Date().timeIntervalSince(since)
+        if elapsed >= Self.stuckSuppressionWarnInterval && !loggedStuckSuppressionWarn {
+            let signal = context.isMicrophoneInUseElsewhere ? "mic in use" : "conference app"
+            diagnosticLog.warn(.reminder, "In-call suppression has persisted \(Int(elapsed / 60))m (signal: \(signal)) — reminders muted; verify this is a real call")
+            loggedStuckSuppressionWarn = true
+        }
     }
 }
 

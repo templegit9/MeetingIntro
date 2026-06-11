@@ -805,9 +805,9 @@ struct SettingsView: View {
             Section("Live Signals") {
                 signalRow(name: "In a call",
                           isOn: contextMonitor.snapshot.isInActiveCall,
-                          detail: contextMonitor.snapshot.isConferenceAppActive
-                            ? "video-conf app active"
-                            : (contextMonitor.snapshot.isMicrophoneInUseElsewhere ? "mic in use" : "no signal"))
+                          detail: contextMonitor.snapshot.isMicrophoneInUseElsewhere
+                            ? "mic in use"
+                            : (contextMonitor.snapshot.isConferenceAppActive ? "conf app open (mic idle)" : "no signal"))
                 signalRow(name: "Focus on",
                           isOn: contextMonitor.snapshot.isFocusActive,
                           detail: focusAuthDetail)

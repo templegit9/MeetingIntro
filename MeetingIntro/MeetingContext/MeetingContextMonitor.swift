@@ -10,11 +10,15 @@ struct MeetingContextSnapshot: Equatable {
     let isFocusActive: Bool
     let isFullscreenAppActive: Bool
 
-    /// A user is "in an active call" when either a known video-conference app is frontmost
-    /// or some other process has the microphone running. Either signal alone catches roughly
-    /// half of real-world calls (Zoom native vs. Chrome-based Meet, for example); together
-    /// they catch nearly all.
-    var isInActiveCall: Bool { isConferenceAppActive || isMicrophoneInUseElsewhere }
+    /// A user is "in an active call" only when some process has the microphone actually
+    /// running. A conference app merely being open/frontmost is **not** sufficient — an
+    /// idle Zoom/Teams window left open all day must not latch us into "in call" and
+    /// silently mute every reminder + hold the cancellation notice indefinitely (the
+    /// v2.7.0 regression: 11.5h of stuck suppression). Real calls keep the mic device
+    /// "running" via `kAudioDevicePropertyDeviceIsRunningSomewhere` even when muted, so
+    /// genuine calls still detect; `isConferenceAppActive` survives as a Live-Signals
+    /// detail but no longer asserts in-call on its own.
+    var isInActiveCall: Bool { isMicrophoneInUseElsewhere }
 }
 
 /// Aggregates the four context detectors into a single observable snapshot.

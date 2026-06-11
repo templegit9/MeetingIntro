@@ -25,6 +25,7 @@
 		52E3A860EC8A1BA2804CBF85 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5673A02C0FAC799726EA0BCF /* Assets.xcassets */; };
 		58CA9A36991C9BE9D8D4541A /* TemplateEditSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 675F9C5FC04AEF4EF60B3806 /* TemplateEditSheet.swift */; };
 		6776C67C91580A90FAF868AB /* MeetingNotesConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7C7F0E8190A10BB8431B931 /* MeetingNotesConfig.swift */; };
+		67B654CACB98A5BBE32C5FC4 /* AppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A779B106BB03584C7E64259 /* AppUpdater.swift */; };
 		68ED75073588DF9609623340 /* WhisperKitEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72275B905671FFA1F87F986C /* WhisperKitEngine.swift */; };
 		6D165CF43230BB289017217D /* CalendarMirrorEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CAC212711667C92D4767C0F /* CalendarMirrorEngine.swift */; };
 		6D89F0F14CE5474AF8968E50 /* RecordingConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A3DCA2311169ED15B355E39 /* RecordingConfig.swift */; };
@@ -88,6 +89,7 @@
 		675F9C5FC04AEF4EF60B3806 /* TemplateEditSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateEditSheet.swift; sourceTree = "<group>"; };
 		67C9C4B04514972B0139B4A6 /* MeetingRecordingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingRecordingCoordinator.swift; sourceTree = "<group>"; };
 		68E04A0A0326198310A91568 /* MeetingContextMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingContextMonitor.swift; sourceTree = "<group>"; };
+		6A779B106BB03584C7E64259 /* AppUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdater.swift; sourceTree = "<group>"; };
 		6B298FA1587E1C1B7A432A3C /* HandoffStateSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandoffStateSnapshot.swift; sourceTree = "<group>"; };
 		6B8186D8004986233B28EE7F /* FocusModeDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusModeDetector.swift; sourceTree = "<group>"; };
 		711DFD4598AE2E83744CCFBD /* GraphCalendarProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphCalendarProvider.swift; sourceTree = "<group>"; };
@@ -226,6 +228,7 @@
 		E23B221A094EBFA88F29CB36 /* MeetingIntro */ = {
 			isa = PBXGroup;
 			children = (
+				6A779B106BB03584C7E64259 /* AppUpdater.swift */,
 				5673A02C0FAC799726EA0BCF /* Assets.xcassets */,
 				79AB0D1338EB2A471C1C13FD /* AudioManager.swift */,
 				8A99A9D2EE9624DA582CD8D5 /* CalendarManager.swift */,
@@ -347,6 +350,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				67B654CACB98A5BBE32C5FC4 /* AppUpdater.swift in Sources */,
 				C7D67F889CA6E39386F2B34D /* AudioManager.swift in Sources */,
 				CC7683CA9E1E90FD5AC1A39F /* AudioRouter.swift in Sources */,
 				3E9D73F063725D3F92C907AC /* AudioTrackExporter.swift in Sources */,
@@ -481,7 +485,7 @@
 				INFOPLIST_FILE = MeetingIntro/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.6.0;
+				MARKETING_VERSION = 2.7.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.oluyinka.MeetingIntro;
 				SDKROOT = macosx;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -560,7 +564,7 @@
 				INFOPLIST_FILE = MeetingIntro/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.6.0;
+				MARKETING_VERSION = 2.7.2;
 				OTHER_CODE_SIGN_FLAGS = "--timestamp --options runtime";
 				PRODUCT_BUNDLE_IDENTIFIER = com.oluyinka.MeetingIntro;
 				SDKROOT = macosx;
