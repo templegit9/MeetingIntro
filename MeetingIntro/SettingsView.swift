@@ -697,7 +697,17 @@ struct SettingsView: View {
                     Text("Skip auto-join if started more than \(countdownConfig.autoJoinGraceMinutes) min ago")
                 }
                 .disabled(!countdownConfig.autoJoinEnabled || !countdownConfig.joinButtonEnabled)
-                Text("When armed from the overlay, MeetingIntro opens the meeting's link automatically at its start time — no overlay needed. If your Mac was asleep and the meeting started more than the grace window ago, the join is skipped (you get a \"missed\" notification instead). Cancel a pending auto-join from the menu bar. Requires the Join button (above).")
+                Text("When armed from the overlay, the meeting shows a live countdown in the menu bar (click it to cancel) and its link opens automatically at start time. If your Mac was asleep and the meeting started more than the grace window ago, the join is skipped (you get a \"missed\" notification instead). Requires the Join button (above).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Toggle("Show a heads-up overlay before an armed meeting starts", isOn: $countdownConfig.autoJoinImminentOverlayEnabled)
+                    .disabled(!countdownConfig.autoJoinEnabled || !countdownConfig.joinButtonEnabled)
+                Stepper(value: $countdownConfig.autoJoinOverlayLeadSeconds, in: 15...300, step: 15) {
+                    Text("Heads-up appears \(countdownConfig.autoJoinOverlayLeadSeconds)s before start")
+                }
+                .disabled(!countdownConfig.autoJoinImminentOverlayEnabled || !countdownConfig.autoJoinEnabled || !countdownConfig.joinButtonEnabled)
+                Text("A small, non-blocking heads-up (with Join now / Cancel) appears in the corner shortly before an armed meeting opens.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

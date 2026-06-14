@@ -439,6 +439,15 @@ final class CalendarManager: ObservableObject {
         onAutoJoinArmed?(meeting)
     }
 
+    /// "Join now" from the heads-up overlay: open the link immediately and disarm.
+    func joinNowAndDisarm(_ id: String) {
+        if let meeting = upcomingMeetings.first(where: { $0.id == id }), let url = meeting.url {
+            diagnosticLog?.info(.overlay, "Auto-join: Join now tapped — \(meeting.title)")
+            NSWorkspace.shared.open(url)
+        }
+        disarmAutoJoin(id)
+    }
+
     /// Disarm a meeting (user clicked the menu bar disarm row, or it became moot).
     func disarmAutoJoin(_ id: String) {
         guard armedAutoJoinIDs.contains(id) else { return }

@@ -131,14 +131,11 @@ struct MeetingIntroApp: App {
             // When recording, swap the menu bar glyph to a red record symbol so the
             // user has an at-a-glance signal from anywhere on screen — not just the
             // OS-level dot, which isn't MeetingIntro-specific.
+            // The armed-meeting countdown lives in its OWN NSStatusItem (managed by
+            // MenuBarCountdownModel) so it can be clicked to cancel — this label is
+            // just the app icon (red while recording).
             if recordingController.isRecording {
                 Label("Recording", systemImage: "record.circle.fill")
-            } else if let countdown = menuBarCountdown.text {
-                // A meeting is armed for auto-join — show its live countdown right at
-                // the menu bar icon; it opens the meeting automatically at 0:00.
-                // Text (not Label) so the time string actually renders in the status
-                // bar — a Label there shows icon-only. Inline SF Symbol keeps the icon.
-                Text("\(Image(systemName: "clock.badge.checkmark")) \(countdown)")
             } else {
                 Label("MeetingIntro", systemImage: "clock.badge.checkmark")
             }
@@ -236,7 +233,7 @@ final class AppLifecycleManager: ObservableObject {
     ) {
         // Wire the config manager into CalendarManager
         calendarManager.countdownConfigs = countdownConfig
-        menuBarCountdown.configure(calendarManager: calendarManager)
+        menuBarCountdown.configure(calendarManager: calendarManager, countdownConfig: countdownConfig)
         calendarManager.diagnosticLog = diagnosticLog
         notificationManager.soundManager = mixkitSounds
         notificationManager.diagnosticLog = diagnosticLog
@@ -284,6 +281,23 @@ final class AppLifecycleManager: ObservableObject {
         calendarManager.onAutoJoinArmed = { notificationManager.sendAutoJoinArmedNotification(for: $0) }
         calendarManager.onAutoJoinFired = { notificationManager.sendAutoJoinFiredNotification(for: $0) }
         calendarManager.onAutoJoinMissed = { notificationManager.sendAutoJoinMissedNotification(for: $0) }
+
+        // Gentle pre-start overlay — MenuBarCountdownModel publishes the soonest armed
+        // meeting once it's inside the lead window; show/hide the heads-up accordingly.
+        menuBarCountdown.$imminentMeeting
+            .removeDuplicates { $0?.id == $1?.id }
+            .sink { meeting in
+                if let meeting {
+                    overlayController.showAutoJoinImminent(
+                        meeting,
+                        onCancel: { calendarManager.disarmAutoJoin(meeting.id) },
+                        onJoinNow: { calendarManager.joinNowAndDisarm(meeting.id) }
+                    )
+                } else {
+                    overlayController.dismissAutoJoinImminent()
+                }
+            }
+            .store(in: &cancellables)
 
         // Start polling AFTER the hook is set, so the first poll uses the policy.
         calendarManager.startPolling()

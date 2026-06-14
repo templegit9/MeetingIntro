@@ -12,6 +12,9 @@ final class OverlayWindowController: ObservableObject {
     /// Separate slot for the cancellation notice so it never collides with an
     /// active countdown overlay — both can be on screen at once.
     private var cancellationWindow: NSPanel?
+    /// Separate slot for the auto-join heads-up (gentle pre-start overlay).
+    private var autoJoinImminentWindow: NSPanel?
+    private var autoJoinImminentID: String?
     private var calendarManager: CalendarManager?
     private var audioManager: AudioManager?
 
@@ -190,5 +193,46 @@ final class OverlayWindowController: ObservableObject {
         cancellationWindow?.close()
         cancellationWindow = nil
         currentNoticeIDs = []
+    }
+
+    // MARK: - Auto-join heads-up (gentle pre-start overlay)
+
+    /// Show (or update) the small heads-up before an armed meeting auto-joins.
+    /// Idempotent on the meeting id so the per-second driver can call it freely.
+    func showAutoJoinImminent(_ meeting: MeetingEvent, onCancel: @escaping () -> Void, onJoinNow: @escaping () -> Void) {
+        if autoJoinImminentID == meeting.id, autoJoinImminentWindow != nil { return }
+        autoJoinImminentWindow?.close()
+
+        let view = AutoJoinImminentView(meeting: meeting, onCancel: onCancel, onJoinNow: onJoinNow)
+        let hostingView = NSHostingView(rootView: view)
+        let width: CGFloat = 420, height: CGFloat = 76
+        let panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: width, height: height),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        panel.contentView = hostingView
+        panel.isFloatingPanel = true
+        panel.level = .floating
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.isOpaque = false
+        panel.backgroundColor = NSColor.black.withAlphaComponent(0.85)
+        panel.hasShadow = true
+        // Dark-designed (white text on dark) — force dark so light mode doesn't wash it out.
+        panel.appearance = NSAppearance(named: .darkAqua)
+        if let screen = NSScreen.main {
+            let frame = screen.visibleFrame
+            panel.setFrameOrigin(NSPoint(x: frame.maxX - width - 20, y: frame.maxY - height - 20))
+        }
+        panel.orderFrontRegardless()
+        autoJoinImminentWindow = panel
+        autoJoinImminentID = meeting.id
+    }
+
+    func dismissAutoJoinImminent() {
+        autoJoinImminentWindow?.close()
+        autoJoinImminentWindow = nil
+        autoJoinImminentID = nil
     }
 }

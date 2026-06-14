@@ -44,6 +44,17 @@ final class CountdownConfigManager: ObservableObject {
         didSet { UserDefaults.standard.set(autoJoinGraceMinutes, forKey: "autoJoinGraceMinutes") }
     }
 
+    /// Show a small, non-blocking heads-up overlay shortly before an armed meeting
+    /// auto-joins. Default on.
+    @Published var autoJoinImminentOverlayEnabled: Bool {
+        didSet { UserDefaults.standard.set(autoJoinImminentOverlayEnabled, forKey: "autoJoinImminentOverlayEnabled") }
+    }
+
+    /// How many seconds before start the heads-up overlay appears (clamped 15–300).
+    @Published var autoJoinOverlayLeadSeconds: Int {
+        didSet { UserDefaults.standard.set(autoJoinOverlayLeadSeconds, forKey: "autoJoinOverlayLeadSeconds") }
+    }
+
     static let availableMinutes = [1, 2, 3, 5, 10, 15]
 
     init() {
@@ -68,6 +79,8 @@ final class CountdownConfigManager: ObservableObject {
         }
         let storedGrace = UserDefaults.standard.object(forKey: "autoJoinGraceMinutes") as? Int
         self.autoJoinGraceMinutes = storedGrace ?? 2
+        self.autoJoinImminentOverlayEnabled = UserDefaults.standard.object(forKey: "autoJoinImminentOverlayEnabled") as? Bool ?? true
+        self.autoJoinOverlayLeadSeconds = UserDefaults.standard.object(forKey: "autoJoinOverlayLeadSeconds") as? Int ?? 60
     }
 
     /// Get all enabled minutes (for CalendarManager compatibility).
