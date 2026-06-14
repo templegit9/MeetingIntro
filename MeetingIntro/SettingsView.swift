@@ -680,6 +680,18 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section("Start at Time (auto-join)") {
+                Toggle("Show \"Start at Time\" button on the overlay", isOn: $countdownConfig.autoJoinEnabled)
+                    .disabled(!countdownConfig.joinButtonEnabled)
+                Stepper(value: $countdownConfig.autoJoinGraceMinutes, in: 1...30) {
+                    Text("Skip auto-join if started more than \(countdownConfig.autoJoinGraceMinutes) min ago")
+                }
+                .disabled(!countdownConfig.autoJoinEnabled || !countdownConfig.joinButtonEnabled)
+                Text("When armed from the overlay, MeetingIntro opens the meeting's link automatically at its start time — no overlay needed. If your Mac was asleep and the meeting started more than the grace window ago, the join is skipped (you get a \"missed\" notification instead). Cancel a pending auto-join from the menu bar. Requires the Join button (above).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Today's Meetings (menu bar)") {
                 ColorPicker("Next-meeting highlight color", selection: Binding(
                     get: { Color(hex: nextMeetingHighlightHex) },

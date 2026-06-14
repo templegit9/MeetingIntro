@@ -29,6 +29,21 @@ final class CountdownConfigManager: ObservableObject {
         didSet { UserDefaults.standard.set(joinButtonEnabled, forKey: "joinButtonEnabled") }
     }
 
+    /// When true (and a join URL is detected), the countdown overlay shows a
+    /// "Start at Time" button that arms an automatic join: at the meeting's start
+    /// time MeetingIntro opens the conference link for you (Issue #2).
+    @Published var autoJoinEnabled: Bool {
+        didSet { UserDefaults.standard.set(autoJoinEnabled, forKey: "autoJoinEnabled") }
+    }
+
+    /// Freshness bound (minutes) for an armed auto-join. The link is opened only if
+    /// the start time is reached within this window; past it (e.g. the Mac slept
+    /// through the start) the join is treated as missed rather than yanking you into
+    /// a meeting that began long ago. See `CalendarManager.evaluateAutoJoin`.
+    @Published var autoJoinGraceMinutes: Int {
+        didSet { UserDefaults.standard.set(autoJoinGraceMinutes, forKey: "autoJoinGraceMinutes") }
+    }
+
     static let availableMinutes = [1, 2, 3, 5, 10, 15]
 
     init() {
@@ -46,6 +61,13 @@ final class CountdownConfigManager: ObservableObject {
         } else {
             self.joinButtonEnabled = UserDefaults.standard.bool(forKey: "joinButtonEnabled")
         }
+        if UserDefaults.standard.object(forKey: "autoJoinEnabled") == nil {
+            self.autoJoinEnabled = true
+        } else {
+            self.autoJoinEnabled = UserDefaults.standard.bool(forKey: "autoJoinEnabled")
+        }
+        let storedGrace = UserDefaults.standard.object(forKey: "autoJoinGraceMinutes") as? Int
+        self.autoJoinGraceMinutes = storedGrace ?? 2
     }
 
     /// Get all enabled minutes (for CalendarManager compatibility).

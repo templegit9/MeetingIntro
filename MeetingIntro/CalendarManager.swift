@@ -151,6 +151,40 @@ final class CalendarManager: ObservableObject {
     private static let k_notifiedCancellations = "notifiedCancellationIDs"
     private static let k_dismissedCancellations = "dismissedCancellationIDs"
 
+    // MARK: - Auto-join ("Start at Time", Issue #2)
+
+    /// Meeting IDs the user armed for auto-join from the countdown overlay. Persisted
+    /// so a relaunch shortly before the meeting still honors the arm. Published so the
+    /// menu bar can show + offer to disarm them. Keyed by ID only — the live event's
+    /// `startDate`/`url` are re-read each poll, so a reschedule or link change is tracked.
+    @Published private(set) var armedAutoJoinIDs: Set<String> = []
+    /// Meeting IDs whose auto-join has already fired — de-dup so the 30s poll doesn't
+    /// re-open the link every cycle after the start time passes.
+    private var joinedAutoJoinIDs: Set<String> = []
+    private static let k_armedAutoJoin = "armedAutoJoinIDs"
+    private static let k_joinedAutoJoin = "joinedAutoJoinIDs"
+
+    /// Fired when the user arms a meeting (for the confirmation notification).
+    var onAutoJoinArmed: ((MeetingEvent) -> Void)?
+    /// Fired the moment an armed meeting's link is auto-opened.
+    var onAutoJoinFired: ((MeetingEvent) -> Void)?
+    /// Fired when an armed meeting's start passed beyond the freshness window (e.g. the
+    /// Mac slept through it) — the join is NOT performed; the user is told instead.
+    var onAutoJoinMissed: ((MeetingEvent) -> Void)?
+
+    /// Armed meetings still upcoming/in-progress (for the menu bar disarm list).
+    var armedAutoJoinMeetings: [MeetingEvent] {
+        upcomingMeetings
+            .filter { armedAutoJoinIDs.contains($0.id) && !$0.isCancelled && $0.endDate > Date() }
+            .sorted { $0.startDate < $1.startDate }
+    }
+
+    /// Freshness bound for auto-join, in minutes (from config; default 2). Clamped to
+    /// ≥1 — a 0-minute window combined with the 30s poll would always read as "missed".
+    private var autoJoinGraceMinutes: Int {
+        max(1, countdownConfigs?.autoJoinGraceMinutes ?? 2)
+    }
+
     // MARK: - Lifecycle
 
     init() {
@@ -158,6 +192,8 @@ final class CalendarManager: ObservableObject {
         let d = UserDefaults.standard
         self.notifiedCancellationIDs = Set(d.stringArray(forKey: Self.k_notifiedCancellations) ?? [])
         self.dismissedCancellationIDs = Set(d.stringArray(forKey: Self.k_dismissedCancellations) ?? [])
+        self.armedAutoJoinIDs = Set(d.stringArray(forKey: Self.k_armedAutoJoin) ?? [])
+        self.joinedAutoJoinIDs = Set(d.stringArray(forKey: Self.k_joinedAutoJoin) ?? [])
     }
 
     /// Start polling for calendar events.
@@ -264,9 +300,11 @@ final class CalendarManager: ObservableObject {
                     && !dismissedCancellationIDs.contains($0.id)
             }
             pruneCancellationState(against: events)
+            pruneAutoJoinState(against: events)
             errorMessage = nil
 
             evaluateCountdownTrigger()
+            evaluateAutoJoin()
             onPollComplete?()
         } catch {
             errorMessage = error.localizedDescription
@@ -381,6 +419,119 @@ final class CalendarManager: ObservableObject {
     func dismissCountdown() {
         shouldShowCountdown = false
         countdownMeeting = nil
+    }
+
+    // MARK: - Auto-join ("Start at Time")
+
+    /// Arm a meeting for auto-join. Called from the overlay's "Start at Time" button.
+    /// Idempotent; persists so a relaunch shortly before start still honors it.
+    func armAutoJoin(_ id: String) {
+        // Only arm real meetings in the current window — guards against the Settings
+        // "Test Countdown Overlay" preview (a synthetic "test" event) persisting a
+        // phantom armed ID, and against arming something we can't later evaluate.
+        guard let meeting = upcomingMeetings.first(where: { $0.id == id }) else { return }
+        guard !armedAutoJoinIDs.contains(id) else { return }
+        // Re-arming after a prior fire should start fresh.
+        joinedAutoJoinIDs.remove(id)
+        armedAutoJoinIDs.insert(id)
+        persistAutoJoinState()
+        diagnosticLog?.info(.overlay, "Auto-join armed — \(meeting.title) @ \(meeting.formattedStartTime)")
+        onAutoJoinArmed?(meeting)
+    }
+
+    /// Disarm a meeting (user clicked the menu bar disarm row, or it became moot).
+    func disarmAutoJoin(_ id: String) {
+        guard armedAutoJoinIDs.contains(id) else { return }
+        armedAutoJoinIDs.remove(id)
+        persistAutoJoinState()
+        if let meeting = upcomingMeetings.first(where: { $0.id == id }) {
+            diagnosticLog?.info(.overlay, "Auto-join disarmed — \(meeting.title)")
+        }
+    }
+
+    /// For each armed meeting that has reached its start time, open its conference link
+    /// once (as if the user hit Join). Runs on every poll.
+    ///
+    /// Guardrails (Issue #2 risk analysis):
+    /// - **Freshness bound**: fire only if `now <= startDate + grace`. Past that — e.g.
+    ///   the Mac slept through the start (the 30s poll is suspended during sleep) — the
+    ///   join is treated as *missed* rather than yanking the user into a long-started
+    ///   meeting. (Bound is time-based, so it covers the catch-up/wake poll uniformly.)
+    /// - **Cancelled**: never auto-join; disarm.
+    /// - **No link**: never auto-join; disarm (the button is link-gated, but the link
+    ///   can vanish between arm and start).
+    /// - **De-dup**: `joinedAutoJoinIDs` guarantees a single open.
+    private func evaluateAutoJoin() {
+        guard !armedAutoJoinIDs.isEmpty else { return }
+        let now = Date()
+        let grace = TimeInterval(autoJoinGraceMinutes * 60)
+
+        for id in armedAutoJoinIDs {
+            // Not in the current window yet (e.g. armed across a long gap) — leave armed.
+            guard let meeting = upcomingMeetings.first(where: { $0.id == id }) else { continue }
+
+            if meeting.isCancelled {
+                diagnosticLog?.info(.overlay, "Auto-join cancelled (meeting cancelled) — \(meeting.title)")
+                disarmAutoJoin(id)
+                continue
+            }
+            guard let url = meeting.url else {
+                diagnosticLog?.warn(.overlay, "Auto-join skipped (no join link) — \(meeting.title)")
+                disarmAutoJoin(id)
+                continue
+            }
+
+            // Not started yet — wait.
+            if now < meeting.startDate { continue }
+
+            // Already ended, or started too long ago (slept through) → missed, don't open.
+            if now >= meeting.endDate || now > meeting.startDate.addingTimeInterval(grace) {
+                diagnosticLog?.warn(.overlay, "Auto-join missed (started \(Int(now.timeIntervalSince(meeting.startDate) / 60))m ago, beyond \(autoJoinGraceMinutes)m grace) — \(meeting.title)")
+                joinedAutoJoinIDs.insert(id)
+                armedAutoJoinIDs.remove(id)
+                persistAutoJoinState()
+                onAutoJoinMissed?(meeting)
+                continue
+            }
+
+            guard !joinedAutoJoinIDs.contains(id) else {
+                armedAutoJoinIDs.remove(id); persistAutoJoinState(); continue
+            }
+
+            // Fire: open the link exactly once. Explicit user intent — fires regardless
+            // of smart-context suppression, but the notification keeps it from being silent.
+            diagnosticLog?.info(.overlay, "Auto-join firing — opening \(meeting.title)")
+            NSWorkspace.shared.open(url)
+            joinedAutoJoinIDs.insert(id)
+            armedAutoJoinIDs.remove(id)
+            persistAutoJoinState()
+            // The overlay was dismissed at arm time; close defensively if it's still up.
+            if countdownMeeting?.id == id { dismissCountdown() }
+            onAutoJoinFired?(meeting)
+        }
+    }
+
+    private func persistAutoJoinState() {
+        UserDefaults.standard.set(Array(armedAutoJoinIDs), forKey: Self.k_armedAutoJoin)
+        UserDefaults.standard.set(Array(joinedAutoJoinIDs), forKey: Self.k_joinedAutoJoin)
+    }
+
+    /// Keep the armed/joined sets bounded. Conservatively drop an *armed* ID only when
+    /// its meeting is present in this fetch AND has ended — a transient fetch that
+    /// momentarily omits an imminent meeting must NOT silently un-arm it (that arm is
+    /// about to fire). `joinedAutoJoinIDs` is terminal bookkeeping, so it's pruned to
+    /// the live window outright.
+    private func pruneAutoJoinState(against events: [MeetingEvent]) {
+        let now = Date()
+        let endedIDs = Set(events.filter { $0.endDate <= now }.map(\.id))
+        let liveIDs = Set(events.filter { $0.endDate > now }.map(\.id))
+        let prunedArmed = armedAutoJoinIDs.subtracting(endedIDs)
+        let prunedJoined = joinedAutoJoinIDs.intersection(liveIDs)
+        if prunedArmed != armedAutoJoinIDs || prunedJoined != joinedAutoJoinIDs {
+            armedAutoJoinIDs = prunedArmed
+            joinedAutoJoinIDs = prunedJoined
+            persistAutoJoinState()
+        }
     }
 
     /// Reset triggered state (e.g., at midnight or on provider switch).

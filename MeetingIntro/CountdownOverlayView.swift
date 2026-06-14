@@ -6,11 +6,15 @@ struct CountdownOverlayView: View {
 
     let meeting: MeetingEvent
     let onDismiss: () -> Void
+    /// Arms auto-join for this meeting (opens the link automatically at start time)
+    /// and dismisses the overlay. Wired by `OverlayWindowController`.
+    var onArmAutoJoin: (() -> Void)?
 
     @State private var timeRemaining: TimeInterval = 0
     @State private var timer: Timer?
     @State private var isAppearing = false
     @AppStorage("joinButtonEnabled") private var joinButtonEnabled: Bool = true
+    @AppStorage("autoJoinEnabled") private var autoJoinEnabled: Bool = true
     @AppStorage("contextPanelMinThreshold") private var panelMinThreshold: Int = 0
 
     private var progress: Double {
@@ -142,6 +146,29 @@ struct CountdownOverlayView: View {
                             )
                     }
                     .buttonStyle(.plain)
+                }
+
+                // Start at Time — arms an auto-join. Only before start (afterward,
+                // joining is immediate via the Join button) and only when there's a
+                // link + the feature is on. Dismisses the overlay; the link opens
+                // automatically when the meeting starts.
+                if !hasStarted, meeting.url != nil, joinButtonEnabled, autoJoinEnabled,
+                   let onArmAutoJoin {
+                    Button(action: onArmAutoJoin) {
+                        Label("Start at Time", systemImage: "clock.badge.checkmark")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 10)
+                            .frame(minHeight: 40)
+                            .background(
+                                Capsule()
+                                    .fill(.white.opacity(0.18))
+                                    .overlay(Capsule().stroke(.white.opacity(0.3), lineWidth: 1))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .help("Open this meeting's link automatically when it starts")
                 }
 
                 Spacer()

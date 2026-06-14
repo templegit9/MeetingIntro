@@ -233,4 +233,59 @@ final class NotificationManager: ObservableObject {
         let request = UNNotificationRequest(identifier: key, content: content, trigger: nil)
         deliver(request, describing: "recording started — \(meeting.title)")
     }
+
+    // MARK: - Auto-join ("Start at Time", Issue #2)
+
+    private static func timeString(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateStyle = .none
+        f.timeStyle = .short
+        return f.string(from: date)
+    }
+
+    /// Confirmation that a meeting has been armed for auto-join.
+    func sendAutoJoinArmedNotification(for meeting: MeetingEvent) {
+        guard isEnabled else { return }
+        let content = UNMutableNotificationContent()
+        content.title = "Auto-join armed"
+        content.subtitle = meeting.title
+        content.body = "MeetingIntro will open this meeting at \(Self.timeString(meeting.startDate)). Disarm from the menu bar."
+        content.sound = nil
+        let request = UNNotificationRequest(
+            identifier: "autojoin_armed_\(meeting.id)_\(Date().timeIntervalSince1970)",
+            content: content, trigger: nil
+        )
+        deliver(request, describing: "auto-join armed — \(meeting.title)")
+    }
+
+    /// Posted the moment an armed meeting's link is opened automatically.
+    func sendAutoJoinFiredNotification(for meeting: MeetingEvent) {
+        guard isEnabled else { return }
+        let content = UNMutableNotificationContent()
+        content.title = "Joining meeting"
+        content.subtitle = meeting.title
+        content.body = "Opening the meeting link now."
+        content.sound = .default
+        let request = UNNotificationRequest(
+            identifier: "autojoin_fired_\(meeting.id)",
+            content: content, trigger: nil
+        )
+        deliver(request, describing: "auto-join fired — \(meeting.title)")
+    }
+
+    /// Posted when an armed meeting's start passed beyond the freshness window (e.g. the
+    /// Mac slept through it) — the link was deliberately NOT opened.
+    func sendAutoJoinMissedNotification(for meeting: MeetingEvent) {
+        guard isEnabled else { return }
+        let content = UNMutableNotificationContent()
+        content.title = "Missed auto-join"
+        content.subtitle = meeting.title
+        content.body = "This meeting started while you were away, so it wasn't opened automatically."
+        content.sound = .default
+        let request = UNNotificationRequest(
+            identifier: "autojoin_missed_\(meeting.id)",
+            content: content, trigger: nil
+        )
+        deliver(request, describing: "auto-join missed — \(meeting.title)")
+    }
 }

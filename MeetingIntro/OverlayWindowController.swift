@@ -31,9 +31,16 @@ final class OverlayWindowController: ObservableObject {
         }
         diagnosticLog?.info(.overlay, "Showing countdown overlay — \(meeting.title)")
 
-        let overlayView = CountdownOverlayView(meeting: meeting) { [weak self] in
-            self?.dismiss()
-        }
+        let overlayView = CountdownOverlayView(
+            meeting: meeting,
+            onDismiss: { [weak self] in self?.dismiss() },
+            onArmAutoJoin: { [weak self] in
+                // Arm the auto-join, then close the overlay. The link opens
+                // automatically at start time (CalendarManager.evaluateAutoJoin).
+                self?.calendarManager?.armAutoJoin(meeting.id)
+                self?.dismiss()
+            }
+        )
 
         let hostingView = NSHostingView(rootView: overlayView)
 

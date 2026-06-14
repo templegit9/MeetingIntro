@@ -264,6 +264,12 @@ final class AppLifecycleManager: ObservableObject {
         calendarManager.responseGate = { smartConfig.suppresses($0) }
         recordingCoordinator.responseSuppressed = { smartConfig.suppresses($0) }
 
+        // Auto-join ("Start at Time") — surface each transition as a notification so
+        // the auto-open is never silent (armed / fired / missed-while-away).
+        calendarManager.onAutoJoinArmed = { notificationManager.sendAutoJoinArmedNotification(for: $0) }
+        calendarManager.onAutoJoinFired = { notificationManager.sendAutoJoinFiredNotification(for: $0) }
+        calendarManager.onAutoJoinMissed = { notificationManager.sendAutoJoinMissedNotification(for: $0) }
+
         // Start polling AFTER the hook is set, so the first poll uses the policy.
         calendarManager.startPolling()
 
@@ -621,6 +627,26 @@ struct MenuBarView: View {
                         calendarManager.dismissCancellation(meeting.id)
                     } label: {
                         Text(Image(systemName: "xmark.circle.fill")).foregroundColor(.red).font(.caption)
+                            + Text(" \(meeting.formattedStartTime) ")
+                                .font(.system(.caption, design: .monospaced)).foregroundColor(.secondary)
+                            + Text(meeting.title).font(.body)
+                    }
+                }
+                Divider()
+            }
+
+            // Auto-join armed ("Start at Time") — the overlay is dismissed on arm, so
+            // this is the user's way to see + cancel a pending auto-join. Each row is a
+            // Button (NSMenu-native); clicking disarms it.
+            if !calendarManager.armedAutoJoinMeetings.isEmpty {
+                Text("Auto-join armed — click to cancel")
+                    .font(.system(.caption, weight: .semibold))
+                    .foregroundColor(.accentColor)
+                ForEach(calendarManager.armedAutoJoinMeetings) { meeting in
+                    Button {
+                        calendarManager.disarmAutoJoin(meeting.id)
+                    } label: {
+                        Text(Image(systemName: "clock.badge.checkmark")).foregroundColor(.accentColor).font(.caption)
                             + Text(" \(meeting.formattedStartTime) ")
                                 .font(.system(.caption, design: .monospaced)).foregroundColor(.secondary)
                             + Text(meeting.title).font(.body)
