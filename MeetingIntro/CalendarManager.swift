@@ -319,7 +319,7 @@ final class CalendarManager: ObservableObject {
         // For each meeting, check each configured countdown time. Cancelled
         // meetings are skipped — their reminders fire as a one-shot system
         // notification at detection time instead (see AppLifecycleManager).
-        for event in upcomingMeetings where event.timeUntilStart > 0 && !event.isCancelled && !(responseGate?(event) ?? false) {
+        for event in upcomingMeetings where event.timeUntilStart > 0 && !event.isCancelled && !(responseGate?(event) ?? false) && !armedAutoJoinIDs.contains(event.id) {
             for minutes in countdownMinutesList {
                 let thresholdSeconds = TimeInterval(minutes * 60)
                 let comboKey = "\(event.id)_\(minutes)"
@@ -461,7 +461,11 @@ final class CalendarManager: ObservableObject {
     /// - **No link**: never auto-join; disarm (the button is link-gated, but the link
     ///   can vanish between arm and start).
     /// - **De-dup**: `joinedAutoJoinIDs` guarantees a single open.
-    private func evaluateAutoJoin() {
+    ///
+    /// Internal (not private) so the 1-second menu-bar countdown ticker can drive it too
+    /// — the 30s poll alone would open the link up to ~30s after the displayed 0:00,
+    /// which reads as broken. Idempotent + de-duped, so calling it every second is safe.
+    func evaluateAutoJoin() {
         guard !armedAutoJoinIDs.isEmpty else { return }
         let now = Date()
         let grace = TimeInterval(autoJoinGraceMinutes * 60)

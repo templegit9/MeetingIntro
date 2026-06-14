@@ -13,6 +13,9 @@ struct CountdownOverlayView: View {
     @State private var timeRemaining: TimeInterval = 0
     @State private var timer: Timer?
     @State private var isAppearing = false
+    /// Shows the "Armed ✓" confirmation briefly before the overlay closes, so the
+    /// Start-at-Time tap visibly registers instead of the window just vanishing.
+    @State private var armedConfirmation = false
     @AppStorage("joinButtonEnabled") private var joinButtonEnabled: Bool = true
     @AppStorage("autoJoinEnabled") private var autoJoinEnabled: Bool = true
     @AppStorage("contextPanelMinThreshold") private var panelMinThreshold: Int = 0
@@ -154,7 +157,17 @@ struct CountdownOverlayView: View {
                 // automatically when the meeting starts.
                 if !hasStarted, meeting.url != nil, joinButtonEnabled, autoJoinEnabled,
                    let onArmAutoJoin {
-                    Button(action: onArmAutoJoin) {
+                    Button {
+                        // Acknowledge the tap, then arm + dismiss after a beat. The
+                        // confirmation overlay covers the other buttons so a stray
+                        // Dismiss tap can't race the arm.
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            armedConfirmation = true
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
+                            onArmAutoJoin()
+                        }
+                    } label: {
                         Label("Start at Time", systemImage: "clock.badge.checkmark")
                             .font(.subheadline.weight(.medium))
                             .foregroundStyle(.white)
@@ -191,6 +204,26 @@ struct CountdownOverlayView: View {
                 }
                 .buttonStyle(.plain)
                 .padding(.bottom, 40)
+            }
+
+            // Armed confirmation — covers the content (and the other buttons, so a
+            // stray tap can't race the arm) until the overlay closes.
+            if armedConfirmation {
+                ZStack {
+                    Color.black.opacity(0.55).ignoresSafeArea()
+                    VStack(spacing: 14) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 60))
+                            .foregroundStyle(Color(red: 0.25, green: 0.78, blue: 0.45))
+                        Text("Armed")
+                            .font(.system(size: 26, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                        Label("Counting down in the menu bar", systemImage: "arrow.up.right")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.85))
+                    }
+                }
+                .transition(.opacity)
             }
         }
         .opacity(isAppearing ? 1 : 0)

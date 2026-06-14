@@ -74,6 +74,7 @@ struct MeetingIntroApp: App {
     @StateObject private var diagnosticLog = DiagnosticLog()
     @StateObject private var mirrorConfig = MirrorConfigManager()
     @StateObject private var mirrorEngine = CalendarMirrorEngine()
+    @StateObject private var menuBarCountdown = MenuBarCountdownModel()
 
     init() {
         let router = AudioRouter()
@@ -123,7 +124,8 @@ struct MeetingIntroApp: App {
                 notesPipeline: notesPipeline,
                 diagnosticLog: diagnosticLog,
                 mirrorConfig: mirrorConfig,
-                mirrorEngine: mirrorEngine
+                mirrorEngine: mirrorEngine,
+                menuBarCountdown: menuBarCountdown
             )
         } label: {
             // When recording, swap the menu bar glyph to a red record symbol so the
@@ -131,6 +133,12 @@ struct MeetingIntroApp: App {
             // OS-level dot, which isn't MeetingIntro-specific.
             if recordingController.isRecording {
                 Label("Recording", systemImage: "record.circle.fill")
+            } else if let countdown = menuBarCountdown.text {
+                // A meeting is armed for auto-join — show its live countdown right at
+                // the menu bar icon; it opens the meeting automatically at 0:00.
+                // Text (not Label) so the time string actually renders in the status
+                // bar — a Label there shows icon-only. Inline SF Symbol keeps the icon.
+                Text("\(Image(systemName: "clock.badge.checkmark")) \(countdown)")
             } else {
                 Label("MeetingIntro", systemImage: "clock.badge.checkmark")
             }
@@ -218,10 +226,12 @@ final class AppLifecycleManager: ObservableObject {
         notesPipeline: MeetingNotesPipeline,
         diagnosticLog: DiagnosticLog,
         mirrorConfig: MirrorConfigManager,
-        mirrorEngine: CalendarMirrorEngine
+        mirrorEngine: CalendarMirrorEngine,
+        menuBarCountdown: MenuBarCountdownModel
     ) {
         // Wire the config manager into CalendarManager
         calendarManager.countdownConfigs = countdownConfig
+        menuBarCountdown.configure(calendarManager: calendarManager)
         calendarManager.diagnosticLog = diagnosticLog
         notificationManager.soundManager = mixkitSounds
         notificationManager.diagnosticLog = diagnosticLog
@@ -385,6 +395,9 @@ final class AppLifecycleManager: ObservableObject {
             .sink { meetings in
                 let maxThreshold = TimeInterval((countdownConfig.triggers.map(\.minutes).max() ?? 0) * 60)
                 for meeting in meetings where meeting.timeUntilStart > 0 && !meeting.isCancelled {
+                    // Armed for auto-join → the menu-bar countdown is the only surface;
+                    // suppress every original-start-time reminder for this event.
+                    if calendarManager.armedAutoJoinIDs.contains(meeting.id) { continue }
                     // RSVP gate: skip invitations the user declined / didn't answer.
                     if smartConfig.suppresses(meeting) {
                         // Log only when a reminder would actually have fired (avoids
@@ -464,6 +477,7 @@ struct MenuBarView: View {
     @ObservedObject var diagnosticLog: DiagnosticLog
     @ObservedObject var mirrorConfig: MirrorConfigManager
     @ObservedObject var mirrorEngine: CalendarMirrorEngine
+    @ObservedObject var menuBarCountdown: MenuBarCountdownModel
 
     @Environment(\.openWindow) private var openWindow
 
@@ -743,7 +757,8 @@ struct MenuBarView: View {
                 notesPipeline: notesPipeline,
                 diagnosticLog: diagnosticLog,
                 mirrorConfig: mirrorConfig,
-                mirrorEngine: mirrorEngine
+                mirrorEngine: mirrorEngine,
+                menuBarCountdown: menuBarCountdown
             )
         }
     }

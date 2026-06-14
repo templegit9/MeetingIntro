@@ -53,6 +53,7 @@
 		CC7683CA9E1E90FD5AC1A39F /* AudioRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06B89F3A47268C68A4AF32C6 /* AudioRouter.swift */; };
 		CEEF992EE3D7FEA673D18ADE /* RecordingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = E21F519F51FBE4A4BD52367A /* RecordingSession.swift */; };
 		D195FE28659E1B2C38932999 /* CountdownOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D81EBB57F5E6FDD478BC43 /* CountdownOverlayView.swift */; };
+		D1D8F3654A6020E2B6709C80 /* MenuBarCountdownModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57ADDD7395104BDD5BE47459 /* MenuBarCountdownModel.swift */; };
 		DD8A1A680768E76BFD44F679 /* MixkitSoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C252C77AB45CB10DE5063A4E /* MixkitSoundManager.swift */; };
 		DF34F6437529E629568391AC /* TranscriptModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 021E3CACD81AFC8B3CDCB8FC /* TranscriptModels.swift */; };
 		E6BC699DC42179C53C65FDAB /* FocusModeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01D2DF78FFB46B55D8FBA3A4 /* FocusModeController.swift */; };
@@ -86,6 +87,7 @@
 		4CAC212711667C92D4767C0F /* CalendarMirrorEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarMirrorEngine.swift; sourceTree = "<group>"; };
 		5673A02C0FAC799726EA0BCF /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		570F13DE8551AC2384BF9DB7 /* MeetingDetailsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDetailsPanel.swift; sourceTree = "<group>"; };
+		57ADDD7395104BDD5BE47459 /* MenuBarCountdownModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarCountdownModel.swift; sourceTree = "<group>"; };
 		675F9C5FC04AEF4EF60B3806 /* TemplateEditSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateEditSheet.swift; sourceTree = "<group>"; };
 		67C9C4B04514972B0139B4A6 /* MeetingRecordingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingRecordingCoordinator.swift; sourceTree = "<group>"; };
 		68E04A0A0326198310A91568 /* MeetingContextMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingContextMonitor.swift; sourceTree = "<group>"; };
@@ -241,6 +243,7 @@
 				711DFD4598AE2E83744CCFBD /* GraphCalendarProvider.swift */,
 				570F13DE8551AC2384BF9DB7 /* MeetingDetailsPanel.swift */,
 				88FE80611C96045D0752ECE8 /* MeetingIntroApp.swift */,
+				57ADDD7395104BDD5BE47459 /* MenuBarCountdownModel.swift */,
 				C252C77AB45CB10DE5063A4E /* MixkitSoundManager.swift */,
 				2415B0B2BBF77234529B496A /* NotificationManager.swift */,
 				22E108D1CE89056097ED33FE /* OverlayWindowController.swift */,
@@ -380,6 +383,7 @@
 				27ED839518A9FCCB5DA7AB02 /* MeetingNotesPipeline.swift in Sources */,
 				0304CC4696155FE7CB9C6852 /* MeetingNotesWindow.swift in Sources */,
 				2B12A77C9BF7293F27AB6EEF /* MeetingRecordingCoordinator.swift in Sources */,
+				D1D8F3654A6020E2B6709C80 /* MenuBarCountdownModel.swift in Sources */,
 				175F2E49C8587451AB910A93 /* MicrophoneDetector.swift in Sources */,
 				AF2A3862A0CC33BF08C80922 /* Mirror.swift in Sources */,
 				85955A740FE1667D4701DCA0 /* MirrorEditSheet.swift in Sources */,
