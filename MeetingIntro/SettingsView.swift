@@ -683,6 +683,13 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section("Meeting Start") {
+                Toggle("Notify me when a meeting starts", isOn: $notificationManager.notifyAtStartEnabled)
+                Text("Posts a system notification at the meeting's start time, in addition to your pre-meeting reminders. Skipped for meetings you've armed with \"Start at Time\" (those open automatically) and for declined invitations.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Start at Time (auto-join)") {
                 Toggle("Show \"Start at Time\" button on the overlay", isOn: $countdownConfig.autoJoinEnabled)
                     .disabled(!countdownConfig.joinButtonEnabled)

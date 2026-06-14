@@ -210,6 +210,11 @@ final class AppLifecycleManager: ObservableObject {
     /// that all-channel muting has been latched abnormally long.
     private static let stuckSuppressionWarnInterval: TimeInterval = 90 * 60
 
+    /// A meeting-start notification fires only for a meeting that started within this
+    /// window — so launch / wake (where `meetingsCurrentlyRunning` surfaces meetings
+    /// already in progress) doesn't fire "starting now" for something 40 min old.
+    private static let meetingStartNotifyWindow: TimeInterval = 120
+
     func observe(
         calendarManager: CalendarManager,
         overlayController: OverlayWindowController,
@@ -428,6 +433,22 @@ final class AppLifecycleManager: ObservableObject {
                             voiceReminder.speakReminderIfNeeded(for: meeting)
                         }
                     }
+                }
+            }
+            .store(in: &cancellables)
+
+        // Meeting-start notification (T-0). `meetingsCurrentlyRunning` already excludes
+        // cancelled meetings; the freshness window keeps launch/wake from announcing a
+        // meeting already long in progress, and the per-ID dedup keeps it to once.
+        // Armed meetings are skipped — their auto-join posts its own "Joining" notice.
+        calendarManager.$meetingsCurrentlyRunning
+            .sink { running in
+                let now = Date()
+                for meeting in running {
+                    guard now.timeIntervalSince(meeting.startDate) <= Self.meetingStartNotifyWindow else { continue }
+                    if calendarManager.armedAutoJoinIDs.contains(meeting.id) { continue }
+                    if smartConfig.suppresses(meeting) { continue }
+                    notificationManager.sendMeetingStartedNotification(for: meeting)
                 }
             }
             .store(in: &cancellables)

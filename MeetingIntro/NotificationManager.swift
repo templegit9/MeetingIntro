@@ -25,6 +25,12 @@ final class NotificationManager: ObservableObject {
         didSet { UserDefaults.standard.set(cancellationPlaySound, forKey: "cancellationPlaySound") }
     }
 
+    /// Whether to fire a system notification at the moment a meeting starts (T-0),
+    /// in addition to the pre-meeting countdown reminders. Default on.
+    @Published var notifyAtStartEnabled: Bool {
+        didSet { UserDefaults.standard.set(notifyAtStartEnabled, forKey: "notifyAtStartEnabled") }
+    }
+
     /// Reference to Mixkit sound manager for custom alert sounds.
     var soundManager: MixkitSoundManager?
 
@@ -48,6 +54,7 @@ final class NotificationManager: ObservableObject {
         self.isEnabled = d.object(forKey: "notificationsEnabled") as? Bool ?? true
         self.cancellationNotifyEnabled = d.object(forKey: "cancellationNotifyEnabled") as? Bool ?? true
         self.cancellationPlaySound = d.object(forKey: "cancellationPlaySound") as? Bool ?? true
+        self.notifyAtStartEnabled = d.object(forKey: "notifyAtStartEnabled") as? Bool ?? true
     }
 
     /// Request notification permission and capture the result. Also refreshes the
@@ -287,5 +294,35 @@ final class NotificationManager: ObservableObject {
             content: content, trigger: nil
         )
         deliver(request, describing: "auto-join missed — \(meeting.title)")
+    }
+
+    // MARK: - Meeting start
+
+    /// One-shot notification fired the moment a meeting starts (T-0). De-duped per
+    /// meeting so the 30s poll / a brief sleep-wake can't repeat it. Caller gates on
+    /// freshness (only genuinely-starting meetings), armed-state, and RSVP.
+    func sendMeetingStartedNotification(for meeting: MeetingEvent) {
+        guard isEnabled, notifyAtStartEnabled else {
+            diagnosticLog?.info(.notification, "Meeting-start notification suppressed (\(isEnabled ? "start toggle off" : "notifications disabled")) — \(meeting.title)")
+            return
+        }
+        let key = "started_\(meeting.id)"
+        guard !sentNotificationKeys.contains(key) else { return }
+        sentNotificationKeys.insert(key)
+
+        let content = UNMutableNotificationContent()
+        content.title = "Meeting starting now"
+        content.subtitle = meeting.title
+        if meeting.url != nil {
+            content.body = "It's time — open the meeting to join."
+        } else if let location = meeting.location, !location.isEmpty {
+            content.body = location
+        } else {
+            content.body = "It's time for your meeting."
+        }
+        content.sound = .default
+
+        let request = UNNotificationRequest(identifier: key, content: content, trigger: nil)
+        deliver(request, describing: "meeting started — \(meeting.title)")
     }
 }
