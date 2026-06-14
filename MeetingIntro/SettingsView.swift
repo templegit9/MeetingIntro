@@ -570,7 +570,7 @@ struct SettingsView: View {
         .sheet(isPresented: $showMirrorSheet) {
             MirrorEditSheet(
                 existing: editingMirror,
-                calendars: quickAddCalendars,
+                loadCalendars: { await calendarManager.eventKitCalendars() },
                 isWritable: { mirrorEngine.isWritable($0) },
                 creatableSources: mirrorEngine.creatableSources(),
                 defaultSourceID: mirrorEngine.defaultCreatableSourceID(),
@@ -602,10 +602,13 @@ struct SettingsView: View {
     private func deleteMirror(_ mirror: Mirror) {
         if mirror.deleteCopiesOnDisable { mirrorEngine.tearDown(mirror) }
         mirrorConfig.remove(mirror.id)
+        diagnosticLog.info(.calendar, "Mirror deleted — \"\(mirror.name)\"")
     }
 
     private func saveMirror(_ mirror: Mirror) {
+        let isNew = !mirrorConfig.mirrors.contains { $0.id == mirror.id }
         mirrorConfig.upsert(mirror)
+        diagnosticLog.info(.calendar, "Mirror \(isNew ? "created" : "updated") — \"\(mirror.name)\" (\(mirror.sourceCalendarIDs.count) source(s) → \(mirrorEngine.destinationName(for: mirror) ?? mirror.destinationCalendarID), \(mirror.detailMode.displayName)). Total mirrors: \(mirrorConfig.mirrors.count)")
         mirrorEngine.reconcileAll()
     }
 

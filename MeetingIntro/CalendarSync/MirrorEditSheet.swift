@@ -4,7 +4,11 @@ import SwiftUI
 /// a real calendar ID (via `createCalendar`) before returning a complete Mirror.
 struct MirrorEditSheet: View {
     let existing: Mirror?
-    let calendars: [CalendarInfo]
+    /// Loads the available calendars. The sheet loads these ITSELF (rather than
+    /// receiving a snapshot) so a slow EventKit fetch on the parent tab can't leave
+    /// the Sources list empty when the sheet opens — which silently blocked Create
+    /// (the "pick at least one source" guard) even though the user had picked things.
+    let loadCalendars: () async -> [CalendarInfo]
     let isWritable: (String) -> Bool
     let creatableSources: [EventKitProvider.CreatableSource]
     let defaultSourceID: String?
@@ -13,6 +17,8 @@ struct MirrorEditSheet: View {
     let onSave: (Mirror) -> Void
     let onCancel: () -> Void
 
+    @State private var calendars: [CalendarInfo] = []
+    @State private var calendarsLoaded = false
     @State private var name: String = ""
     @State private var selectedSources: Set<String> = []
     @State private var useNewCalendar: Bool = true
@@ -40,8 +46,14 @@ struct MirrorEditSheet: View {
                 }
 
                 Section("Sources (calendars to mirror FROM)") {
-                    if calendars.isEmpty {
-                        Text("No calendars found.").font(.caption).foregroundStyle(.secondary)
+                    if !calendarsLoaded {
+                        HStack(spacing: 8) {
+                            ProgressView().controlSize(.small)
+                            Text("Loading calendars…").font(.caption).foregroundStyle(.secondary)
+                        }
+                    } else if calendars.isEmpty {
+                        Text("No calendars found. Make sure MeetingIntro has Calendar access in System Settings → Privacy.")
+                            .font(.caption).foregroundStyle(.secondary)
                     }
                     ForEach(calendars) { cal in
                         Toggle(isOn: Binding(
@@ -113,11 +125,16 @@ struct MirrorEditSheet: View {
                 Button(existing == nil ? "Create" : "Save") { save() }
                     .keyboardShortcut(.defaultAction)
                     .buttonStyle(.borderedProminent)
+                    .disabled(!calendarsLoaded)
             }
             .padding()
         }
         .frame(width: 460, height: 620)
         .onAppear(perform: loadExisting)
+        .task {
+            calendars = await loadCalendars()
+            calendarsLoaded = true
+        }
     }
 
     private func loadExisting() {
