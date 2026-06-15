@@ -137,19 +137,23 @@ final class CalendarMirrorEngine: ObservableObject {
         var created = 0, updated = 0, deleted = 0
         do {
             for source in desired {
-                let prior = existing[source.sourceID]
-                try provider.writeMirror(source, existing: prior, destinationID: mirror.destinationCalendarID, mirrorID: mirror.id, mode: mirror.detailMode)
-                if prior == nil { created += 1 } else { updated += 1 }
+                switch try provider.writeMirror(source, existing: existing[source.sourceID], destinationID: mirror.destinationCalendarID, mirrorID: mirror.id, mode: mirror.detailMode) {
+                case .created: created += 1
+                case .updated: updated += 1
+                case .unchanged: break
+                }
             }
             if !orphans.isEmpty {
                 try provider.deleteMirrorEvents(Array(orphans.values))
                 deleted = orphans.count
             }
-            try provider.commitMirrorChanges()
-            config.update(mirror.id) { $0.lastSync = Date(); $0.lastError = nil }
-            if created + deleted > 0 || updated > 0 {
+            // Only commit when something actually changed — an empty commit still fires
+            // EKEventStoreChanged, which would retrigger reconcile (the churn loop).
+            if created + updated + deleted > 0 {
+                try provider.commitMirrorChanges()
                 diagnosticLog?.info(.calendar, "Mirror \"\(mirror.name)\": +\(created) ~\(updated) -\(deleted) (\(desired.count) source events)")
             }
+            config.update(mirror.id) { $0.lastSync = Date(); $0.lastError = nil }
         } catch {
             config.update(mirror.id) { $0.lastError = error.localizedDescription }
             diagnosticLog?.error(.calendar, "Mirror \"\(mirror.name)\" reconcile failed: \(error.localizedDescription)")

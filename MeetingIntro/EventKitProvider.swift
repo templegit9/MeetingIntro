@@ -39,6 +39,7 @@ final class EventKitProvider: CalendarProvider {
 
         return ekEvents
             .filter { !$0.isAllDay } // Skip all-day events by default for meeting countdown
+            .filter { !MirrorMarker.isMirror($0.url) } // Don't surface our own mirror copies as duplicate meetings
             .map { event in
                 let attendees = (event.attendees ?? []).compactMap { $0.name }
                 let joinURL = ConferenceLinkExtractor.bestURL(
@@ -334,32 +335,65 @@ final class EventKitProvider: CalendarProvider {
 
     /// Create or update one mirror event for `source` in `destinationID`.
     /// `existing` is the prior copy (from existingMirrorMap) if any.
-    func writeMirror(_ source: MirrorSourceEvent, existing: EKEvent?, destinationID: String, mirrorID: UUID, mode: Mirror.DetailMode) throws {
+    @discardableResult
+    func writeMirror(_ source: MirrorSourceEvent, existing: EKEvent?, destinationID: String, mirrorID: UUID, mode: Mirror.DetailMode) throws -> MirrorWriteResult {
         guard isAuthorized else { throw MirrorError.notAuthorized }
         guard let cal = eventStore.calendar(withIdentifier: destinationID) else { throw MirrorError.destinationNotFound }
         guard cal.allowsContentModifications else { throw MirrorError.destinationReadOnly(cal.title) }
 
-        let event = existing ?? EKEvent(eventStore: eventStore)
+        // Desired field values for this mirror copy.
+        let desiredTitle: String
+        let desiredLocation: String?
+        let desiredNotes: String?
+        switch mode {
+        case .full:
+            desiredTitle = source.title
+            desiredLocation = source.location
+            desiredNotes = source.notes
+        case .busy:
+            desiredTitle = "Busy"
+            desiredLocation = nil
+            desiredNotes = nil
+        }
+
+        // CRITICAL: only write when something actually changed. Re-saving an unchanged
+        // copy commits a no-op transaction that fires EKEventStoreChanged → triggers a
+        // refresh → another reconcile → another write … a churn/feedback loop (and on
+        // multiple devices sharing the destination, they fight forever). Skipping
+        // unchanged copies lets a steady state settle to "+0 ~0 -0" with no commit.
+        if let existing {
+            let unchanged = existing.startDate == source.startDate
+                && existing.endDate == source.endDate
+                && existing.isAllDay == source.isAllDay
+                && (existing.title ?? "") == desiredTitle
+                && (existing.location ?? "") == (desiredLocation ?? "")
+                && (existing.notes ?? "") == (desiredNotes ?? "")
+            if unchanged { return .unchanged }
+
+            existing.calendar = cal
+            existing.startDate = source.startDate
+            existing.endDate = source.endDate
+            existing.isAllDay = source.isAllDay
+            existing.title = desiredTitle
+            existing.location = desiredLocation
+            existing.notes = desiredNotes
+            do { try eventStore.save(existing, span: .thisEvent, commit: false) }
+            catch { throw MirrorError.saveFailed(error.localizedDescription) }
+            return .updated
+        }
+
+        let event = EKEvent(eventStore: eventStore)
         event.calendar = cal
         event.url = MirrorMarker.encode(mirrorID: mirrorID, sourceID: source.sourceID)
         event.startDate = source.startDate
         event.endDate = source.endDate
         event.isAllDay = source.isAllDay
-        switch mode {
-        case .full:
-            event.title = source.title
-            event.location = source.location
-            event.notes = source.notes
-        case .busy:
-            event.title = "Busy"
-            event.location = nil
-            event.notes = nil
-        }
-        do {
-            try eventStore.save(event, span: .thisEvent, commit: false)
-        } catch {
-            throw MirrorError.saveFailed(error.localizedDescription)
-        }
+        event.title = desiredTitle
+        event.location = desiredLocation
+        event.notes = desiredNotes
+        do { try eventStore.save(event, span: .thisEvent, commit: false) }
+        catch { throw MirrorError.saveFailed(error.localizedDescription) }
+        return .created
     }
 
     func deleteMirrorEvents(_ events: [EKEvent]) throws {

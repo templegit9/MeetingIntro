@@ -56,6 +56,14 @@ struct Mirror: Codable, Identifiable, Equatable {
     }
 }
 
+/// Outcome of writing one mirror event — lets the engine skip an empty commit
+/// (and the `EKEventStoreChanged` storm it triggers) when nothing actually changed.
+enum MirrorWriteResult {
+    case created
+    case updated
+    case unchanged
+}
+
 /// Encodes the source linkage into a mirror event's `url` so the destination
 /// calendar IS the sync state — no external mapping DB to drift.
 /// Form: `meetingintro-mirror://<mirrorUUID>/<base64url(sourceEventID)>`.
