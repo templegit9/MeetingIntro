@@ -159,7 +159,8 @@ struct CompactMenuView: View {
             Text(meeting.formattedStartTime)
                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                 .foregroundStyle(isNext ? accent : .secondary)
-                .frame(width: 58, alignment: .leading)
+                .lineLimit(1)
+                .frame(width: 64, alignment: .leading)
             Text(meeting.title)
                 .font(.body).fontWeight(isNext ? .semibold : .regular)
                 .strikethrough(meeting.isCancelled)
@@ -196,7 +197,7 @@ struct CompactMenuView: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 Image(systemName: icon).foregroundStyle(tint).font(.caption)
-                Text(time).font(.system(.caption, design: .monospaced)).foregroundStyle(.secondary)
+                Text(time).font(.system(.caption, design: .monospaced)).foregroundStyle(.secondary).lineLimit(1).fixedSize()
                 Text(title).font(.body).lineLimit(1)
                 Spacer()
             }

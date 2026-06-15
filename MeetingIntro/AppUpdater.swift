@@ -39,27 +39,46 @@ final class AppUpdater: ObservableObject {
     private let currentVersion: String
     private var pollTimer: Timer?
     private var autoChecksStarted = false
+    private var wakeObserver: NSObjectProtocol?
+    static let autoCheckKey = "autoUpdateChecksEnabled"
 
     init() {
         self.currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
     }
 
+    /// User preference: run background update checks (default on). Off → only manual checks.
+    var autoCheckEnabled: Bool { UserDefaults.standard.object(forKey: Self.autoCheckKey) as? Bool ?? true }
+
     private struct Release: Decodable { let tag_name: String; let draft: Bool; let prerelease: Bool }
 
     /// Start proactive checks: once now, then every 6 hours, plus on wake. Silent —
-    /// background failures don't surface an error icon. Idempotent.
+    /// background failures don't surface an error icon. Idempotent. No-op if the user
+    /// disabled auto-checks.
     func startAutoChecks() {
-        guard !autoChecksStarted else { return }
+        guard autoCheckEnabled, !autoChecksStarted else { return }
         autoChecksStarted = true
         Task { await checkSilently() }
         pollTimer = Timer.scheduledTimer(withTimeInterval: 6 * 3600, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in await self?.checkSilently() }
         }
-        NSWorkspace.shared.notificationCenter.addObserver(
+        wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
         ) { [weak self] _ in
             Task { @MainActor [weak self] in await self?.checkSilently() }
         }
+    }
+
+    /// Stop background checks (timer + wake observer). Manual checks still work.
+    func stopAutoChecks() {
+        pollTimer?.invalidate(); pollTimer = nil
+        if let wakeObserver { NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver) }
+        wakeObserver = nil
+        autoChecksStarted = false
+    }
+
+    /// Re-evaluate after the user toggles the preference: start or stop accordingly.
+    func refreshAutoChecks() {
+        if autoCheckEnabled { startAutoChecks() } else { stopAutoChecks() }
     }
 
     /// User-initiated check — shows the spinner and surfaces failures.

@@ -100,6 +100,7 @@ struct SettingsView: View {
     @AppStorage(UpcomingDayLabelFormat.storageKey) private var dayLabelFormatRaw: String = UpcomingDayLabelFormat.compact.rawValue
     @AppStorage(UpcomingDayLabelFormat.showCountKey) private var upcomingShowCount: Bool = true
     @AppStorage(MenuBarPresentation.storageKey) private var menuBarPresentationRaw: String = MenuBarPresentation.popover.rawValue
+    @AppStorage(AppUpdater.autoCheckKey) private var autoUpdateEnabled: Bool = true
     @AppStorage("cancellationShowInTodayView") private var cancellationShowInTodayView: Bool = true
     @AppStorage("cancellationShowOverlay") private var cancellationShowOverlay: Bool = false
     @AppStorage("cancellationOverlayPosition") private var cancellationOverlayPosition: String = OverlayWindowController.CancellationOverlayPosition.topRight.rawValue
@@ -1525,6 +1526,31 @@ struct SettingsView: View {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
     }
 
+    /// "Build 202606142100 · Jun 14, 2026 at 9:00 PM" — the release script stamps
+    /// CFBundleVersion with a YYYYMMDDHHmm timestamp, so it doubles as the build date.
+    private var currentBuildInfo: String {
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
+        guard !build.isEmpty else { return "" }
+        if build.count == 12 {
+            let parser = DateFormatter()
+            parser.dateFormat = "yyyyMMddHHmm"
+            if let d = parser.date(from: build) {
+                let out = DateFormatter(); out.dateStyle = .medium; out.timeStyle = .short
+                return "Build \(build) · \(out.string(from: d))"
+            }
+        }
+        return "Build \(build)"
+    }
+
+    private func aboutLink(_ title: String, _ symbol: String, _ urlString: String) -> some View {
+        Button {
+            if let u = URL(string: urlString) { NSWorkspace.shared.open(u) }
+        } label: {
+            Label(title, systemImage: symbol).font(.caption)
+        }
+        .buttonStyle(.link)
+    }
+
     /// Icon button beside the version: check for / install updates via Homebrew.
     @ViewBuilder
     private var updateControl: some View {
@@ -1814,6 +1840,12 @@ struct SettingsView: View {
                     updateControl
                 }
 
+                if !currentBuildInfo.isEmpty {
+                    Text(currentBuildInfo)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+
                 if let hint = unlockHint {
                     Text(hint)
                         .font(.caption2)
@@ -1822,6 +1854,13 @@ struct SettingsView: View {
                 }
 
                 updateStatusLine
+
+                Toggle("Check for updates automatically", isOn: $autoUpdateEnabled)
+                    .toggleStyle(.checkbox)
+                    .font(.caption)
+                    .fixedSize()
+                    .onChange(of: autoUpdateEnabled) { _, _ in updater.refreshAutoChecks() }
+                    .padding(.top, 2)
             }
 
             Text("Never be late to a meeting again.\nGet countdown overlays and voice reminders\nbefore your meetings start.")
@@ -1842,17 +1881,15 @@ struct SettingsView: View {
                     .fontWeight(.semibold)
                     .fontDesign(.rounded)
 
-                // Feedback front door: the Google Form (no GitHub account needed;
-                // submissions auto-bridge to GitHub Issues via Apps Script — see
-                // docs/feedback-form-bridge.md). GitHub-savvy users can also file
-                // directly via the templates in .github/ISSUE_TEMPLATE/.
-                Button("Request Feature / Report Bug") {
-                    if let url = URL(string: "https://forms.gle/9ueTH3vZq71TpDD86") {
-                        NSWorkspace.shared.open(url)
-                    }
+                // Link row (SF-Symbol links, CodexBar-style). Feedback is the Google
+                // Form front door (no GitHub account needed; it auto-bridges to Issues —
+                // see docs/feedback-form-bridge.md).
+                HStack(spacing: 20) {
+                    aboutLink("GitHub", "chevron.left.forwardslash.chevron.right", "https://github.com/templegit9/MeetingIntro")
+                    aboutLink("Releases", "shippingbox", "https://github.com/templegit9/MeetingIntro/releases")
+                    aboutLink("Feedback", "exclamationmark.bubble", "https://forms.gle/9ueTH3vZq71TpDD86")
                 }
-                .buttonStyle(.link)
-                .font(.caption)
+                .padding(.top, 2)
             }
 
             Divider()
