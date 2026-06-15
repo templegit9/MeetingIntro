@@ -37,8 +37,8 @@ enum UpcomingViewStyle: String, CaseIterable, Identifiable {
 /// How the menu-bar dropdown is presented. Both are SwiftUI views in a `.window`
 /// MenuBarExtra (the native NSMenu was retired — see docs/popover-redesign-spec.md).
 enum MenuBarPresentation: String, CaseIterable, Identifiable {
-    case menu      // compact, menu-styled list (CompactMenuView) — default
-    case popover   // rich CodexBar-style popover (PopoverRootView)
+    case menu      // compact, menu-styled list (CompactMenuView)
+    case popover   // rich CodexBar-style popover (PopoverRootView) — default (v2.9.0)
 
     var id: String { rawValue }
     var displayName: String {

@@ -143,7 +143,7 @@ struct MeetingIntroApp: App {
         }
     }
 
-    @AppStorage(MenuBarPresentation.storageKey) private var presentationRaw: String = MenuBarPresentation.menu.rawValue
+    @AppStorage(MenuBarPresentation.storageKey) private var presentationRaw: String = MenuBarPresentation.popover.rawValue
 
     @ViewBuilder private var menuContent: some View {
         // The dropdown is a `.window`-style popover. Content branches on the user's
