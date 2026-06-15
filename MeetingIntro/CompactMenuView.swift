@@ -86,6 +86,7 @@ struct CompactMenuView: View {
                     }
                 }
                 .frame(maxHeight: 280)
+                .scrollBounceBehavior(.basedOnSize)
             }
 
             // Upcoming (reuses the day grouping; a popup Menu listing future days)

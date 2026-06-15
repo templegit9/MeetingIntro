@@ -242,6 +242,7 @@ struct PopoverRootView: View {
                     .padding(.vertical, 2)
                 }
                 .frame(maxHeight: 300)
+                .scrollBounceBehavior(.basedOnSize)
             }
         }
     }

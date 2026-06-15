@@ -76,7 +76,6 @@ struct MeetingIntroApp: App {
     @StateObject private var mirrorEngine = CalendarMirrorEngine()
     @StateObject private var menuBarCountdown = MenuBarCountdownModel()
     @StateObject private var lifecycleManager = AppLifecycleManager()
-    @StateObject private var upcomingPanel = UpcomingPanelController()
     @StateObject private var updater = AppUpdater()
 
     init() {

@@ -99,7 +99,6 @@ struct SettingsView: View {
     @AppStorage("upcomingDaysAhead") private var upcomingDaysAhead: Int = 7
     @AppStorage(UpcomingDayLabelFormat.storageKey) private var dayLabelFormatRaw: String = UpcomingDayLabelFormat.compact.rawValue
     @AppStorage(UpcomingDayLabelFormat.showCountKey) private var upcomingShowCount: Bool = true
-    @AppStorage(UpcomingHeaderStyle.storageKey) private var headerStyleRaw: String = UpcomingHeaderStyle.section.rawValue
     @AppStorage(MenuBarPresentation.storageKey) private var menuBarPresentationRaw: String = MenuBarPresentation.menu.rawValue
     @AppStorage("cancellationShowInTodayView") private var cancellationShowInTodayView: Bool = true
     @AppStorage("cancellationShowOverlay") private var cancellationShowOverlay: Bool = false
@@ -661,18 +660,6 @@ struct SettingsView: View {
                     .disabled((UpcomingViewStyle(rawValue: upcomingViewStyleRaw) ?? .off) == .off)
                 Text("Preview:  \((UpcomingDayLabelFormat(rawValue: dayLabelFormatRaw) ?? .compact).label(date: Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date(), count: 7, showCount: upcomingShowCount))")
                     .font(.caption.monospaced())
-                    .foregroundStyle(.secondary)
-            }
-
-            Section("Day Header Style") {
-                Picker("Make day headers distinct", selection: $headerStyleRaw) {
-                    ForEach(UpcomingHeaderStyle.allCases) { style in
-                        Text(style.displayName).tag(style.rawValue)
-                    }
-                }
-                .pickerStyle(.inline)
-                Text("How each day's header stands out from its meetings in the \"Upcoming ▸\" submenu. \"Section header\" is the most distinct.")
-                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
 

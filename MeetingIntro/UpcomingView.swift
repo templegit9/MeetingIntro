@@ -91,27 +91,6 @@ enum UpcomingDayLabelFormat: String, CaseIterable, Identifiable {
     static let showCountKey = "upcomingShowCount"
 }
 
-/// How the day section header is visually set apart in the "Upcoming ▸" submenu.
-enum UpcomingHeaderStyle: String, CaseIterable, Identifiable {
-    case plain     // dim secondary text (current)
-    case bold      // bold UPPERCASE text
-    case divider   // a separator line above each day + bold header
-    case section   // native menu section header (most distinct)
-
-    var id: String { rawValue }
-
-    var displayName: String {
-        switch self {
-        case .plain: return "Plain"
-        case .bold: return "Bold caps"
-        case .divider: return "Divider + bold"
-        case .section: return "Section header"
-        }
-    }
-
-    static let storageKey = "upcomingHeaderStyle"
-}
-
 /// Shared day-header formatting for the upcoming views ("Today" / "Tomorrow" / "Wed Jun 18").
 enum UpcomingDayFormat {
     static func header(for date: Date) -> String {

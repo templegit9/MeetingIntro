@@ -1,6 +1,8 @@
 # Spec — Menu-bar popover redesign (`.window`-style dropdown)
 
-> Status: **proposal / not implemented.** Target: a future minor (suggested **v2.9.0**).
+> Status: **IMPLEMENTED (Phases 1–5) behind the "Dropdown Style" setting; default = Compact menu.**
+> Shipped target: **v2.9.0**. Remaining decision: flip the default to the rich popover (Phase 5).
+> Components: `CompactMenuView` (default), `PopoverRootView` + `DayTimelineBar` (rich), `MenuBarPresentation` setting.
 > Inspiration: CodexBar's `.window` popover. This spec is design + architecture only — no code.
 > Authored after the v2.8.x menu-bar work (upcoming-days browsing, day-label/header formats).
 
