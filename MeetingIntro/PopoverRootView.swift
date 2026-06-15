@@ -42,6 +42,7 @@ struct PopoverRootView: View {
                 // list shows static start times, so it stays outside the TimelineView.
                 TimelineView(.periodic(from: .now, by: 1)) { _ in
                     VStack(spacing: 0) {
+                        dayTimeline
                         heroBand
                         calloutCards
                     }
@@ -106,6 +107,27 @@ struct PopoverRootView: View {
         if secs < 60 { return "synced just now" }
         if secs < 3600 { return "synced \(secs / 60)m ago" }
         return "synced \(secs / 3600)h ago"
+    }
+
+    // MARK: - Day timeline (Today)
+
+    /// Horizontal "blocks across the workday" bar for today's timed meetings, with a
+    /// live now-marker. Next meeting = accent, currently-recording = red, others muted.
+    @ViewBuilder private var dayTimeline: some View {
+        let cal = Calendar.current
+        let timed = calendarManager.todaysMeetings.filter {
+            !$0.isAllDay && !$0.isCancelled && cal.isDateInToday($0.startDate)
+        }
+        if !timed.isEmpty {
+            DayTimelineBar(
+                meetings: timed,
+                nextID: calendarManager.nextMeeting?.id,
+                recordingTitle: recordingController.isRecording ? recordingController.currentMeetingTitle : nil,
+                accent: accent
+            )
+            .frame(height: 10)
+            .padding(.horizontal, 14).padding(.top, 10).padding(.bottom, 4)
+        }
     }
 
     // MARK: - Hero (Today)
@@ -287,5 +309,57 @@ struct PopoverRootView: View {
             Text(shortcut).font(.system(size: 11, design: .monospaced)).foregroundStyle(.tertiary)
         }
         .contentShape(Rectangle()).padding(.horizontal, 14).padding(.vertical, 5)
+    }
+}
+
+/// The day-timeline hero bar: today's timed meetings as blocks across a workday window,
+/// with a live now-marker. Window auto-expands to fit early/late meetings (default 9–19h).
+private struct DayTimelineBar: View {
+    let meetings: [MeetingEvent]
+    let nextID: String?
+    let recordingTitle: String?
+    let accent: Color
+
+    var body: some View {
+        GeometryReader { geo in
+            let cal = Calendar.current
+            let dayStart = cal.startOfDay(for: Date())
+            let offsets = meetings.map { $0.startDate.timeIntervalSince(dayStart) }
+            let ends = meetings.map { $0.endDate.timeIntervalSince(dayStart) }
+            let winStart = min(9 * 3600, offsets.min() ?? 9 * 3600)
+            let winEnd = max(19 * 3600, ends.max() ?? 19 * 3600)
+            let span = max(1, winEnd - winStart)
+            let w = geo.size.width
+            let frac: (TimeInterval) -> CGFloat = { t in CGFloat(min(max((t - winStart) / span, 0), 1)) }
+
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color.secondary.opacity(0.15)).frame(height: 6)
+
+                ForEach(meetings) { m in
+                    let x = frac(m.startDate.timeIntervalSince(dayStart)) * w
+                    let endX = frac(m.endDate.timeIntervalSince(dayStart)) * w
+                    let bw = max(3, endX - x)
+                    Capsule()
+                        .fill(blockColor(m))
+                        .frame(width: bw, height: 6)
+                        .offset(x: min(x, w - bw))
+                }
+
+                // Now marker
+                let nowOff = Date().timeIntervalSince(dayStart)
+                if nowOff >= winStart && nowOff <= winEnd {
+                    Rectangle().fill(Color.primary)
+                        .frame(width: 1.5, height: 10)
+                        .offset(x: frac(nowOff) * w - 0.75)
+                }
+            }
+            .frame(maxHeight: .infinity, alignment: .center)
+        }
+    }
+
+    private func blockColor(_ m: MeetingEvent) -> Color {
+        if let rt = recordingTitle, m.title == rt { return .red }
+        if m.id == nextID { return accent }
+        return Color.secondary.opacity(0.55)
     }
 }
