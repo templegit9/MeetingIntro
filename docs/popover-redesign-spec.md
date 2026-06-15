@@ -167,13 +167,12 @@ ASCII north-star (from the prior discussion):
 Multi-session. Phase 1 is the riskiest (status-item ownership + menu parity). Phases 2–4 are
 additive SwiftUI behind the setting. Each phase is shippable and revertable.
 
-## 11. Open decisions (resolve before Phase 1)
+## 11. Decisions (RESOLVED)
 
-1. **Full `NSStatusItem` ownership** (drop `MenuBarExtra`) — confirm appetite, since it's the
-   crux. (Recommended; no clean alternative for runtime menu↔popover switching.)
-2. Default presentation during rollout: **native menu** (recommended) vs popover.
-3. Does the **Today timeline** earn its complexity, or start with just the "NEXT · in 12m" hero line?
-4. Keep the native-menu day-label/header-format settings, or retire them once popover is default?
+1. **Full `NSStatusItem` ownership — YES.** Drop `MenuBarExtra`; rebuild the native menu in AppKit.
+2. **Default during rollout: native menu.** Popover is opt-in via the Menu Bar setting.
+3. **Build the day-timeline** (the Canvas hero bar), not just the countdown line.
+4. **Retire** the native-menu day-label/header-format settings once the popover is the default.
 
 ---
 

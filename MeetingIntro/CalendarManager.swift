@@ -18,6 +18,11 @@ final class CalendarManager: ObservableObject {
     /// the future-date views have data without touching the reminder/cancellation paths.
     @Published var upcomingWeek: [MeetingEvent] = []
 
+    /// Timestamp of the last successful refresh — surfaced as "synced Xm ago" in the
+    /// menu-bar popover header. (`lastPollDate` is private + also tracks failed/catch-up
+    /// polls; this is the public, success-only signal.)
+    @Published private(set) var lastRefreshDate: Date?
+
     /// Meetings whose start time has passed but end time has not. Updated on each poll.
     /// Used by `MeetingHandoffCoordinator` to drive enter/exit side effects.
     @Published var meetingsCurrentlyRunning: [MeetingEvent] = []
@@ -344,6 +349,7 @@ final class CalendarManager: ObservableObject {
             pruneCancellationState(against: events)
             pruneAutoJoinState(against: events)
             errorMessage = nil
+            lastRefreshDate = now
 
             evaluateCountdownTrigger()
             evaluateAutoJoin()
