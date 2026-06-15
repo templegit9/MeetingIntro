@@ -570,12 +570,16 @@ struct MenuBarView: View {
     @AppStorage(UpcomingViewStyle.storageKey) private var upcomingViewStyleRaw: String = UpcomingViewStyle.off.rawValue
     @AppStorage(UpcomingDayLabelFormat.storageKey) private var dayLabelFormatRaw: String = UpcomingDayLabelFormat.compact.rawValue
     @AppStorage(UpcomingDayLabelFormat.showCountKey) private var upcomingShowCount: Bool = true
+    @AppStorage(UpcomingHeaderStyle.storageKey) private var headerStyleRaw: String = UpcomingHeaderStyle.section.rawValue
 
     private var upcomingViewStyle: UpcomingViewStyle {
         UpcomingViewStyle(rawValue: upcomingViewStyleRaw) ?? .off
     }
     private var dayLabelFormat: UpcomingDayLabelFormat {
         UpcomingDayLabelFormat(rawValue: dayLabelFormatRaw) ?? .compact
+    }
+    private var upcomingHeaderStyle: UpcomingHeaderStyle {
+        UpcomingHeaderStyle(rawValue: headerStyleRaw) ?? .section
     }
 
     /// Today's meetings as displayed — cancelled ones filtered out when the user
@@ -722,16 +726,7 @@ struct MenuBarView: View {
             if !schedules.isEmpty {
                 Menu {
                     ForEach(schedules, id: \.date) { day in
-                        Text(dayLabelFormat.label(date: day.date, count: day.events.count, showCount: upcomingShowCount))
-                            .font(.system(.caption, weight: .semibold))
-                            .foregroundColor(.secondary)
-                        ForEach(day.events.prefix(10)) { meeting in
-                            meetingRowText(for: meeting)
-                        }
-                        if day.events.count > 10 {
-                            Text("+ \(day.events.count - 10) more")
-                                .font(.caption2).foregroundColor(.secondary)
-                        }
+                        upcomingDayGroup(day)
                     }
                 } label: {
                     Label("Upcoming", systemImage: "calendar.badge.clock")
@@ -754,6 +749,39 @@ struct MenuBarView: View {
                     }
                 }
             }
+        }
+    }
+
+    /// One day's header + rows in the "Upcoming ▸" submenu, with the user's chosen
+    /// header style (NSMenu items, so the levers are text styling / a Divider / a
+    /// native Section header).
+    @ViewBuilder
+    private func upcomingDayGroup(_ day: (date: Date, events: [MeetingEvent])) -> some View {
+        let label = dayLabelFormat.label(date: day.date, count: day.events.count, showCount: upcomingShowCount)
+        switch upcomingHeaderStyle {
+        case .section:
+            Section(label) { upcomingDayRows(day) }
+        case .divider:
+            Divider()
+            Text(label).font(.caption.weight(.bold)).foregroundColor(.secondary)
+            upcomingDayRows(day)
+        case .bold:
+            Text(label.uppercased()).font(.caption.weight(.bold)).foregroundColor(.primary)
+            upcomingDayRows(day)
+        case .plain:
+            Text(label).font(.system(.caption, weight: .semibold)).foregroundColor(.secondary)
+            upcomingDayRows(day)
+        }
+    }
+
+    @ViewBuilder
+    private func upcomingDayRows(_ day: (date: Date, events: [MeetingEvent])) -> some View {
+        ForEach(day.events.prefix(10)) { meeting in
+            meetingRowText(for: meeting)
+        }
+        if day.events.count > 10 {
+            Text("+ \(day.events.count - 10) more")
+                .font(.caption2).foregroundColor(.secondary)
         }
     }
 
