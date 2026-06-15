@@ -53,8 +53,11 @@ Grounded in the app's existing dark overlay aesthetic and the user accent.
 ## 4. Information architecture (top → bottom)
 
 1. **Header**
-   - Title row: "MeetingIntro" or the selected date; right-aligned **status** ("synced 2m ago",
-     from `CalendarManager.lastSync`-equivalent / last poll).
+   - Title row: "MeetingIntro" or the selected date; right-aligned **status** ("synced 2m ago").
+     ⚠️ **Correction:** `CalendarManager` has no public last-refresh timestamp (`lastPollDate` is
+     `private`; `lastSync` belongs to the CalendarSync `Mirror` model, not here). **Prerequisite:**
+     add `@Published private(set) var lastRefreshDate: Date?` to `CalendarManager`, set at the end
+     of `refreshEvents()` (one-liner, zero risk). See §12.
    - **Segmented switcher:** `Today | Upcoming` (and, if multiple providers configured,
      a source toggle). Accent-filled selected segment.
 2. **Day timeline (hero)** — a horizontal bar representing the workday with meeting blocks; a
@@ -171,3 +174,68 @@ additive SwiftUI behind the setting. Each phase is shippable and revertable.
 2. Default presentation during rollout: **native menu** (recommended) vs popover.
 3. Does the **Today timeline** earn its complexity, or start with just the "NEXT · in 12m" hero line?
 4. Keep the native-menu day-label/header-format settings, or retire them once popover is default?
+
+---
+
+## 12. Design refinement (mac-app-designer review, grounded in the code)
+
+A visual/UX pass against the actual source refined the tokens and caught several corrections.
+
+### Locked decisions
+- **Width: 340pt** (commit to one — variable 320–360 reads as buggy). Fits "12:59 PM" mono +
+  ~160pt title + RSVP glyph + Join at 14pt padding without truncation.
+- **Use `NSPopover`, not an `NSPanel`** — `.transient` behavior auto-dismisses on click-outside,
+  and `show(relativeTo:of:preferredEdge:)` handles notch / multi-display placement automatically.
+  (The existing `UpcomingPanelController` uses `NSPanel` because it's a *window*, not a dropdown.)
+- **Don't force `.darkAqua`** (unlike the overlay panels) — the popover must work in light mode;
+  let the system material show.
+- **Segmented switcher:** tinted selection (`accent.opacity(0.15)` bg + accent text), NOT a solid
+  accent capsule (too heavy in light mode). Build it as a custom `HStack` of buttons, not
+  `Picker(.segmented)` (too tall in a popover).
+- **Go straight to full `NSStatusItem` ownership** — coexistence with `MenuBarExtra` is proven
+  impossible at runtime; don't build a workaround.
+
+### Concrete tokens (highlights)
+- Section headers: 10pt semibold, UPPERCASE, tracking 0.4, `.secondary`.
+- Event row: time = 12pt medium **monospaced**, fixed **58pt** column (not 62); title `.body`
+  (`.semibold` only for next meeting); 14pt h-pad / 6pt v-pad (≈32pt row).
+- Hero "NEXT": a full-width **accent-tinted band** (`accent.opacity(0.07)`, no corner radius),
+  "NEXT" 10pt + countdown 11pt mono accent + start time right-aligned; title `.subheadline` semibold.
+- CalloutCard: icon (20pt frame) + title `.caption` semibold + trailing borderless action button;
+  `iconColor.opacity(0.10)` fill + `0.25` stroke, radius 8, 12/8 padding, 3pt gap between cards.
+  Colors: Recording = **red**, Auto-join armed / Update = **accent**, Cancelled = **orange**.
+- Action rows: icon (18pt frame) `.secondary` + label `.callout` + right-aligned ⌘-shortcut hint
+  (11pt mono `.tertiary`); hover highlight `Color.primary.opacity(0.05)`.
+- Live updates: wrap **only** the hero + callout-card stack in one
+  `TimelineView(.periodic(from: .now, by: 1))` — the event list shows static start times.
+
+### Cheap wins (reuse existing code)
+- `UpcomingDaysPanelView.eventRow` is ~90% the target EventRow — deltas: 62→58pt time column,
+  add in-progress green dot, add `.onHover` highlight, swap the RSVP `contextMenu` for an **inline
+  `Menu(.borderlessButton)`** (the single biggest UX win over NSMenu — promote RSVP to **Phase 3**).
+- `relativeStart(_:)`, the day pager, `UpcomingDayFormat.longHeader`, and `Color(hex:)` already
+  exist — reuse, don't duplicate.
+
+### macOS-popover gotchas (must-handle)
+1. **`NSApp.activate(ignoringOtherApps: true)` on show** — without it an `LSUIElement` popover
+   renders but key events (⌘Q/⌘N, arrows, text fields) don't fire. (Existing panel already does this.)
+2. **`.scrollBounceBehavior(.basedOnSize)`** on the events `ScrollView` — kills the wrong-feeling
+   rubber-band for a menu-like surface.
+3. **`SettingsLink` works** inside the hosted view but won't close the popover first — acceptable;
+   don't try to intercept it (re: the v2.7.1 `showSettingsWindow:` selector that was unreliable).
+4. **Icon swap** (`clock.badge.checkmark` ↔ `record.circle.fill`) becomes a manual Combine
+   subscription on `recordingController.$isRecording` → `statusItem.button?.image`.
+5. **`⌘Q`/shortcuts** must be bound on the SwiftUI buttons (`.keyboardShortcut`) — a custom popover
+   doesn't inherit the NSMenu's free shortcuts; they fire only while the popover is focused.
+6. **`Menu(.borderlessButton)` in an NSPopover** can briefly dismiss the popover on macOS 14.0–14.2
+   — test on 14.0; fall back to `contextMenu` if it misbehaves.
+7. **`errorMessage`** (rendered by the current NSMenu) must appear in the popover too — a small
+   inline banner between hero and cards (not a card).
+
+### Prerequisite before Phase 2
+- **B1:** add `CalendarManager.lastRefreshDate` (above) — blocks the header status line.
+
+### On the day-timeline (§4.2)
+The "NEXT · in 12m" hero stands on its own; the Canvas timeline bar is **genuinely optional**, not
+just deferred. A block-per-meeting bar for a 4-meeting day is less useful than the countdown
+(CodexBar's bar works because it's continuous 24h utilization). Decide if it earns its cost.
