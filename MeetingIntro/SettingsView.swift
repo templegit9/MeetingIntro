@@ -95,10 +95,7 @@ struct SettingsView: View {
     @State private var newLinkURL: String = ""
     @State private var editingTemplate: QuickAddTemplate?
 
-    @AppStorage(UpcomingViewStyle.storageKey) private var upcomingViewStyleRaw: String = UpcomingViewStyle.off.rawValue
     @AppStorage("upcomingDaysAhead") private var upcomingDaysAhead: Int = 7
-    @AppStorage(UpcomingDayLabelFormat.storageKey) private var dayLabelFormatRaw: String = UpcomingDayLabelFormat.compact.rawValue
-    @AppStorage(UpcomingDayLabelFormat.showCountKey) private var upcomingShowCount: Bool = true
     @AppStorage(MenuBarPresentation.storageKey) private var menuBarPresentationRaw: String = MenuBarPresentation.popover.rawValue
     @AppStorage(AppUpdater.autoCheckKey) private var autoUpdateEnabled: Bool = true
     @AppStorage("cancellationShowInTodayView") private var cancellationShowInTodayView: Bool = true
@@ -634,44 +631,23 @@ struct SettingsView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
 
-            Section("Upcoming Events") {
-                Picker("Show future days as", selection: $upcomingViewStyleRaw) {
-                    ForEach(UpcomingViewStyle.allCases) { style in
-                        Text(style.displayName).tag(style.rawValue)
-                    }
-                }
-                Text((UpcomingViewStyle(rawValue: upcomingViewStyleRaw) ?? .off).detail)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            Section("Upcoming Days") {
                 Stepper(value: $upcomingDaysAhead, in: 1...30) {
                     Text("Load \(upcomingDaysAhead) day\(upcomingDaysAhead == 1 ? "" : "s") ahead")
                 }
-                .disabled((UpcomingViewStyle(rawValue: upcomingViewStyleRaw) ?? .off) == .off)
-            }
-
-            Section("Day Label Format") {
-                Picker("Format", selection: $dayLabelFormatRaw) {
-                    ForEach(UpcomingDayLabelFormat.allCases) { fmt in
-                        Text(fmt.displayName).tag(fmt.rawValue)
-                    }
-                }
-                .pickerStyle(.inline)
-                .disabled((UpcomingViewStyle(rawValue: upcomingViewStyleRaw) ?? .off) == .off)
-                Toggle("Show meeting count on each day", isOn: $upcomingShowCount)
-                    .disabled((UpcomingViewStyle(rawValue: upcomingViewStyleRaw) ?? .off) == .off)
-                Text("Preview:  \((UpcomingDayLabelFormat(rawValue: dayLabelFormatRaw) ?? .compact).label(date: Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date(), count: 7, showCount: upcomingShowCount))")
-                    .font(.caption.monospaced())
+                Text("How far ahead the Upcoming view (and the compact menu's Upcoming list) loads.")
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            Section("Today's Meetings") {
-                ColorPicker("Next-meeting highlight color", selection: Binding(
+            Section("Accent Color") {
+                ColorPicker("Highlight / accent color", selection: Binding(
                     get: { Color(hex: nextMeetingHighlightHex) },
                     set: { nextMeetingHighlightHex = $0.hexString }
                 ), supportsOpacity: false)
                 Button("Reset to default") { nextMeetingHighlightHex = defaultNextMeetingHighlightHex }
                     .controlSize(.small)
-                Text("In the menu bar dropdown, the next upcoming meeting is marked with ▸, bolded, shown in this color with a countdown; already-ended meetings are dimmed.")
+                Text("Used for the next meeting and accents throughout the dropdown (the Today/Upcoming switcher, the \"NEXT\" band, the day-timeline marker).")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

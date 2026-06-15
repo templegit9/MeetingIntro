@@ -17,13 +17,8 @@ struct CompactMenuView: View {
     @Environment(\.openWindow) private var openWindow
     @AppStorage("cancellationShowInTodayView") private var showCancelled: Bool = true
     @AppStorage("nextMeetingHighlightHex") private var nextMeetingHighlightHex: String = defaultNextMeetingHighlightHex
-    @AppStorage(UpcomingViewStyle.storageKey) private var upcomingViewStyleRaw: String = UpcomingViewStyle.off.rawValue
-    @AppStorage(UpcomingDayLabelFormat.storageKey) private var dayLabelFormatRaw: String = UpcomingDayLabelFormat.compact.rawValue
-    @AppStorage(UpcomingDayLabelFormat.showCountKey) private var upcomingShowCount: Bool = true
 
     private var accent: Color { Color(hex: nextMeetingHighlightHex) }
-    private var dayLabelFormat: UpcomingDayLabelFormat { UpcomingDayLabelFormat(rawValue: dayLabelFormatRaw) ?? .compact }
-    private var upcomingStyle: UpcomingViewStyle { UpcomingViewStyle(rawValue: upcomingViewStyleRaw) ?? .off }
 
     private var todays: [MeetingEvent] {
         showCancelled ? calendarManager.todaysMeetings : calendarManager.todaysMeetings.filter { !$0.isCancelled }
@@ -89,29 +84,27 @@ struct CompactMenuView: View {
                 .scrollBounceBehavior(.basedOnSize)
             }
 
-            // Upcoming (reuses the day grouping; a popup Menu listing future days)
-            if upcomingStyle != .off {
-                let schedules = calendarManager.upcomingDaySchedules()
-                if !schedules.isEmpty {
-                    Divider()
-                    Menu {
-                        ForEach(schedules, id: \.date) { day in
-                            Section(dayLabelFormat.label(date: day.date, count: day.events.count, showCount: upcomingShowCount)) {
-                                ForEach(day.events.prefix(10)) { m in
-                                    Button {
-                                        if let url = m.url { NSWorkspace.shared.open(url) }
-                                    } label: {
-                                        Text("\(m.formattedStartTime)  \(m.title)")
-                                    }
+            // Upcoming days — a popup Menu listing future days (compact label: header · count)
+            let schedules = calendarManager.upcomingDaySchedules()
+            if !schedules.isEmpty {
+                Divider()
+                Menu {
+                    ForEach(schedules, id: \.date) { day in
+                        Section("\(UpcomingDayFormat.header(for: day.date)) · \(day.events.count)") {
+                            ForEach(day.events.prefix(10)) { m in
+                                Button {
+                                    if let url = m.url { NSWorkspace.shared.open(url) }
+                                } label: {
+                                    Text("\(m.formattedStartTime)  \(m.title)")
                                 }
                             }
                         }
-                    } label: {
-                        Label("Upcoming", systemImage: "calendar.badge.clock")
                     }
-                    .menuStyle(.borderlessButton)
-                    .padding(.horizontal, 14).padding(.vertical, 6)
+                } label: {
+                    Label("Upcoming", systemImage: "calendar.badge.clock")
                 }
+                .menuStyle(.borderlessButton)
+                .padding(.horizontal, 14).padding(.vertical, 6)
             }
 
             if let error = calendarManager.errorMessage {
