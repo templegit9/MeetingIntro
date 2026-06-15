@@ -1527,9 +1527,12 @@ struct SettingsView: View {
             .buttonStyle(.plain)
             .help("Update to the latest version")
         case .upToDate:
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-                .help("You're on the latest version")
+            Button { Task { await updater.check() } } label: {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+            }
+            .buttonStyle(.plain)
+            .help("You're on the latest version — click to re-check")
         case .failed:
             Button { Task { await updater.check() } } label: {
                 Image(systemName: "exclamationmark.arrow.triangle.2.circlepath")
@@ -1859,8 +1862,11 @@ struct SettingsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .task {
-            // Check once when About opens (don't re-check if we already know).
-            if case .idle = updater.state { await updater.check() }
+            // Always re-check when About opens. The launch/background auto-check can
+            // leave a stale `.upToDate` from before a newer release shipped; opening
+            // About is an explicit "is there an update?" so it should hit GitHub fresh
+            // (unless an update is already in flight).
+            if case .updating = updater.state {} else { await updater.check() }
         }
     }
 
