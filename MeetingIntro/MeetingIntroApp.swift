@@ -154,7 +154,8 @@ struct MeetingIntroApp: App {
                 recordingController: recordingController,
                 recordingCoordinator: recordingCoordinator,
                 quickAddPanel: quickAddPanel,
-                updater: updater
+                updater: updater,
+                diagnosticLog: diagnosticLog
             )
         } else {
             CompactMenuView(

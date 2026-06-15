@@ -11,6 +11,7 @@ struct PopoverRootView: View {
     @ObservedObject var recordingCoordinator: MeetingRecordingCoordinator
     @ObservedObject var quickAddPanel: QuickAddPanelController
     @ObservedObject var updater: AppUpdater
+    @ObservedObject var diagnosticLog: DiagnosticLog
 
     @Environment(\.openWindow) private var openWindow
     @AppStorage("cancellationShowInTodayView") private var showCancelled: Bool = true
@@ -56,6 +57,11 @@ struct PopoverRootView: View {
             footer
         }
         .frame(width: 340)
+        .onAppear {
+            let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+            let screenH = Int(NSScreen.main?.visibleFrame.height ?? 0)
+            diagnosticLog.info(.calendar, "Popover opened — v\(v) screenH=\(screenH) todaysMeetings=\(calendarManager.todaysMeetings.count) shownInTab=\(listEvents.count) upcomingWeek=\(calendarManager.upcomingWeek.count) next=\(calendarManager.nextMeeting?.title ?? "none")")
+        }
     }
 
     /// Whether to draw a divider between the hero/cards block and the event list.
@@ -241,7 +247,7 @@ struct PopoverRootView: View {
                     }
                     .padding(.vertical, 2)
                 }
-                .frame(maxHeight: 300)
+                .frame(minHeight: 140, maxHeight: 300)
                 .scrollBounceBehavior(.basedOnSize)
             }
         }

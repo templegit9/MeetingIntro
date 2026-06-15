@@ -80,7 +80,7 @@ struct CompactMenuView: View {
                         ForEach(todays) { eventRow($0) }
                     }
                 }
-                .frame(maxHeight: 280)
+                .frame(minHeight: 120, maxHeight: 280)
                 .scrollBounceBehavior(.basedOnSize)
             }
 
