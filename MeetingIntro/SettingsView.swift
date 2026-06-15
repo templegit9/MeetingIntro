@@ -580,7 +580,8 @@ struct SettingsView: View {
                 defaultSourceID: mirrorEngine.defaultCreatableSourceID(),
                 createCalendar: { name, sourceID in mirrorEngine.createDedicatedCalendar(named: name, sourceID: sourceID) },
                 onSave: { mirror in saveMirror(mirror); showMirrorSheet = false },
-                onCancel: { showMirrorSheet = false }
+                onCancel: { showMirrorSheet = false },
+                diagnosticLog: diagnosticLog
             )
         }
         .task { quickAddCalendars = await calendarManager.eventKitCalendars() }

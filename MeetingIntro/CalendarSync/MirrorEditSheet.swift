@@ -16,6 +16,7 @@ struct MirrorEditSheet: View {
     var createCalendar: (_ name: String, _ sourceID: String?) -> String?
     let onSave: (Mirror) -> Void
     let onCancel: () -> Void
+    let diagnosticLog: DiagnosticLog
 
     @State private var calendars: [CalendarInfo] = []
     @State private var calendarsLoaded = false
@@ -111,15 +112,17 @@ struct MirrorEditSheet: View {
                         .font(.caption2).foregroundStyle(.secondary)
                     Toggle("Delete the copies when I turn this mirror off", isOn: $deleteCopiesOnDisable)
                 }
-
-                if let error {
-                    Section { Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange).font(.caption) }
-                }
             }
             .formStyle(.grouped)
 
             Divider()
-            HStack {
+            HStack(spacing: 10) {
+                // Error sits in the always-visible bottom bar so a validation bail
+                // can't hide below the fold of the scrolling form.
+                if let error {
+                    Label(error, systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange).font(.caption).lineLimit(2)
+                }
                 Spacer()
                 Button("Cancel", action: onCancel)
                 Button(existing == nil ? "Create" : "Save") { save() }
@@ -134,6 +137,7 @@ struct MirrorEditSheet: View {
         .task {
             calendars = await loadCalendars()
             calendarsLoaded = true
+            diagnosticLog.info(.calendar, "Mirror sheet opened — \(calendars.count) calendars loaded, \(writableCalendars.count) writable, \(creatableSources.count) creatable sources")
         }
     }
 
@@ -148,11 +152,18 @@ struct MirrorEditSheet: View {
         deleteCopiesOnDisable = m.deleteCopiesOnDisable
     }
 
+    /// Set the error AND log it, so a silent validation bail is visible in Diagnostics.
+    private func fail(_ message: String) {
+        error = message
+        diagnosticLog.warn(.calendar, "Mirror create blocked: \(message)")
+    }
+
     private func save() {
         error = nil
         let trimmedName = name.trimmingCharacters(in: .whitespaces)
-        guard !trimmedName.isEmpty else { error = "Give the mirror a name."; return }
-        guard !selectedSources.isEmpty else { error = "Pick at least one source calendar."; return }
+        diagnosticLog.info(.calendar, "Mirror Create tapped — name='\(trimmedName)', sources=\(selectedSources.count), newCalendar=\(useNewCalendar), existingDest=\(existingDestinationID.isEmpty ? "none" : "set")")
+        guard !trimmedName.isEmpty else { fail("Give the mirror a name."); return }
+        guard !selectedSources.isEmpty else { fail("Pick at least one source calendar."); return }
 
         // Resolve destination.
         let destinationID: String
@@ -165,25 +176,25 @@ struct MirrorEditSheet: View {
                 isDedicated = true
             } else {
                 let calName = newCalendarName.trimmingCharacters(in: .whitespaces)
-                guard !calName.isEmpty else { error = "Name the new calendar."; return }
+                guard !calName.isEmpty else { fail("Name the new calendar."); return }
                 let sourceID = newCalendarSourceID.isEmpty ? nil : newCalendarSourceID
                 guard let id = createCalendar(calName, sourceID) else {
-                    error = "Couldn't create the calendar in that account. Google/Microsoft don't allow it — create the calendar there first, then use \"Existing calendar.\""
+                    fail("Couldn't create the calendar in that account. Google/Microsoft don't allow it — create the calendar there first, then use \"Existing calendar.\"")
                     return
                 }
                 destinationID = id
                 isDedicated = true
             }
         } else {
-            guard !existingDestinationID.isEmpty else { error = "Choose a destination calendar."; return }
-            guard isWritable(existingDestinationID) else { error = "That calendar is read-only."; return }
+            guard !existingDestinationID.isEmpty else { fail("Choose a destination calendar."); return }
+            guard isWritable(existingDestinationID) else { fail("That calendar is read-only."); return }
             destinationID = existingDestinationID
             isDedicated = false
         }
 
         // Loop guard: destination can't be a source.
         guard !selectedSources.contains(destinationID) else {
-            error = "The destination can't also be a source."; return
+            fail("The destination can't also be a source."); return
         }
 
         var mirror = existing ?? Mirror(name: trimmedName, sourceCalendarIDs: [], destinationCalendarID: destinationID, isDedicatedCalendar: isDedicated)
