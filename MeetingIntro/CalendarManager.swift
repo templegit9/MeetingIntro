@@ -10,8 +10,13 @@ final class CalendarManager: ObservableObject {
 
     // MARK: - Published State
 
-    /// All upcoming meetings from the active provider.
+    /// All upcoming meetings from the active provider (reminder-scoped window).
     @Published var upcomingMeetings: [MeetingEvent] = []
+
+    /// A wider window (default 7 days) for the menu-bar "upcoming days" browser. Same
+    /// fetch as `upcomingMeetings`, just not filtered down to the reminder window — so
+    /// the future-date views have data without touching the reminder/cancellation paths.
+    @Published var upcomingWeek: [MeetingEvent] = []
 
     /// Meetings whose start time has passed but end time has not. Updated on each poll.
     /// Used by `MeetingHandoffCoordinator` to drive enter/exit side effects.
@@ -85,6 +90,34 @@ final class CalendarManager: ObservableObject {
         let endOfDay = Calendar.current.date(bySettingHour: 23, minute: 59, second: 59, of: Date())
             ?? Date().addingTimeInterval(86400)
         return max(3600, endOfDay.timeIntervalSinceNow + 7200)
+    }
+
+    /// How many days ahead the upcoming-days browser loads (1–30, default 7).
+    var upcomingDaysAhead: Int {
+        let stored = UserDefaults.standard.object(forKey: "upcomingDaysAhead") as? Int ?? 7
+        return max(1, min(30, stored))
+    }
+
+    /// Future days (excluding today), each with its events sorted by start, for the
+    /// menu-bar browser. Empty days are omitted. Cancelled meetings are included so the
+    /// user sees them struck-through, mirroring the today list.
+    func upcomingDaySchedules() -> [(date: Date, events: [MeetingEvent])] {
+        let cal = Calendar.current
+        let grouped = Dictionary(grouping: upcomingWeek.filter { !cal.isDateInToday($0.startDate) && $0.startDate > Date() }) {
+            cal.startOfDay(for: $0.startDate)
+        }
+        return grouped.keys.sorted().map { day in
+            (date: day, events: grouped[day]!.sorted { $0.startDate < $1.startDate })
+        }
+    }
+
+    /// Events for a single calendar day (used by the popover day-navigator). Includes
+    /// today; sorted by start.
+    func events(on day: Date) -> [MeetingEvent] {
+        let cal = Calendar.current
+        return upcomingWeek
+            .filter { cal.isDate($0.startDate, inSameDayAs: day) }
+            .sorted { $0.startDate < $1.startDate }
     }
 
     /// Set of calendar IDs to monitor (empty = all).
@@ -286,10 +319,19 @@ final class CalendarManager: ObservableObject {
                 isAuthorized = true
             }
 
-            let events = try await activeProvider.fetchUpcomingEvents(within: lookAheadInterval)
-            upcomingMeetings = events
-            diagnosticLog?.debug(.calendar, "Poll: \(events.count) events in window (\(activeProviderType.rawValue))")
+            // Fetch a WIDER window (for the upcoming-days browser) in a single call,
+            // then derive `upcomingMeetings` by filtering back to the original reminder
+            // window — so every reminder/cancellation/auto-join consumer behaves exactly
+            // as before, and only the browsing UI sees the extra days.
+            let reminderWindow = lookAheadInterval
+            let browseWindow = max(reminderWindow, TimeInterval(upcomingDaysAhead) * 86400)
+            let allEvents = try await activeProvider.fetchUpcomingEvents(within: browseWindow)
             let now = Date()
+            let reminderWindowEnd = now.addingTimeInterval(reminderWindow)
+            let events = allEvents.filter { $0.startDate <= reminderWindowEnd }
+            upcomingMeetings = events
+            upcomingWeek = allEvents
+            diagnosticLog?.debug(.calendar, "Poll: \(events.count) in reminder window, \(allEvents.count) in \(upcomingDaysAhead)-day browse window (\(activeProviderType.rawValue))")
             meetingsCurrentlyRunning = events.filter { $0.startDate <= now && now < $0.endDate && !$0.isCancelled }
             todaysMeetings = events
                 .filter { Calendar.current.isDateInToday($0.startDate) }

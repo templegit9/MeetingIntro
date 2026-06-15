@@ -75,6 +75,8 @@ struct MeetingIntroApp: App {
     @StateObject private var mirrorConfig = MirrorConfigManager()
     @StateObject private var mirrorEngine = CalendarMirrorEngine()
     @StateObject private var menuBarCountdown = MenuBarCountdownModel()
+    @StateObject private var lifecycleManager = AppLifecycleManager()
+    @StateObject private var upcomingPanel = UpcomingPanelController()
 
     init() {
         let router = AudioRouter()
@@ -101,46 +103,79 @@ struct MeetingIntroApp: App {
         _notesPipeline = StateObject(wrappedValue: MeetingNotesPipeline(notesConfig: nConfig, quickAddConfig: qaConfig))
     }
 
-    var body: some Scene {
-        // MARK: - Menu Bar
-        MenuBarExtra {
-            MenuBarView(
-                calendarManager: calendarManager,
-                audioManager: audioManager,
-                overlayController: overlayController,
-                voiceReminder: voiceReminder,
-                notificationManager: notificationManager,
-                countdownConfig: countdownConfig,
-                mixkitSounds: mixkitSounds,
-                contextMonitor: contextMonitor,
-                smartConfig: smartConfig,
-                audioRouter: audioRouter,
-                handoffConfig: handoffConfig,
-                handoffCoordinator: handoffCoordinator,
-                recordingConfig: recordingConfig,
-                recordingController: recordingController,
-                recordingCoordinator: recordingCoordinator,
-                quickAddPanel: quickAddPanel,
-                notesPipeline: notesPipeline,
-                diagnosticLog: diagnosticLog,
-                mirrorConfig: mirrorConfig,
-                mirrorEngine: mirrorEngine,
-                menuBarCountdown: menuBarCountdown
-            )
-        } label: {
-            // When recording, swap the menu bar glyph to a red record symbol so the
-            // user has an at-a-glance signal from anywhere on screen — not just the
-            // OS-level dot, which isn't MeetingIntro-specific.
-            // The armed-meeting countdown lives in its OWN NSStatusItem (managed by
-            // MenuBarCountdownModel) so it can be clicked to cancel — this label is
-            // just the app icon (red while recording).
+    /// Single wiring point, called from the always-present menu-bar label so it runs in
+    /// both menu and popover styles. Idempotent (guarded inside observe()).
+    private func wireLifecycle() {
+        lifecycleManager.observe(
+            calendarManager: calendarManager,
+            overlayController: overlayController,
+            audioManager: audioManager,
+            voiceReminder: voiceReminder,
+            notificationManager: notificationManager,
+            countdownConfig: countdownConfig,
+            mixkitSounds: mixkitSounds,
+            contextMonitor: contextMonitor,
+            smartConfig: smartConfig,
+            handoffCoordinator: handoffCoordinator,
+            recordingCoordinator: recordingCoordinator,
+            quickAddPanel: quickAddPanel,
+            notesPipeline: notesPipeline,
+            diagnosticLog: diagnosticLog,
+            mirrorConfig: mirrorConfig,
+            mirrorEngine: mirrorEngine,
+            menuBarCountdown: menuBarCountdown
+        )
+    }
+
+    /// The always-present status-bar label. observe() (the single wiring point) runs on
+    /// its onAppear so it fires in both menu and popover styles. Red while recording.
+    @ViewBuilder private var menuBarLabel: some View {
+        Group {
             if recordingController.isRecording {
                 Label("Recording", systemImage: "record.circle.fill")
             } else {
                 Label("MeetingIntro", systemImage: "clock.badge.checkmark")
             }
         }
-        .menuBarExtraStyle(.menu)
+        .onAppear { wireLifecycle() }
+    }
+
+    @ViewBuilder private var menuContent: some View {
+        MenuBarView(
+            calendarManager: calendarManager,
+            audioManager: audioManager,
+            overlayController: overlayController,
+            voiceReminder: voiceReminder,
+            notificationManager: notificationManager,
+            countdownConfig: countdownConfig,
+            mixkitSounds: mixkitSounds,
+            contextMonitor: contextMonitor,
+            smartConfig: smartConfig,
+            audioRouter: audioRouter,
+            handoffConfig: handoffConfig,
+            handoffCoordinator: handoffCoordinator,
+            recordingConfig: recordingConfig,
+            recordingController: recordingController,
+            recordingCoordinator: recordingCoordinator,
+            quickAddPanel: quickAddPanel,
+            notesPipeline: notesPipeline,
+            diagnosticLog: diagnosticLog,
+            mirrorConfig: mirrorConfig,
+            mirrorEngine: mirrorEngine,
+            menuBarCountdown: menuBarCountdown,
+            upcomingPanel: upcomingPanel
+        )
+    }
+
+    var body: some Scene {
+        // MARK: - Menu Bar
+        // Two MenuBarExtra variants: the style modifiers (.menu vs .window) are distinct
+        // concrete types, so they can't be selected with a ternary, and SceneBuilder has
+        // no buildEither (if/else). Two standalone `if`s (buildOptional) — mutually
+        // exclusive — are the way. Switching at runtime recreates the status item (a
+        // relaunch may be needed for a clean swap).
+        MenuBarExtra { menuContent } label: { menuBarLabel }
+            .menuBarExtraStyle(.menu)
 
         // MARK: - Settings Window
         Settings {
@@ -187,6 +222,10 @@ struct MeetingIntroApp: App {
 @MainActor
 final class AppLifecycleManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
+    /// observe() wires subscriptions that must be set up exactly once. It's now driven
+    /// from the always-present menu-bar label (so it runs in both menu and popover
+    /// styles); this guard makes repeat onAppear calls no-ops instead of double-wiring.
+    private var hasObserved = false
 
     // Cancellation-overlay hold bookkeeping (smart-context hold on the notice).
     /// When the smart-context hold first engaged for the current pending set (nil = not held).
@@ -231,6 +270,9 @@ final class AppLifecycleManager: ObservableObject {
         mirrorEngine: CalendarMirrorEngine,
         menuBarCountdown: MenuBarCountdownModel
     ) {
+        guard !hasObserved else { return }
+        hasObserved = true
+
         // Wire the config manager into CalendarManager
         calendarManager.countdownConfigs = countdownConfig
         menuBarCountdown.configure(calendarManager: calendarManager, countdownConfig: countdownConfig)
@@ -513,12 +555,17 @@ struct MenuBarView: View {
     @ObservedObject var mirrorConfig: MirrorConfigManager
     @ObservedObject var mirrorEngine: CalendarMirrorEngine
     @ObservedObject var menuBarCountdown: MenuBarCountdownModel
+    @ObservedObject var upcomingPanel: UpcomingPanelController
 
     @Environment(\.openWindow) private var openWindow
 
-    @StateObject private var lifecycleManager = AppLifecycleManager()
     @AppStorage("cancellationShowInTodayView") private var showCancelledInTodayView: Bool = true
     @AppStorage("nextMeetingHighlightHex") private var nextMeetingHighlightHex: String = defaultNextMeetingHighlightHex
+    @AppStorage(UpcomingViewStyle.storageKey) private var upcomingViewStyleRaw: String = UpcomingViewStyle.off.rawValue
+
+    private var upcomingViewStyle: UpcomingViewStyle {
+        UpcomingViewStyle(rawValue: upcomingViewStyleRaw) ?? .off
+    }
 
     /// Today's meetings as displayed — cancelled ones filtered out when the user
     /// has turned off "show cancelled meetings in Today's Meetings". Display-side
@@ -647,6 +694,58 @@ struct MenuBarView: View {
         return prefix + time + Text(" ") + title + status + rsvp + countdown
     }
 
+    /// Future-date submenus (NSMenu native ▸ chevron) — options 1 & 2. The popover
+    /// style is handled by swapping the whole dropdown, so it renders nothing here.
+    @ViewBuilder
+    private var upcomingSubmenus: some View {
+        switch upcomingViewStyle {
+        case .off:
+            EmptyView()
+        case .popover:
+            Button("Browse Upcoming Days…") {
+                upcomingPanel.toggle(calendarManager: calendarManager)
+            }
+            .keyboardShortcut("u")
+        case .upcomingSubmenu:
+            let schedules = calendarManager.upcomingDaySchedules()
+            if !schedules.isEmpty {
+                Menu {
+                    ForEach(schedules, id: \.date) { day in
+                        Text(UpcomingDayFormat.header(for: day.date))
+                            .font(.system(.caption, weight: .semibold))
+                            .foregroundColor(.secondary)
+                        ForEach(day.events.prefix(10)) { meeting in
+                            meetingRowText(for: meeting)
+                        }
+                        if day.events.count > 10 {
+                            Text("+ \(day.events.count - 10) more")
+                                .font(.caption2).foregroundColor(.secondary)
+                        }
+                    }
+                } label: {
+                    Label("Upcoming", systemImage: "calendar.badge.clock")
+                }
+            }
+        case .perDay:
+            let schedules = calendarManager.upcomingDaySchedules()
+            if !schedules.isEmpty {
+                ForEach(schedules, id: \.date) { day in
+                    Menu {
+                        ForEach(day.events.prefix(10)) { meeting in
+                            meetingRowText(for: meeting)
+                        }
+                        if day.events.count > 10 {
+                            Text("+ \(day.events.count - 10) more")
+                                .font(.caption2).foregroundColor(.secondary)
+                        }
+                    } label: {
+                        Text("\(UpcomingDayFormat.header(for: day.date))  ·  \(day.events.count)")
+                    }
+                }
+            }
+        }
+    }
+
     var body: some View {
         Group {
             // Recording status — shown above everything else when active so the user
@@ -733,6 +832,10 @@ struct MenuBarView: View {
                 }
             }
 
+            // Future-date browsing (options 1 & 2). The popover style replaces the whole
+            // dropdown elsewhere, so it renders nothing here.
+            upcomingSubmenus
+
             Divider()
 
             if let error = calendarManager.errorMessage {
@@ -775,27 +878,6 @@ struct MenuBarView: View {
             .keyboardShortcut("q")
         }
         .frame(minWidth: 280, alignment: .leading)
-        .onAppear {
-            lifecycleManager.observe(
-                calendarManager: calendarManager,
-                overlayController: overlayController,
-                audioManager: audioManager,
-                voiceReminder: voiceReminder,
-                notificationManager: notificationManager,
-                countdownConfig: countdownConfig,
-                mixkitSounds: mixkitSounds,
-                contextMonitor: contextMonitor,
-                smartConfig: smartConfig,
-                handoffCoordinator: handoffCoordinator,
-                recordingCoordinator: recordingCoordinator,
-                quickAddPanel: quickAddPanel,
-                notesPipeline: notesPipeline,
-                diagnosticLog: diagnosticLog,
-                mirrorConfig: mirrorConfig,
-                mirrorEngine: mirrorEngine,
-                menuBarCountdown: menuBarCountdown
-            )
-        }
     }
 }
 

@@ -95,6 +95,8 @@ struct SettingsView: View {
     @State private var newLinkURL: String = ""
     @State private var editingTemplate: QuickAddTemplate?
 
+    @AppStorage(UpcomingViewStyle.storageKey) private var upcomingViewStyleRaw: String = UpcomingViewStyle.off.rawValue
+    @AppStorage("upcomingDaysAhead") private var upcomingDaysAhead: Int = 7
     @AppStorage("cancellationShowInTodayView") private var cancellationShowInTodayView: Bool = true
     @AppStorage("cancellationShowOverlay") private var cancellationShowOverlay: Bool = false
     @AppStorage("cancellationOverlayPosition") private var cancellationOverlayPosition: String = OverlayWindowController.CancellationOverlayPosition.topRight.rawValue
@@ -708,6 +710,21 @@ struct SettingsView: View {
                 }
                 .disabled(!countdownConfig.autoJoinImminentOverlayEnabled || !countdownConfig.autoJoinEnabled || !countdownConfig.joinButtonEnabled)
                 Text("A small, non-blocking heads-up (with Join now / Cancel) appears in the corner shortly before an armed meeting opens.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Upcoming Events (menu bar)") {
+                Picker("Show future days as", selection: $upcomingViewStyleRaw) {
+                    ForEach(UpcomingViewStyle.allCases) { style in
+                        Text(style.displayName).tag(style.rawValue)
+                    }
+                }
+                Stepper(value: $upcomingDaysAhead, in: 1...30) {
+                    Text("Load \(upcomingDaysAhead) day\(upcomingDaysAhead == 1 ? "" : "s") ahead")
+                }
+                .disabled((UpcomingViewStyle(rawValue: upcomingViewStyleRaw) ?? .off) == .off)
+                Text((UpcomingViewStyle(rawValue: upcomingViewStyleRaw) ?? .off).detail)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
