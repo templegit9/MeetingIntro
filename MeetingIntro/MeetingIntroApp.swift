@@ -145,41 +145,26 @@ struct MeetingIntroApp: App {
     }
 
     @ViewBuilder private var menuContent: some View {
-        MenuBarView(
+        // The dropdown is a `.window`-style popover (see body comment). Default content
+        // is the compact menu-styled view; the rich popover comes in Phase 2 behind a
+        // setting.
+        CompactMenuView(
             calendarManager: calendarManager,
-            audioManager: audioManager,
-            overlayController: overlayController,
-            voiceReminder: voiceReminder,
-            notificationManager: notificationManager,
-            countdownConfig: countdownConfig,
-            mixkitSounds: mixkitSounds,
-            contextMonitor: contextMonitor,
-            smartConfig: smartConfig,
-            audioRouter: audioRouter,
-            handoffConfig: handoffConfig,
-            handoffCoordinator: handoffCoordinator,
-            recordingConfig: recordingConfig,
             recordingController: recordingController,
             recordingCoordinator: recordingCoordinator,
             quickAddPanel: quickAddPanel,
-            notesPipeline: notesPipeline,
-            diagnosticLog: diagnosticLog,
-            mirrorConfig: mirrorConfig,
-            mirrorEngine: mirrorEngine,
-            menuBarCountdown: menuBarCountdown,
-            upcomingPanel: upcomingPanel,
             updater: updater
         )
     }
 
     var body: some Scene {
         // MARK: - Menu Bar
-        // Single native menu. The "Day browser popover" Upcoming style is a floating
-        // panel opened from a menu item (UpcomingPanelController) rather than a
-        // .window-style dropdown, because MenuBarExtra can't switch .menu/.window at
-        // runtime (SceneBuilder has no buildEither and the styles are incompatible types).
+        // `.window` style (not `.menu`): the native menu can't coexist with the rich
+        // popover and SceneBuilder can't switch styles at runtime, so the dropdown is a
+        // SwiftUI popover. Content branches (Phase 2) between CompactMenuView (default)
+        // and the rich PopoverRootView. observe() runs from the always-present label.
         MenuBarExtra { menuContent } label: { menuBarLabel }
-            .menuBarExtraStyle(.menu)
+            .menuBarExtraStyle(.window)
 
         // MARK: - Settings Window
         Settings {

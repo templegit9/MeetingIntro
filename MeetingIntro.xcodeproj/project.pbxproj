@@ -52,6 +52,7 @@
 		BADF623C56CC45E4F43B439A /* QuickAddView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05D74E00B1E2E60AC7158BD4 /* QuickAddView.swift */; };
 		C7D67F889CA6E39386F2B34D /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79AB0D1338EB2A471C1C13FD /* AudioManager.swift */; };
 		C8676CAB632124F3AFBD267B /* GraphCalendarProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 711DFD4598AE2E83744CCFBD /* GraphCalendarProvider.swift */; };
+		CA44BA8AC38617402B107E82 /* CompactMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65AA4DF0A8F95DD6C9C2EBE4 /* CompactMenuView.swift */; };
 		CC7683CA9E1E90FD5AC1A39F /* AudioRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06B89F3A47268C68A4AF32C6 /* AudioRouter.swift */; };
 		CEEF992EE3D7FEA673D18ADE /* RecordingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = E21F519F51FBE4A4BD52367A /* RecordingSession.swift */; };
 		D195FE28659E1B2C38932999 /* CountdownOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D81EBB57F5E6FDD478BC43 /* CountdownOverlayView.swift */; };
@@ -93,6 +94,7 @@
 		570F13DE8551AC2384BF9DB7 /* MeetingDetailsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDetailsPanel.swift; sourceTree = "<group>"; };
 		57848C89CCB36538773C65EE /* AutoJoinImminentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoJoinImminentView.swift; sourceTree = "<group>"; };
 		57ADDD7395104BDD5BE47459 /* MenuBarCountdownModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarCountdownModel.swift; sourceTree = "<group>"; };
+		65AA4DF0A8F95DD6C9C2EBE4 /* CompactMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactMenuView.swift; sourceTree = "<group>"; };
 		675F9C5FC04AEF4EF60B3806 /* TemplateEditSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateEditSheet.swift; sourceTree = "<group>"; };
 		67C9C4B04514972B0139B4A6 /* MeetingRecordingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingRecordingCoordinator.swift; sourceTree = "<group>"; };
 		68E04A0A0326198310A91568 /* MeetingContextMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingContextMonitor.swift; sourceTree = "<group>"; };
@@ -243,6 +245,7 @@
 				8A99A9D2EE9624DA582CD8D5 /* CalendarManager.swift */,
 				0DD250C84523C24862974C5D /* CalendarProvider.swift */,
 				F2918B368AF626877462E126 /* CancellationOverlayView.swift */,
+				65AA4DF0A8F95DD6C9C2EBE4 /* CompactMenuView.swift */,
 				28D229B727F2C87F6712FCC4 /* ConferenceLinkExtractor.swift */,
 				2BA29FA390A4A1D580C895A8 /* CountdownConfig.swift */,
 				B4D81EBB57F5E6FDD478BC43 /* CountdownOverlayView.swift */,
@@ -371,6 +374,7 @@
 				6D165CF43230BB289017217D /* CalendarMirrorEngine.swift in Sources */,
 				3CEA795EFAD5F9E28F297D07 /* CalendarProvider.swift in Sources */,
 				159AA5A9C571071C598623DA /* CancellationOverlayView.swift in Sources */,
+				CA44BA8AC38617402B107E82 /* CompactMenuView.swift in Sources */,
 				4FAA179DD289F0BA7A5C83E8 /* ConferenceLinkExtractor.swift in Sources */,
 				06F32CFDCF41BE6E7F8D56FE /* CountdownConfig.swift in Sources */,
 				D195FE28659E1B2C38932999 /* CountdownOverlayView.swift in Sources */,

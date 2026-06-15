@@ -14,6 +14,17 @@ demonstrates; our current `.menu` style fundamentally can't render it (text-only
 Non-goals (this phase): changing reminder/overlay logic, calendar backends, or any data model.
 This is a **presentation-layer** project.
 
+> **ARCHITECTURE REVISED (during Phase 1).** The original plan (drop `MenuBarExtra`, own the
+> `NSStatusItem`, hand-build the native `NSMenu`) was abandoned after two findings: (a) SceneBuilder
+> rejects *any* conditional around scenes (even a single `if`), and (b) a hand-built AppKit `NSMenu`
+> **cannot reliably open the SwiftUI `Settings` scene** — that's the v2.7.1 `showSettingsWindow:`
+> failure, and `SettingsLink` is SwiftUI-only. **New approach:** keep `MenuBarExtra`, switch it to
+> **`.window` style always**, and **branch the content** (ViewBuilder `if/else`, which works inside a
+> view): a compact menu-styled SwiftUI view (default) vs the rich popover. All SwiftUI; no status-item
+> ownership, no `NSMenu` port, no services move; `SettingsLink`/`observe()` unchanged. **Tradeoff:** the
+> true native `NSMenu` is retired — the default becomes a SwiftUI menu-styled popover. §2 below is kept
+> for historical context but no longer reflects the chosen path.
+
 ## 2. Why this needs an architecture change
 
 `MenuBarExtra` **cannot switch between `.menu` and `.window` styles at runtime** — SwiftUI's
