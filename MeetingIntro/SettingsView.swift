@@ -97,6 +97,8 @@ struct SettingsView: View {
 
     @AppStorage(UpcomingViewStyle.storageKey) private var upcomingViewStyleRaw: String = UpcomingViewStyle.off.rawValue
     @AppStorage("upcomingDaysAhead") private var upcomingDaysAhead: Int = 7
+    @AppStorage(UpcomingDayLabelFormat.storageKey) private var dayLabelFormatRaw: String = UpcomingDayLabelFormat.compact.rawValue
+    @AppStorage(UpcomingDayLabelFormat.showCountKey) private var upcomingShowCount: Bool = true
     @AppStorage("cancellationShowInTodayView") private var cancellationShowInTodayView: Bool = true
     @AppStorage("cancellationShowOverlay") private var cancellationShowOverlay: Bool = false
     @AppStorage("cancellationOverlayPosition") private var cancellationOverlayPosition: String = OverlayWindowController.CancellationOverlayPosition.topRight.rawValue
@@ -146,6 +148,7 @@ struct SettingsView: View {
                 case .quickAdd:  quickAddTab
                 case .calendarSync: calendarSyncTab
                 case .countdown: countdownTab
+                case .menuBar:   menuBarTab
                 case .smart:     smartTab
                 case .voice:     voiceTab
                 case .sounds:    soundsTab
@@ -614,6 +617,56 @@ struct SettingsView: View {
         mirrorEngine.reconcileAll()
     }
 
+    // MARK: - Menu Bar Tab
+
+    private var menuBarTab: some View {
+        Form {
+            Section("Upcoming Events") {
+                Picker("Show future days as", selection: $upcomingViewStyleRaw) {
+                    ForEach(UpcomingViewStyle.allCases) { style in
+                        Text(style.displayName).tag(style.rawValue)
+                    }
+                }
+                Text((UpcomingViewStyle(rawValue: upcomingViewStyleRaw) ?? .off).detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Stepper(value: $upcomingDaysAhead, in: 1...30) {
+                    Text("Load \(upcomingDaysAhead) day\(upcomingDaysAhead == 1 ? "" : "s") ahead")
+                }
+                .disabled((UpcomingViewStyle(rawValue: upcomingViewStyleRaw) ?? .off) == .off)
+            }
+
+            Section("Day Label Format") {
+                Picker("Format", selection: $dayLabelFormatRaw) {
+                    ForEach(UpcomingDayLabelFormat.allCases) { fmt in
+                        Text(fmt.displayName).tag(fmt.rawValue)
+                    }
+                }
+                .pickerStyle(.inline)
+                .disabled((UpcomingViewStyle(rawValue: upcomingViewStyleRaw) ?? .off) == .off)
+                Toggle("Show meeting count on each day", isOn: $upcomingShowCount)
+                    .disabled((UpcomingViewStyle(rawValue: upcomingViewStyleRaw) ?? .off) == .off)
+                Text("Preview:  \((UpcomingDayLabelFormat(rawValue: dayLabelFormatRaw) ?? .compact).label(date: Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date(), count: 7, showCount: upcomingShowCount))")
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Today's Meetings") {
+                ColorPicker("Next-meeting highlight color", selection: Binding(
+                    get: { Color(hex: nextMeetingHighlightHex) },
+                    set: { nextMeetingHighlightHex = $0.hexString }
+                ), supportsOpacity: false)
+                Button("Reset to default") { nextMeetingHighlightHex = defaultNextMeetingHighlightHex }
+                    .controlSize(.small)
+                Text("In the menu bar dropdown, the next upcoming meeting is marked with ▸, bolded, shown in this color with a countdown; already-ended meetings are dimmed.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+    }
+
     // MARK: - Countdown Tab
 
     private var countdownTab: some View {
@@ -710,33 +763,6 @@ struct SettingsView: View {
                 }
                 .disabled(!countdownConfig.autoJoinImminentOverlayEnabled || !countdownConfig.autoJoinEnabled || !countdownConfig.joinButtonEnabled)
                 Text("A small, non-blocking heads-up (with Join now / Cancel) appears in the corner shortly before an armed meeting opens.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section("Upcoming Events (menu bar)") {
-                Picker("Show future days as", selection: $upcomingViewStyleRaw) {
-                    ForEach(UpcomingViewStyle.allCases) { style in
-                        Text(style.displayName).tag(style.rawValue)
-                    }
-                }
-                Stepper(value: $upcomingDaysAhead, in: 1...30) {
-                    Text("Load \(upcomingDaysAhead) day\(upcomingDaysAhead == 1 ? "" : "s") ahead")
-                }
-                .disabled((UpcomingViewStyle(rawValue: upcomingViewStyleRaw) ?? .off) == .off)
-                Text((UpcomingViewStyle(rawValue: upcomingViewStyleRaw) ?? .off).detail)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section("Today's Meetings (menu bar)") {
-                ColorPicker("Next-meeting highlight color", selection: Binding(
-                    get: { Color(hex: nextMeetingHighlightHex) },
-                    set: { nextMeetingHighlightHex = $0.hexString }
-                ), supportsOpacity: false)
-                Button("Reset to default") { nextMeetingHighlightHex = defaultNextMeetingHighlightHex }
-                    .controlSize(.small)
-                Text("In the menu bar dropdown, the next upcoming meeting is marked with ▸, bolded, shown in this color with a countdown; already-ended meetings are dimmed.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -2032,6 +2058,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
     case quickAdd
     case calendarSync
     case countdown
+    case menuBar
     case smart
     case voice
     case sounds
@@ -2049,6 +2076,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
         case .quickAdd:  return "Quick Add"
         case .calendarSync: return "Calendar Sync"
         case .countdown: return "Countdown"
+        case .menuBar:   return "Menu Bar"
         case .smart:     return "Smart"
         case .voice:     return "Voice"
         case .sounds:    return "Sounds"
@@ -2068,6 +2096,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
         case .quickAdd:  return "square.and.pencil"
         case .calendarSync: return "arrow.triangle.2.circlepath"
         case .countdown: return "timer"
+        case .menuBar:   return "menubar.rectangle"
         case .smart:     return "brain"
         case .voice:     return "waveform"
         case .sounds:    return "speaker.wave.2"
@@ -2084,7 +2113,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
     var group: SettingsGroup {
         switch self {
         case .calendar, .quickAdd, .calendarSync:        return .sources
-        case .countdown, .smart, .voice, .sounds:        return .reminders
+        case .countdown, .menuBar, .smart, .voice, .sounds: return .reminders
         case .audio, .handoff, .recording:               return .inMeeting
         case .whatsNew, .diagnostics, .guide, .about:    return .help
         }

@@ -568,9 +568,14 @@ struct MenuBarView: View {
     @AppStorage("cancellationShowInTodayView") private var showCancelledInTodayView: Bool = true
     @AppStorage("nextMeetingHighlightHex") private var nextMeetingHighlightHex: String = defaultNextMeetingHighlightHex
     @AppStorage(UpcomingViewStyle.storageKey) private var upcomingViewStyleRaw: String = UpcomingViewStyle.off.rawValue
+    @AppStorage(UpcomingDayLabelFormat.storageKey) private var dayLabelFormatRaw: String = UpcomingDayLabelFormat.compact.rawValue
+    @AppStorage(UpcomingDayLabelFormat.showCountKey) private var upcomingShowCount: Bool = true
 
     private var upcomingViewStyle: UpcomingViewStyle {
         UpcomingViewStyle(rawValue: upcomingViewStyleRaw) ?? .off
+    }
+    private var dayLabelFormat: UpcomingDayLabelFormat {
+        UpcomingDayLabelFormat(rawValue: dayLabelFormatRaw) ?? .compact
     }
 
     /// Today's meetings as displayed — cancelled ones filtered out when the user
@@ -717,7 +722,7 @@ struct MenuBarView: View {
             if !schedules.isEmpty {
                 Menu {
                     ForEach(schedules, id: \.date) { day in
-                        Text(UpcomingDayFormat.header(for: day.date))
+                        Text(dayLabelFormat.label(date: day.date, count: day.events.count, showCount: upcomingShowCount))
                             .font(.system(.caption, weight: .semibold))
                             .foregroundColor(.secondary)
                         ForEach(day.events.prefix(10)) { meeting in
@@ -745,7 +750,7 @@ struct MenuBarView: View {
                                 .font(.caption2).foregroundColor(.secondary)
                         }
                     } label: {
-                        Text("\(UpcomingDayFormat.header(for: day.date))  ·  \(day.events.count)")
+                        Text(dayLabelFormat.label(date: day.date, count: day.events.count, showCount: upcomingShowCount))
                     }
                 }
             }
