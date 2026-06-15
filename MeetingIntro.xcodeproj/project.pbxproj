@@ -50,6 +50,7 @@
 		B0CB597A37C8A1BDC0AFD335 /* MeetingHandoffCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDFC8F7479FAF2BB94D98907 /* MeetingHandoffCoordinator.swift */; };
 		B7EA1C818EBD405895A0EB6F /* FocusModeDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B8186D8004986233B28EE7F /* FocusModeDetector.swift */; };
 		BADF623C56CC45E4F43B439A /* QuickAddView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05D74E00B1E2E60AC7158BD4 /* QuickAddView.swift */; };
+		C02348FCACD90D6B40D0A6EA /* PopoverRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B13DD9777C3BA467B874853 /* PopoverRootView.swift */; };
 		C7D67F889CA6E39386F2B34D /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79AB0D1338EB2A471C1C13FD /* AudioManager.swift */; };
 		C8676CAB632124F3AFBD267B /* GraphCalendarProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 711DFD4598AE2E83744CCFBD /* GraphCalendarProvider.swift */; };
 		CA44BA8AC38617402B107E82 /* CompactMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65AA4DF0A8F95DD6C9C2EBE4 /* CompactMenuView.swift */; };
@@ -84,6 +85,7 @@
 		22E108D1CE89056097ED33FE /* OverlayWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayWindowController.swift; sourceTree = "<group>"; };
 		2415B0B2BBF77234529B496A /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		28D229B727F2C87F6712FCC4 /* ConferenceLinkExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConferenceLinkExtractor.swift; sourceTree = "<group>"; };
+		2B13DD9777C3BA467B874853 /* PopoverRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopoverRootView.swift; sourceTree = "<group>"; };
 		2BA29FA390A4A1D580C895A8 /* CountdownConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountdownConfig.swift; sourceTree = "<group>"; };
 		347676095E299FEBEE181E57 /* MenuBarPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPopoverView.swift; sourceTree = "<group>"; };
 		41B9F2E85EE737CD879A15CE /* MirrorEditSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MirrorEditSheet.swift; sourceTree = "<group>"; };
@@ -258,6 +260,7 @@
 				C252C77AB45CB10DE5063A4E /* MixkitSoundManager.swift */,
 				2415B0B2BBF77234529B496A /* NotificationManager.swift */,
 				22E108D1CE89056097ED33FE /* OverlayWindowController.swift */,
+				2B13DD9777C3BA467B874853 /* PopoverRootView.swift */,
 				EF585F8BEF5487338065E75D /* ReleaseNotesManager.swift */,
 				4291882B0E4FE689BCFF6CA7 /* SettingsView.swift */,
 				C80250FD654EC927A87CDAB4 /* UpcomingView.swift */,
@@ -406,6 +409,7 @@
 				AF1D34505247C3FC85ECEFB3 /* NotesGenerator.swift in Sources */,
 				70EA5C5D3C9C3001612AA4AC /* NotificationManager.swift in Sources */,
 				8E0C498C8FB52734B010B773 /* OverlayWindowController.swift in Sources */,
+				C02348FCACD90D6B40D0A6EA /* PopoverRootView.swift in Sources */,
 				FAC89668E4EA7DFCDB5A4B06 /* QuickAddConfig.swift in Sources */,
 				A87B427E6B6FC7EF9929EC1B /* QuickAddLink.swift in Sources */,
 				790E9BFC2359BF5ED9BA9408 /* QuickAddPanelController.swift in Sources */,

@@ -100,6 +100,7 @@ struct SettingsView: View {
     @AppStorage(UpcomingDayLabelFormat.storageKey) private var dayLabelFormatRaw: String = UpcomingDayLabelFormat.compact.rawValue
     @AppStorage(UpcomingDayLabelFormat.showCountKey) private var upcomingShowCount: Bool = true
     @AppStorage(UpcomingHeaderStyle.storageKey) private var headerStyleRaw: String = UpcomingHeaderStyle.section.rawValue
+    @AppStorage(MenuBarPresentation.storageKey) private var menuBarPresentationRaw: String = MenuBarPresentation.menu.rawValue
     @AppStorage("cancellationShowInTodayView") private var cancellationShowInTodayView: Bool = true
     @AppStorage("cancellationShowOverlay") private var cancellationShowOverlay: Bool = false
     @AppStorage("cancellationOverlayPosition") private var cancellationOverlayPosition: String = OverlayWindowController.CancellationOverlayPosition.topRight.rawValue
@@ -622,6 +623,17 @@ struct SettingsView: View {
 
     private var menuBarTab: some View {
         Form {
+            Section("Dropdown Style") {
+                Picker("Menu bar dropdown", selection: $menuBarPresentationRaw) {
+                    ForEach(MenuBarPresentation.allCases) { p in
+                        Text(p.displayName).tag(p.rawValue)
+                    }
+                }
+                .pickerStyle(.inline)
+                Text("\"Compact menu\" is the familiar list. \"Rich popover\" is a wider panel with a Today/Upcoming switcher and columned rows. (Both open from the menu bar icon.)")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
             Section("Upcoming Events") {
                 Picker("Show future days as", selection: $upcomingViewStyleRaw) {
                     ForEach(UpcomingViewStyle.allCases) { style in

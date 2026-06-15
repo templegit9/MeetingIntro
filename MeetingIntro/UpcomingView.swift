@@ -34,6 +34,22 @@ enum UpcomingViewStyle: String, CaseIterable, Identifiable {
     static let storageKey = "upcomingViewStyle"
 }
 
+/// How the menu-bar dropdown is presented. Both are SwiftUI views in a `.window`
+/// MenuBarExtra (the native NSMenu was retired — see docs/popover-redesign-spec.md).
+enum MenuBarPresentation: String, CaseIterable, Identifiable {
+    case menu      // compact, menu-styled list (CompactMenuView) — default
+    case popover   // rich CodexBar-style popover (PopoverRootView)
+
+    var id: String { rawValue }
+    var displayName: String {
+        switch self {
+        case .menu: return "Compact menu"
+        case .popover: return "Rich popover"
+        }
+    }
+    static let storageKey = "menuBarPresentation"
+}
+
 /// How a day's row is labelled in the upcoming submenus (user-selectable).
 enum UpcomingDayLabelFormat: String, CaseIterable, Identifiable {
     case compact     // "Tomorrow · 7"
