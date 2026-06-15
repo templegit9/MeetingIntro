@@ -37,12 +37,39 @@ struct PopoverRootView: View {
         VStack(alignment: .leading, spacing: 0) {
             header
             Divider()
+            if tab == .today {
+                // Hero + live-state cards tick once a second (countdowns). The event
+                // list shows static start times, so it stays outside the TimelineView.
+                TimelineView(.periodic(from: .now, by: 1)) { _ in
+                    VStack(spacing: 0) {
+                        heroBand
+                        calloutCards
+                    }
+                }
+                errorBanner
+                if showSectionDivider { Divider() }
+            }
             if tab == .upcoming { dayPager; Divider() }
             eventsList
             Divider()
             footer
         }
         .frame(width: 340)
+    }
+
+    /// Whether to draw a divider between the hero/cards block and the event list.
+    private var showSectionDivider: Bool {
+        calendarManager.nextMeeting != nil
+            || recordingController.isRecording
+            || !calendarManager.armedAutoJoinMeetings.isEmpty
+            || !calendarManager.pendingCancellations.isEmpty
+            || isUpdateAvailable
+            || calendarManager.errorMessage != nil
+    }
+
+    private var isUpdateAvailable: Bool {
+        if case .available = updater.state { return true }
+        return false
     }
 
     // MARK: - Header
@@ -79,6 +106,85 @@ struct PopoverRootView: View {
         if secs < 60 { return "synced just now" }
         if secs < 3600 { return "synced \(secs / 60)m ago" }
         return "synced \(secs / 3600)h ago"
+    }
+
+    // MARK: - Hero (Today)
+
+    @ViewBuilder private var heroBand: some View {
+        if let next = calendarManager.nextMeeting,
+           Calendar.current.isDateInToday(next.startDate), next.startDate > Date() {
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 6) {
+                    Text("NEXT").font(.system(size: 10, weight: .semibold)).tracking(0.5).foregroundStyle(.secondary)
+                    Text(relativeStart(next)).font(.system(size: 11, weight: .semibold, design: .monospaced)).foregroundStyle(accent)
+                    Spacer()
+                    Text(next.formattedStartTime).font(.system(size: 11, weight: .medium, design: .monospaced)).foregroundStyle(accent)
+                }
+                Text(next.title).font(.system(.subheadline, weight: .semibold)).foregroundStyle(.primary).lineLimit(1)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(accent.opacity(0.07))
+        }
+    }
+
+    private func relativeStart(_ meeting: MeetingEvent) -> String {
+        let secs = Int(meeting.startDate.timeIntervalSinceNow)
+        guard secs > 0 else { return "now" }
+        let h = secs / 3600, m = (secs % 3600) / 60
+        if h > 0 && m > 0 { return "in \(h)h \(m)m" }
+        if h > 0 { return "in \(h)h" }
+        return "in \(max(1, m))m"
+    }
+
+    // MARK: - Callout cards (Today)
+
+    @ViewBuilder private var calloutCards: some View {
+        if recordingController.isRecording, let title = recordingController.currentMeetingTitle {
+            calloutCard(icon: "record.circle.fill", tint: .red, title: "Recording — \(title)", actionLabel: "Stop") {
+                Task { await recordingCoordinator.stopManually() }
+            }
+        }
+        ForEach(calendarManager.armedAutoJoinMeetings) { m in
+            calloutCard(icon: "clock.badge.checkmark", tint: accent,
+                        title: "\(m.title) · \(m.formattedStartTime)", actionLabel: "Cancel") {
+                calendarManager.disarmAutoJoin(m.id)
+            }
+        }
+        if case .available(let v) = updater.state {
+            calloutCard(icon: "arrow.down.circle.fill", tint: accent, title: "Update available — v\(v)", actionLabel: "Install") {
+                Task { await updater.update() }
+            }
+        }
+        ForEach(calendarManager.pendingCancellations) { m in
+            calloutCard(icon: "xmark.circle.fill", tint: .orange,
+                        title: "\(m.formattedStartTime)  \(m.title)", actionLabel: "Dismiss") {
+                calendarManager.dismissCancellation(m.id)
+            }
+        }
+    }
+
+    private func calloutCard(icon: String, tint: Color, title: String, actionLabel: String, action: @escaping () -> Void) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon).font(.system(size: 13, weight: .semibold)).foregroundStyle(tint).frame(width: 20)
+            Text(title).font(.system(.caption, weight: .semibold)).foregroundStyle(.primary).lineLimit(1)
+            Spacer(minLength: 4)
+            Button(actionLabel, action: action).font(.system(size: 11, weight: .semibold)).foregroundStyle(tint).buttonStyle(.borderless)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 8)
+        .background(tint.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(tint.opacity(0.25), lineWidth: 1))
+        .padding(.horizontal, 14).padding(.vertical, 3)
+    }
+
+    @ViewBuilder private var errorBanner: some View {
+        if let error = calendarManager.errorMessage {
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 11)).foregroundStyle(.orange)
+                Text(error).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(2)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 6)
+        }
     }
 
     // MARK: - Day pager (Upcoming)
@@ -140,6 +246,17 @@ struct PopoverRootView: View {
             if let url = meeting.url, !meeting.isCancelled {
                 Button { NSWorkspace.shared.open(url) } label: { Image(systemName: "video.fill").foregroundStyle(.green) }
                     .buttonStyle(.borderless).help("Join")
+            }
+            if calendarManager.supportsRSVPWrite, !meeting.isCancelled,
+               [.accepted, .declined, .tentative, .noResponse].contains(meeting.myResponse) {
+                Menu {
+                    Button("Accept") { Task { try? await calendarManager.respond(to: meeting.id, status: .accepted) } }
+                    Button("Tentative") { Task { try? await calendarManager.respond(to: meeting.id, status: .tentative) } }
+                    Button("Decline") { Task { try? await calendarManager.respond(to: meeting.id, status: .declined) } }
+                } label: {
+                    Image(systemName: "ellipsis.circle").foregroundStyle(.secondary)
+                }
+                .menuStyle(.borderlessButton).fixedSize()
             }
         }
         .padding(.horizontal, 14).padding(.vertical, 6)
