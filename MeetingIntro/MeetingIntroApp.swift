@@ -77,6 +77,7 @@ struct MeetingIntroApp: App {
     @StateObject private var menuBarCountdown = MenuBarCountdownModel()
     @StateObject private var lifecycleManager = AppLifecycleManager()
     @StateObject private var upcomingPanel = UpcomingPanelController()
+    @StateObject private var updater = AppUpdater()
 
     init() {
         let router = AudioRouter()
@@ -137,7 +138,10 @@ struct MeetingIntroApp: App {
                 Label("MeetingIntro", systemImage: "clock.badge.checkmark")
             }
         }
-        .onAppear { wireLifecycle() }
+        .onAppear {
+            wireLifecycle()
+            updater.startAutoChecks()
+        }
     }
 
     @ViewBuilder private var menuContent: some View {
@@ -163,17 +167,17 @@ struct MeetingIntroApp: App {
             mirrorConfig: mirrorConfig,
             mirrorEngine: mirrorEngine,
             menuBarCountdown: menuBarCountdown,
-            upcomingPanel: upcomingPanel
+            upcomingPanel: upcomingPanel,
+            updater: updater
         )
     }
 
     var body: some Scene {
         // MARK: - Menu Bar
-        // Two MenuBarExtra variants: the style modifiers (.menu vs .window) are distinct
-        // concrete types, so they can't be selected with a ternary, and SceneBuilder has
-        // no buildEither (if/else). Two standalone `if`s (buildOptional) — mutually
-        // exclusive — are the way. Switching at runtime recreates the status item (a
-        // relaunch may be needed for a clean swap).
+        // Single native menu. The "Day browser popover" Upcoming style is a floating
+        // panel opened from a menu item (UpcomingPanelController) rather than a
+        // .window-style dropdown, because MenuBarExtra can't switch .menu/.window at
+        // runtime (SceneBuilder has no buildEither and the styles are incompatible types).
         MenuBarExtra { menuContent } label: { menuBarLabel }
             .menuBarExtraStyle(.menu)
 
@@ -200,7 +204,8 @@ struct MeetingIntroApp: App {
                 notesConfig: notesConfig,
                 diagnosticLog: diagnosticLog,
                 mirrorConfig: mirrorConfig,
-                mirrorEngine: mirrorEngine
+                mirrorEngine: mirrorEngine,
+                updater: updater
             )
         }
 
@@ -556,6 +561,7 @@ struct MenuBarView: View {
     @ObservedObject var mirrorEngine: CalendarMirrorEngine
     @ObservedObject var menuBarCountdown: MenuBarCountdownModel
     @ObservedObject var upcomingPanel: UpcomingPanelController
+    @ObservedObject var updater: AppUpdater
 
     @Environment(\.openWindow) private var openWindow
 
@@ -748,6 +754,19 @@ struct MenuBarView: View {
 
     var body: some View {
         Group {
+            // Update available — surfaced at the very top so it's seen without opening
+            // About. Clicking runs the Homebrew upgrade + relaunch.
+            if case .available(let v) = updater.state {
+                Button {
+                    Task { await updater.update() }
+                } label: {
+                    Text(Image(systemName: "arrow.down.circle.fill")).foregroundColor(.accentColor)
+                        + Text("  Update available — install v\(v)")
+                        .font(.system(.body, weight: .semibold))
+                }
+                Divider()
+            }
+
             // Recording status — shown above everything else when active so the user
             // can stop without digging through Settings. Single concatenated Text:
             // NSMenu splits container views into one menu item per child.

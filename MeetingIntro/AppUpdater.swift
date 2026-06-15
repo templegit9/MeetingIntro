@@ -20,33 +20,84 @@ final class AppUpdater: ObservableObject {
 
     @Published private(set) var state: State = .idle
 
-    private static let latestURL = URL(string: "https://api.github.com/repos/templegit9/MeetingIntro/releases/latest")!
+    /// We query the releases LIST (not /releases/latest) and pick the highest semver —
+    /// /releases/latest lags behind on GitHub's CDN and depends on a "latest" pointer
+    /// that can be wrong. per_page=30 comfortably covers our release cadence.
+    private static let listURL = URL(string: "https://api.github.com/repos/templegit9/MeetingIntro/releases?per_page=30")!
     private static let caskRef = "templegit9/tap/meetingintro"
 
+    /// Ephemeral session = no persistent URL cache. GitHub sends `max-age=60`, so a
+    /// shared/cached session can serve a stale "latest" and falsely report up-to-date
+    /// right after a release. We always want a fresh read for update checks.
+    private static let session: URLSession = {
+        let cfg = URLSessionConfiguration.ephemeral
+        cfg.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+        cfg.urlCache = nil
+        return URLSession(configuration: cfg)
+    }()
+
     private let currentVersion: String
+    private var pollTimer: Timer?
+    private var autoChecksStarted = false
 
     init() {
         self.currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
     }
 
-    private struct LatestRelease: Decodable { let tag_name: String }
+    private struct Release: Decodable { let tag_name: String; let draft: Bool; let prerelease: Bool }
 
-    /// Fetch the latest release tag and compare against the running version.
+    /// Start proactive checks: once now, then every 6 hours, plus on wake. Silent —
+    /// background failures don't surface an error icon. Idempotent.
+    func startAutoChecks() {
+        guard !autoChecksStarted else { return }
+        autoChecksStarted = true
+        Task { await checkSilently() }
+        pollTimer = Timer.scheduledTimer(withTimeInterval: 6 * 3600, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in await self?.checkSilently() }
+        }
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in await self?.checkSilently() }
+        }
+    }
+
+    /// User-initiated check — shows the spinner and surfaces failures.
     func check() async {
         state = .checking
+        await performCheck(silent: false)
+    }
+
+    /// Background check — never shows the spinner; on failure it leaves the prior state
+    /// (so a flaky network doesn't flip a known result to an error). Won't interrupt an
+    /// in-progress update.
+    func checkSilently() async {
+        if case .updating = state { return }
+        await performCheck(silent: true)
+    }
+
+    private func performCheck(silent: Bool) async {
         do {
-            var req = URLRequest(url: Self.latestURL)
+            var req = URLRequest(url: Self.listURL)
             req.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-            let (data, resp) = try await URLSession.shared.data(for: req)
+            req.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+            let (data, resp) = try await Self.session.data(for: req)
             guard let code = (resp as? HTTPURLResponse)?.statusCode, code == 200 else {
-                state = .failed("Couldn't reach GitHub to check for updates.")
+                if !silent { state = .failed("Couldn't reach GitHub to check for updates.") }
                 return
             }
-            let latest = try JSONDecoder().decode(LatestRelease.self, from: data)
-            let version = latest.tag_name.hasPrefix("v") ? String(latest.tag_name.dropFirst()) : latest.tag_name
-            state = Self.isNewer(version, than: currentVersion) ? .available(version) : .upToDate
+            let releases = try JSONDecoder().decode([Release].self, from: data)
+            let newest = releases
+                .filter { !$0.draft && !$0.prerelease }
+                .map { $0.tag_name.hasPrefix("v") ? String($0.tag_name.dropFirst()) : $0.tag_name }
+                .max { Self.isNewer($1, than: $0) } // highest semver
+            if let newest, Self.isNewer(newest, than: currentVersion) {
+                state = .available(newest)
+            } else {
+                state = .upToDate
+            }
         } catch {
-            state = .failed("Couldn't check for updates: \(error.localizedDescription)")
+            if !silent { state = .failed("Couldn't check for updates: \(error.localizedDescription)") }
         }
     }
 

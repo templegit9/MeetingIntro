@@ -102,7 +102,7 @@ struct SettingsView: View {
     @AppStorage("cancellationOverlayPosition") private var cancellationOverlayPosition: String = OverlayWindowController.CancellationOverlayPosition.topRight.rawValue
 
     @StateObject private var releaseNotes = ReleaseNotesManager()
-    @StateObject private var updater = AppUpdater()
+    @ObservedObject var updater: AppUpdater
 
     @State private var showRecordingDisclaimer = false
     @State private var recordingStats: (count: Int, sizeBytes: Int64) = (0, 0)
