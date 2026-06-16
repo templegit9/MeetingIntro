@@ -180,6 +180,8 @@ final class CalendarManager: ObservableObject {
     private(set) var lastPollWasCatchUp = false
     /// Tracks which (meetingID, minutesBefore) combos have already been triggered.
     private var triggeredCombinations: Set<String> = []
+    /// Per-meeting dedup for the "why no reminder" diagnostic so it logs once, not every poll.
+    private var loggedReminderSuppressions: Set<String> = []
 
     /// Cancellation IDs we've already fired a system notification for. Persisted to
     /// UserDefaults so a relaunch doesn't re-notify for the same cancellation.
@@ -364,6 +366,29 @@ final class CalendarManager: ObservableObject {
 
     /// Check if any meeting is within any of the countdown thresholds.
     private func evaluateCountdownTrigger() {
+        // Diagnostic: for any meeting now inside the largest reminder window, log ONCE
+        // why it will NOT fire a reminder (the overlay/notification gates are otherwise
+        // silent — this is the "why didn't my overlay show?" trail).
+        let maxThresholdSeconds = TimeInterval((countdownMinutesList.max() ?? 0) * 60)
+        for event in upcomingMeetings where event.timeUntilStart > 0 && event.timeUntilStart <= maxThresholdSeconds {
+            let reason: String?
+            if event.isCancelled {
+                reason = "marked CANCELLED (EventKit status .canceled or a \"Canceled:\"/\"Cancelled:\" title) — verify it isn't actually cancelled in Calendar"
+            } else if responseGate?(event) ?? false {
+                reason = "RSVP gate (you declined / didn't respond, with the skip setting on)"
+            } else if armedAutoJoinIDs.contains(event.id) {
+                reason = "armed for auto-join (shows a menu-bar countdown instead of the overlay)"
+            } else {
+                reason = nil
+            }
+            if let reason {
+                let key = "\(event.id)_nofire"
+                if loggedReminderSuppressions.insert(key).inserted {
+                    diagnosticLog?.info(.reminder, "No reminder will fire for \"\(event.title)\" — \(reason)")
+                }
+            }
+        }
+
         // For each meeting, check each configured countdown time. Cancelled
         // meetings are skipped — their reminders fire as a one-shot system
         // notification at detection time instead (see AppLifecycleManager).
