@@ -12,6 +12,9 @@ final class EventKitProvider: CalendarProvider {
     /// Set of calendar identifiers the user has chosen to monitor (empty = all).
     var selectedCalendarIDs: Set<String> = []
 
+    /// Diagnostic log (injected in AppLifecycleManager.observe) for the mirror-dedup trail.
+    var diagnosticLog: DiagnosticLog?
+
     var isAuthorized: Bool {
         EKEventStore.authorizationStatus(for: .event) == .fullAccess
     }
@@ -37,9 +40,26 @@ final class EventKitProvider: CalendarProvider {
         let predicate = eventStore.predicateForEvents(withStart: now, end: endDate, calendars: calendars)
         let ekEvents = eventStore.events(matching: predicate)
 
-        return ekEvents
-            .filter { !$0.isAllDay } // Skip all-day events by default for meeting countdown
-            .filter { !MirrorMarker.isMirror($0.url) } // Don't surface our own mirror copies as duplicate meetings
+        // Drop all-day events, then de-dup mirror copies CORRECTLY: a copy (carrying
+        // our marker) is a *duplicate* only when its source event is ALSO in this fetch
+        // (you monitor both the source and the destination). If you monitor only the
+        // destination calendar, the copy is your sole view of that meeting — keep it.
+        // (v2.9.5 blanket-stripped every copy, which zeroed out a calendar that holds
+        // only mirror copies — the "Personal + Work" mirror-destination case.)
+        let timed = ekEvents.filter { !$0.isAllDay }
+        let presentSourceIDs = Set(timed.compactMap { ev -> String? in
+            MirrorMarker.isMirror(ev.url) ? nil : ev.eventIdentifier
+        })
+        let kept = timed.filter { ev in
+            guard let decoded = MirrorMarker.decode(ev.url) else { return true }
+            return !presentSourceIDs.contains(decoded.sourceID)
+        }
+        let mirrorCopies = timed.filter { MirrorMarker.isMirror($0.url) }.count
+        if mirrorCopies > 0, let log = diagnosticLog {
+            let msg = "EventKit fetch: \(timed.count) timed events, \(mirrorCopies) mirror copies, \(timed.count - kept.count) dropped as duplicates → \(kept.count) kept"
+            await MainActor.run { log.info(.calendar, msg) }
+        }
+        return kept
             .map { event in
                 let attendees = (event.attendees ?? []).compactMap { $0.name }
                 let joinURL = ConferenceLinkExtractor.bestURL(
