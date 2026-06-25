@@ -31,6 +31,21 @@ struct CountdownOverlayView: View {
     /// which runs until the user joins, dismisses, or the meeting ends.
     private var hasStarted: Bool { timeRemaining < 0 }
 
+    /// Best-effort link when `meeting.url` is nil: the first http(s) link anywhere in
+    /// the notes/location. Catches join links from providers the structured extractor
+    /// doesn't recognize, so the overlay still offers an action (Issue #9).
+    private var fallbackJoinURL: URL? {
+        let text = [meeting.notes, meeting.location].compactMap { $0 }.joined(separator: "\n")
+        guard !text.isEmpty,
+              let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
+        else { return nil }
+        let range = NSRange(text.startIndex..., in: text)
+        for match in detector.matches(in: text, options: [], range: range) {
+            if let url = match.url, url.scheme == "http" || url.scheme == "https" { return url }
+        }
+        return nil
+    }
+
     var body: some View {
         ZStack {
             // Background blur/glass
@@ -129,14 +144,17 @@ struct CountdownOverlayView: View {
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.5))
 
-                // Join button — visible when a conference link was detected
-                if let joinURL = meeting.url, joinButtonEnabled {
+                // Join button — the detected conference link, or a best-effort fallback
+                // link found in the notes/location when no structured link was extracted
+                // (Issue #9: an unrecognized/corporate join link left the overlay with no
+                // action at all, stranding the user after start).
+                if joinButtonEnabled, let actionURL = meeting.url ?? fallbackJoinURL {
                     Button {
                         // Joining IS the acknowledgment — close the overlay with it.
-                        NSWorkspace.shared.open(joinURL)
+                        NSWorkspace.shared.open(actionURL)
                         onDismiss()
                     } label: {
-                        Label("Join Meeting", systemImage: "video.fill")
+                        Label(meeting.url != nil ? "Join Meeting" : "Open Meeting Link", systemImage: "video.fill")
                             .font(.headline)
                             .foregroundStyle(.white)
                             .padding(.horizontal, 28)
@@ -149,6 +167,26 @@ struct CountdownOverlayView: View {
                             )
                     }
                     .buttonStyle(.plain)
+                } else if joinButtonEnabled {
+                    // No link anywhere — give the user a way out instead of a dead end.
+                    Button {
+                        NSWorkspace.shared.open(URL(string: "ical://")!)
+                        onDismiss()
+                    } label: {
+                        Label("Open in Calendar", systemImage: "calendar")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 10)
+                            .frame(minHeight: 40)
+                            .background(
+                                Capsule()
+                                    .fill(.white.opacity(0.18))
+                                    .overlay(Capsule().stroke(.white.opacity(0.3), lineWidth: 1))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .help("No meeting link was found — open Calendar to join from there")
                 }
 
                 // Start at Time — arms an auto-join. Only before start (afterward,
