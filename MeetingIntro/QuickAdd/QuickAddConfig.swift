@@ -152,9 +152,16 @@ final class QuickAddConfig: ObservableObject {
 
     // MARK: - Link library CRUD
 
-    func addLink(name: String, url: String) {
+    func addLink(name: String, url: String, provider: MeetingLinkProvider? = nil) {
         let isFirst = meetingLinks.isEmpty
-        meetingLinks.append(SavedMeetingLink(name: name, url: url, isDefault: isFirst))
+        meetingLinks.append(SavedMeetingLink(name: name, url: url, isDefault: isFirst, provider: provider))
+    }
+
+    /// In-place edit (name / url / provider) for inline rename. Preserves id + default.
+    func updateLink(_ link: SavedMeetingLink) {
+        if let i = meetingLinks.firstIndex(where: { $0.id == link.id }) {
+            meetingLinks[i] = link
+        }
     }
 
     func removeLink(_ id: UUID) {
