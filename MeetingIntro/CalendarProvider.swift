@@ -44,6 +44,11 @@ struct MeetingEvent: Identifiable, Equatable {
     let attendeeCount: Int
     let organizerName: String?
     let isCancelled: Bool
+    /// Whether this event is part of a recurring series. Time-change detection skips
+    /// these: EventKit gives every occurrence the SAME id, so an id-keyed baseline can't
+    /// tell a real reschedule from the series simply advancing to the next occurrence.
+    /// Defaults false so existing construction stays valid.
+    var isRecurring: Bool = false
     /// The current user's RSVP. Defaults to `.unknown` so events without invitee
     /// data are never accidentally suppressed.
     var myResponse: ResponseStatus = .unknown

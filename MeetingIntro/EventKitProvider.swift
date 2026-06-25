@@ -84,6 +84,7 @@ final class EventKitProvider: CalendarProvider {
                     attendeeCount: attendees.count,
                     organizerName: event.organizer?.name,
                     isCancelled: cancelled,
+                    isRecurring: event.hasRecurrenceRules,
                     myResponse: myResponse,
                     responseCounts: counts
                 )

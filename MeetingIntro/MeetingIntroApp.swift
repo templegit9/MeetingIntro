@@ -325,6 +325,7 @@ final class AppLifecycleManager: ObservableObject {
         calendarManager.onAutoJoinArmed = { notificationManager.sendAutoJoinArmedNotification(for: $0) }
         calendarManager.onAutoJoinFired = { notificationManager.sendAutoJoinFiredNotification(for: $0) }
         calendarManager.onAutoJoinMissed = { notificationManager.sendAutoJoinMissedNotification(for: $0) }
+        calendarManager.onMeetingTimeChanged = { notificationManager.sendTimeChangeNotification(for: $0, from: $1) }
 
         // Gentle pre-start overlay — MenuBarCountdownModel publishes the soonest armed
         // meeting once it's inside the lead window; show/hide the heads-up accordingly.
@@ -332,6 +333,11 @@ final class AppLifecycleManager: ObservableObject {
             .removeDuplicates { $0?.id == $1?.id }
             .sink { meeting in
                 if let meeting {
+                    // Audible heads-up so a heads-down user gets a beat to stop typing
+                    // before they're pulled into the call (Issue #8).
+                    if countdownConfig.autoJoinAudibleCountdownEnabled {
+                        MenuBarCountdownModel.playHeadsUpChime()
+                    }
                     overlayController.showAutoJoinImminent(
                         meeting,
                         onCancel: { calendarManager.disarmAutoJoin(meeting.id) },

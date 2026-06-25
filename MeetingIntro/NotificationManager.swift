@@ -31,6 +31,11 @@ final class NotificationManager: ObservableObject {
         didSet { UserDefaults.standard.set(notifyAtStartEnabled, forKey: "notifyAtStartEnabled") }
     }
 
+    /// Whether to notify when a meeting's start time is moved (Issue #5). Default on.
+    @Published var timeChangeNotifyEnabled: Bool {
+        didSet { UserDefaults.standard.set(timeChangeNotifyEnabled, forKey: "timeChangeNotifyEnabled") }
+    }
+
     /// Reference to Mixkit sound manager for custom alert sounds.
     var soundManager: MixkitSoundManager?
 
@@ -55,6 +60,7 @@ final class NotificationManager: ObservableObject {
         self.cancellationNotifyEnabled = d.object(forKey: "cancellationNotifyEnabled") as? Bool ?? true
         self.cancellationPlaySound = d.object(forKey: "cancellationPlaySound") as? Bool ?? true
         self.notifyAtStartEnabled = d.object(forKey: "notifyAtStartEnabled") as? Bool ?? true
+        self.timeChangeNotifyEnabled = d.object(forKey: "timeChangeNotifyEnabled") as? Bool ?? true
     }
 
     /// Request notification permission and capture the result. Also refreshes the
@@ -201,6 +207,34 @@ final class NotificationManager: ObservableObject {
         if cancellationPlaySound {
             playSelectedSound()
         }
+    }
+
+    /// Notify that a meeting was rescheduled to a new start time (Issue #5). Dedup is
+    /// handled upstream in `CalendarManager` (keyed by id + new start), so the same move
+    /// only reaches here once.
+    func sendTimeChangeNotification(for meeting: MeetingEvent, from previousStart: Date) {
+        guard isEnabled, timeChangeNotifyEnabled else {
+            diagnosticLog?.info(.calendar, "Time-change notification suppressed (\(isEnabled ? "time-change toggle off" : "notifications disabled")) — \(meeting.title)")
+            return
+        }
+        if !notificationsAuthorized {
+            diagnosticLog?.warn(.calendar, "Time-change notification will likely not appear — system authorization is \(Self.describe(authorizationStatus))")
+        }
+        let formatter = DateFormatter()
+        formatter.dateStyle = Calendar.current.isDate(previousStart, inSameDayAs: meeting.startDate) ? .none : .medium
+        formatter.timeStyle = .short
+
+        let content = UNMutableNotificationContent()
+        content.title = "Meeting moved"
+        content.subtitle = meeting.title
+        content.body = "Now \(formatter.string(from: meeting.startDate)) (was \(formatter.string(from: previousStart)))"
+        content.sound = .default
+
+        // Unique per move so a later reschedule of the same meeting isn't coalesced.
+        let key = "timechange_\(meeting.id)_\(Int(meeting.startDate.timeIntervalSince1970))"
+        let request = UNNotificationRequest(identifier: key, content: content, trigger: nil)
+        deliver(request, describing: "time change — \(meeting.title)")
+        playSelectedSound()
     }
 
     /// Post a notification when a recording's transcript + notes are ready.

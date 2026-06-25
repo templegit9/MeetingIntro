@@ -225,6 +225,26 @@ final class CalendarManager: ObservableObject {
         max(1, countdownConfigs?.autoJoinGraceMinutes ?? 2)
     }
 
+    // MARK: - Time-change detection (Issue #5)
+
+    /// Last-seen start time per meeting ID, so a moved meeting can be detected across
+    /// polls. Persisted (JSON) so a move that lands while the app is closed is still
+    /// caught on next launch. A meeting seen for the FIRST time only records a baseline —
+    /// it never notifies (there's no prior to compare against, so no false "moved").
+    private var knownStartTimes: [String: Date] = [:]
+    /// Dedup keyed `"<id>_<newStartEpoch>"` so the same move notifies once, even across
+    /// relaunch or repeated polls.
+    private var notifiedTimeChanges: Set<String> = []
+    private static let k_knownStartTimes = "knownStartTimes"
+    private static let k_notifiedTimeChanges = "notifiedTimeChanges"
+    /// Ignore sub-minute jitter; only a real reschedule should notify.
+    private static let timeChangeMinDelta: TimeInterval = 60
+
+    /// Fired when a still-upcoming meeting's start time moved beyond `timeChangeMinDelta`.
+    /// Second arg is the previous start time. Armed auto-joins re-anchor automatically
+    /// (they're keyed by ID and re-read the live start) — this is purely the heads-up.
+    var onMeetingTimeChanged: ((MeetingEvent, Date) -> Void)?
+
     // MARK: - Lifecycle
 
     init() {
@@ -234,6 +254,11 @@ final class CalendarManager: ObservableObject {
         self.dismissedCancellationIDs = Set(d.stringArray(forKey: Self.k_dismissedCancellations) ?? [])
         self.armedAutoJoinIDs = Set(d.stringArray(forKey: Self.k_armedAutoJoin) ?? [])
         self.joinedAutoJoinIDs = Set(d.stringArray(forKey: Self.k_joinedAutoJoin) ?? [])
+        if let data = d.data(forKey: Self.k_knownStartTimes),
+           let decoded = try? JSONDecoder().decode([String: Date].self, from: data) {
+            self.knownStartTimes = decoded
+        }
+        self.notifiedTimeChanges = Set(d.stringArray(forKey: Self.k_notifiedTimeChanges) ?? [])
     }
 
     /// Start polling for calendar events.
@@ -350,6 +375,9 @@ final class CalendarManager: ObservableObject {
             }
             pruneCancellationState(against: events)
             pruneAutoJoinState(against: events)
+            // Detect moved meetings over the wider browse window (catches a move from
+            // a few days out, not just inside the reminder window).
+            detectTimeChanges(in: allEvents)
             errorMessage = nil
             lastRefreshDate = now
 
@@ -486,6 +514,60 @@ final class CalendarManager: ObservableObject {
             dismissedCancellationIDs = prunedDismissed
             UserDefaults.standard.set(Array(prunedDismissed), forKey: Self.k_dismissedCancellations)
         }
+    }
+
+    // MARK: - Time-change detection (Issue #5)
+
+    /// Compare each still-upcoming meeting's start against the last-seen value, notify
+    /// once per move (beyond the min delta), and refresh the baselines. First-sight
+    /// meetings only record a baseline — they never notify. Cancelled + all-day events
+    /// are skipped (cancellation has its own channel; all-day moves aren't "got dressed
+    /// for nothing" cases). Safe across transient absences: a dropped-then-reappearing
+    /// meeting is treated as first-sight, so the worst case is a missed notice, never a
+    /// false one.
+    private func detectTimeChanges(in events: [MeetingEvent]) {
+        let now = Date()
+        var dirty = false
+        for event in events where !event.isCancelled && !event.isAllDay && !event.isRecurring && event.startDate > now {
+            if let prior = knownStartTimes[event.id],
+               abs(prior.timeIntervalSince(event.startDate)) >= Self.timeChangeMinDelta {
+                let key = "\(event.id)_\(Int(event.startDate.timeIntervalSince1970))"
+                if notifiedTimeChanges.insert(key).inserted {
+                    diagnosticLog?.info(.calendar, "Meeting moved — \"\(event.title)\": \(prior.formatted(date: .abbreviated, time: .shortened)) → \(event.startDate.formatted(date: .abbreviated, time: .shortened))")
+                    onMeetingTimeChanged?(event, prior)
+                    dirty = true
+                }
+            }
+            if knownStartTimes[event.id] != event.startDate {
+                knownStartTimes[event.id] = event.startDate
+                dirty = true
+            }
+        }
+        if pruneTimeChangeState(against: events) { dirty = true }
+        if dirty { persistTimeChangeState() }
+    }
+
+    /// Drop baselines/dedup keys for meetings no longer in the fetch window. Returns
+    /// whether anything changed (so the caller can persist).
+    @discardableResult
+    private func pruneTimeChangeState(against events: [MeetingEvent]) -> Bool {
+        let liveIDs = Set(events.map(\.id))
+        var changed = false
+        let prunedKnown = knownStartTimes.filter { liveIDs.contains($0.key) }
+        if prunedKnown.count != knownStartTimes.count { knownStartTimes = prunedKnown; changed = true }
+        let prunedNotified = notifiedTimeChanges.filter { key in
+            liveIDs.contains { key.hasPrefix("\($0)_") }
+        }
+        if prunedNotified.count != notifiedTimeChanges.count { notifiedTimeChanges = prunedNotified; changed = true }
+        return changed
+    }
+
+    private func persistTimeChangeState() {
+        let d = UserDefaults.standard
+        if let data = try? JSONEncoder().encode(knownStartTimes) {
+            d.set(data, forKey: Self.k_knownStartTimes)
+        }
+        d.set(Array(notifiedTimeChanges), forKey: Self.k_notifiedTimeChanges)
     }
 
     /// Called when the user manually dismisses the countdown overlay.

@@ -166,7 +166,7 @@ final class GraphCalendarProvider: CalendarProvider {
         let startStr = formatter.string(from: now)
         let endStr = formatter.string(from: endDate)
 
-        let urlString = "https://graph.microsoft.com/v1.0/me/calendarview?startdatetime=\(startStr)&enddatetime=\(endStr)&$select=id,subject,start,end,location,isAllDay,organizer,body,attendees,onlineMeeting,isOnlineMeeting,isCancelled,responseStatus&$orderby=start/dateTime"
+        let urlString = "https://graph.microsoft.com/v1.0/me/calendarview?startdatetime=\(startStr)&enddatetime=\(endStr)&$select=id,subject,start,end,location,isAllDay,organizer,body,attendees,onlineMeeting,isOnlineMeeting,isCancelled,responseStatus,type&$orderby=start/dateTime"
 
         guard let url = URL(string: urlString) else {
             throw CalendarProviderError.unknown(underlying: URLError(.badURL))
@@ -232,6 +232,7 @@ final class GraphCalendarProvider: CalendarProvider {
                     attendeeCount: attendeeNames.count,
                     organizerName: event.organizer?.emailAddress?.name,
                     isCancelled: cancelled,
+                    isRecurring: event.type != nil && event.type != "singleInstance",
                     myResponse: myResponse,
                     responseCounts: counts
                 )
@@ -488,6 +489,9 @@ struct GraphEvent: Codable {
     let organizer: GraphRecipient?
     let isCancelled: Bool?
     let responseStatus: GraphResponseStatus?
+    /// `singleInstance` | `occurrence` | `exception` | `seriesMaster` — used to flag
+    /// recurring events so time-change detection can skip them.
+    let type: String?
 }
 
 struct GraphBody: Codable {
