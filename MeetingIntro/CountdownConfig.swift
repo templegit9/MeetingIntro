@@ -55,6 +55,13 @@ final class CountdownConfigManager: ObservableObject {
         didSet { UserDefaults.standard.set(autoJoinOverlayLeadSeconds, forKey: "autoJoinOverlayLeadSeconds") }
     }
 
+    /// Play an audible beep when an armed meeting enters the heads-up window — so a
+    /// heads-down user gets a moment to stop typing before they're pulled into the
+    /// call (Issue #8). Default on.
+    @Published var autoJoinAudibleCountdownEnabled: Bool {
+        didSet { UserDefaults.standard.set(autoJoinAudibleCountdownEnabled, forKey: "autoJoinAudibleCountdownEnabled") }
+    }
+
     static let availableMinutes = [1, 2, 3, 5, 10, 15]
 
     init() {
@@ -81,6 +88,7 @@ final class CountdownConfigManager: ObservableObject {
         self.autoJoinGraceMinutes = storedGrace ?? 2
         self.autoJoinImminentOverlayEnabled = UserDefaults.standard.object(forKey: "autoJoinImminentOverlayEnabled") as? Bool ?? true
         self.autoJoinOverlayLeadSeconds = UserDefaults.standard.object(forKey: "autoJoinOverlayLeadSeconds") as? Int ?? 60
+        self.autoJoinAudibleCountdownEnabled = UserDefaults.standard.object(forKey: "autoJoinAudibleCountdownEnabled") as? Bool ?? true
     }
 
     /// Get all enabled minutes (for CalendarManager compatibility).
