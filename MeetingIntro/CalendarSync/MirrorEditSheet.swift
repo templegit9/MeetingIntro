@@ -44,6 +44,7 @@ struct MirrorEditSheet: View {
             Form {
                 Section("Name") {
                     TextField("e.g. Personal → Work", text: $name)
+                        .textFieldStyle(.roundedBorder)
                 }
 
                 Section("Sources (calendars to mirror FROM)") {
@@ -82,6 +83,7 @@ struct MirrorEditSheet: View {
 
                     if useNewCalendar {
                         TextField("Calendar name", text: $newCalendarName)
+                            .textFieldStyle(.roundedBorder)
                         Picker("Store in", selection: $newCalendarSourceID) {
                             ForEach(creatableSources) { src in
                                 Text(src.isLocal ? "\(src.title) (this Mac only)" : src.title).tag(src.id)

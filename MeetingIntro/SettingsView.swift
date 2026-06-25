@@ -93,6 +93,11 @@ struct SettingsView: View {
     @State private var quickAddTestResult: (passed: Bool, message: String)?
     @State private var newLinkName: String = ""
     @State private var newLinkURL: String = ""
+    @State private var newLinkError: String?
+    @State private var editingLinkID: UUID?
+    @State private var editLinkName: String = ""
+    @State private var editLinkURL: String = ""
+    @State private var editLinkError: String?
     @State private var editingTemplate: QuickAddTemplate?
 
     @AppStorage("upcomingDaysAhead") private var upcomingDaysAhead: Int = 7
@@ -297,11 +302,10 @@ struct SettingsView: View {
 
     private var quickAddTab: some View {
         Form {
-            Section("Text to Calendar") {
-                Text("Create events by typing plain English — \"Coffee with Sam tomorrow 3pm\". Open from the menu bar: New Event… (⌘N while the menu is open).")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            Section {
                 Button("Try it now") { quickAddPanel.show() }
+            } header: {
+                SettingsSectionHeader("Text to Calendar", info: "Create events by typing plain English — \"Coffee with Sam tomorrow 3pm\". Open from the menu bar: New Event… (⌘N while the menu is open).")
             }
 
             Section("Parsing") {
@@ -324,6 +328,7 @@ struct SettingsView: View {
 
                 if quickAddConfig.provider == .custom {
                     TextField("API base URL (OpenAI-compatible)", text: $quickAddConfig.apiBaseURL)
+                        .textFieldStyle(.roundedBorder)
                 }
 
                 if quickAddConfig.provider == .ollama {
@@ -332,6 +337,7 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 } else {
                     SecureField(quickAddConfig.provider.keyPlaceholder, text: $quickAddKeyDraft)
+                        .textFieldStyle(.roundedBorder)
                     HStack {
                         Button(quickAddConfig.hasLLMKey ? "Update key" : "Save key") {
                             quickAddConfig.openRouterKey = quickAddKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -359,6 +365,7 @@ struct SettingsView: View {
                 }
                 HStack(spacing: 8) {
                     TextField("Model", text: $quickAddConfig.modelID)
+                        .textFieldStyle(.roundedBorder)
                         .disabled(!quickAddConfig.llmEnabled)
                     Button {
                         testQuickAddModel()
@@ -383,7 +390,7 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Section("Event Defaults") {
+            Section {
                 Picker("Create in calendar", selection: Binding(
                     get: { quickAddConfig.defaultCalendarID ?? "" },
                     set: { quickAddConfig.defaultCalendarID = $0.isEmpty ? nil : $0 }
@@ -396,61 +403,30 @@ struct SettingsView: View {
                 Stepper(value: $quickAddConfig.defaultDurationMinutes, in: 5...240, step: 5) {
                     Text("Default duration: \(quickAddConfig.defaultDurationMinutes) min")
                 }
-                Text("Events are created in your Mac calendars (EventKit). Note: macOS doesn't let apps add attendees or send invites — events are created without invitees.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            } header: {
+                SettingsSectionHeader("Event Defaults", info: "Events are created in your Mac calendars (EventKit). Note: macOS doesn't let apps add attendees or send invites — events are created without invitees.")
             }
 
-            Section("Meeting Links") {
-                Text("Save your join links (personal Zoom room, Teams meeting, phone bridge). When you create a meeting-like event — \"sync with Sam\", \"1:1\" — MeetingIntro attaches your default link automatically (you can switch or remove it in the preview). That makes the overlay Join button, audio handoff, and auto-record work for events you create yourself.")
-                    .font(.caption).foregroundStyle(.secondary)
-
+            Section {
                 ForEach(quickAddConfig.meetingLinks) { link in
-                    HStack(spacing: 8) {
-                        Button {
-                            quickAddConfig.setDefaultLink(link.id)
-                        } label: {
-                            Image(systemName: link.isDefault ? "star.fill" : "star")
-                                .foregroundStyle(link.isDefault ? .yellow : .secondary)
-                        }
-                        .buttonStyle(.plain)
-                        .help(link.isDefault ? "Default link for smart-attach" : "Make default")
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(link.name).font(.callout)
-                            Text(link.url).font(.caption2).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
-                        }
-                        Spacer()
-                        Button(role: .destructive) {
-                            quickAddConfig.removeLink(link.id)
-                        } label: { Image(systemName: "trash") }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(.red)
+                    if editingLinkID == link.id {
+                        meetingLinkEditRow(link)
+                    } else {
+                        meetingLinkRow(link)
                     }
                 }
 
-                HStack(spacing: 8) {
-                    TextField("Name (e.g. Personal Zoom)", text: $newLinkName)
-                    TextField("https://…", text: $newLinkURL)
-                    Button("Add") {
-                        let name = newLinkName.trimmingCharacters(in: .whitespaces)
-                        let url = newLinkURL.trimmingCharacters(in: .whitespaces)
-                        guard !name.isEmpty, !url.isEmpty else { return }
-                        quickAddConfig.addLink(name: name, url: url)
-                        newLinkName = ""; newLinkURL = ""
-                    }
-                    .disabled(newLinkName.trimmingCharacters(in: .whitespaces).isEmpty
-                              || newLinkURL.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
+                addMeetingLinkForm
+
                 if quickAddConfig.meetingLinks.isEmpty {
                     Text("No links yet — add one above to enable smart-attach.")
                         .font(.caption2).foregroundStyle(.tertiary)
                 }
+            } header: {
+                SettingsSectionHeader("Meeting Links", info: "Save your join links (personal Zoom room, Teams meeting, phone bridge). When you create a meeting-like event — \"sync with Sam\", \"1:1\" — MeetingIntro attaches your default link automatically (you can switch or remove it in the preview). That makes the overlay Join button, audio handoff, and auto-record work for events you create yourself.")
             }
 
-            Section("Event Templates") {
-                Text("Type a shorthand like /standup into Quick Add and it expands to a full event — title, duration, and a meeting link — then you just add the date/time (/standup tomorrow 9am).")
-                    .font(.caption).foregroundStyle(.secondary)
-
+            Section {
                 ForEach(quickAddConfig.templates) { t in
                     Button {
                         editingTemplate = t
@@ -476,6 +452,8 @@ struct SettingsView: View {
                 } label: {
                     Label("New template", systemImage: "plus")
                 }
+            } header: {
+                SettingsSectionHeader("Event Templates", info: "Type a shorthand like /standup into Quick Add and it expands to a full event — title, duration, and a meeting link — then you just add the date/time (/standup tomorrow 9am).")
             }
         }
         .formStyle(.grouped)
@@ -505,17 +483,132 @@ struct SettingsView: View {
         }
     }
 
+    // MARK: - Meeting Links UI
+
+    /// A saved-link row: provider glyph, default star, name/url, edit + delete.
+    @ViewBuilder
+    private func meetingLinkRow(_ link: SavedMeetingLink) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: link.resolvedProvider.sfSymbol)
+                .foregroundStyle(link.resolvedProvider.tint)
+                .frame(width: 18)
+            Button {
+                quickAddConfig.setDefaultLink(link.id)
+            } label: {
+                Image(systemName: link.isDefault ? "star.fill" : "star")
+                    .foregroundStyle(link.isDefault ? .yellow : .secondary)
+            }
+            .buttonStyle(.plain)
+            .help(link.isDefault ? "Default link for smart-attach" : "Make default")
+            VStack(alignment: .leading, spacing: 1) {
+                Text(link.name).font(.callout)
+                Text(link.url).font(.caption2).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+            }
+            Spacer()
+            Button { beginEditingLink(link) } label: {
+                Image(systemName: "pencil")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .help("Edit this link")
+            Button(role: .destructive) {
+                if editingLinkID == link.id { editingLinkID = nil }
+                quickAddConfig.removeLink(link.id)
+            } label: { Image(systemName: "trash") }
+            .buttonStyle(.plain)
+            .foregroundStyle(.red)
+            .help("Delete this link")
+        }
+    }
+
+    /// Inline editor shown in place of a row when its pencil is tapped.
+    @ViewBuilder
+    private func meetingLinkEditRow(_ link: SavedMeetingLink) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            TextField("Name", text: $editLinkName)
+                .textFieldStyle(.roundedBorder)
+            TextField("https://…  or  +1 555 123 4567", text: $editLinkURL)
+                .textFieldStyle(.roundedBorder)
+            if let editLinkError {
+                Text(editLinkError).font(.caption2).foregroundStyle(.red)
+            }
+            HStack {
+                Spacer()
+                Button("Cancel") { editingLinkID = nil; editLinkError = nil }
+                Button("Save") { saveEditingLink(link) }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(editLinkURL.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    /// Stacked add form: Type picker → Name → URL → Add Link, with validation.
+    @ViewBuilder
+    private var addMeetingLinkForm: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Add a link").font(.caption).foregroundStyle(.secondary)
+            TextField("Name (e.g. Personal Zoom)", text: $newLinkName)
+                .textFieldStyle(.roundedBorder)
+            TextField("https://…  or  +1 555 123 4567", text: $newLinkURL)
+                .textFieldStyle(.roundedBorder)
+                .onChange(of: newLinkURL) { _, _ in newLinkError = nil }
+            if let newLinkError {
+                Text(newLinkError).font(.caption2).foregroundStyle(.red)
+            }
+            HStack {
+                Spacer()
+                Button("Add Link") { addMeetingLinkAction() }
+                    .disabled(newLinkURL.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+    }
+
+    private func beginEditingLink(_ link: SavedMeetingLink) {
+        editingLinkID = link.id
+        editLinkName = link.name
+        editLinkURL = link.url
+        editLinkError = nil
+    }
+
+    private func saveEditingLink(_ link: SavedMeetingLink) {
+        let (normalized, error) = MeetingLinkValidator.normalize(editLinkURL)
+        guard let url = normalized else { editLinkError = error; return }
+        let detected = MeetingLinkProvider.detect(from: url)
+        let name = editLinkName.trimmingCharacters(in: .whitespaces).isEmpty
+            ? detected.displayName
+            : editLinkName.trimmingCharacters(in: .whitespaces)
+        var updated = link
+        updated.name = name
+        updated.url = url
+        updated.provider = detected
+        quickAddConfig.updateLink(updated)
+        editingLinkID = nil
+        editLinkError = nil
+    }
+
+    private func addMeetingLinkAction() {
+        let (normalized, error) = MeetingLinkValidator.normalize(newLinkURL)
+        guard let url = normalized else { newLinkError = error; return }
+        let detected = MeetingLinkProvider.detect(from: url)
+        let name = newLinkName.trimmingCharacters(in: .whitespaces).isEmpty
+            ? detected.displayName
+            : newLinkName.trimmingCharacters(in: .whitespaces)
+        quickAddConfig.addLink(name: name, url: url, provider: detected)
+        newLinkName = ""; newLinkURL = ""; newLinkError = nil
+    }
+
     // MARK: - Calendar Sync Tab
 
     private var calendarSyncTab: some View {
         Form {
-            Section("Calendar Sync") {
-                Text("Mirror events from one or more calendars into another — one-way and continuous. A colleague checking the destination sees your true availability without you copying anything. The destination is a read-only reflection; edit in the source.")
-                    .font(.caption).foregroundStyle(.secondary)
+            Section {
                 Button {
                     editingMirror = nil
                     showMirrorSheet = true
                 } label: { Label("Add Mirror", systemImage: "plus") }
+            } header: {
+                SettingsSectionHeader("Calendar Sync", info: "Mirror events from one or more calendars into another — one-way and continuous. A colleague checking the destination sees your true availability without you copying anything. The destination is a read-only reflection; edit in the source.")
             }
 
             if mirrorConfig.mirrors.isEmpty {
@@ -621,36 +714,34 @@ struct SettingsView: View {
 
     private var menuBarTab: some View {
         Form {
-            Section("Dropdown Style") {
+            Section {
                 Picker("Menu bar dropdown", selection: $menuBarPresentationRaw) {
                     ForEach(MenuBarPresentation.allCases) { p in
                         Text(p.displayName).tag(p.rawValue)
                     }
                 }
                 .pickerStyle(.inline)
-                Text("\"Compact menu\" is the familiar list. \"Rich popover\" is a wider panel with a Today/Upcoming switcher and columned rows. (Both open from the menu bar icon.)")
-                    .font(.caption).foregroundStyle(.secondary)
+            } header: {
+                SettingsSectionHeader("Dropdown Style", info: "\"Compact menu\" is the familiar list. \"Rich popover\" is a wider panel with a Today/Upcoming switcher and columned rows. (Both open from the menu bar icon.)")
             }
 
-            Section("Upcoming Days") {
+            Section {
                 Stepper(value: $upcomingDaysAhead, in: 1...30) {
                     Text("Load \(upcomingDaysAhead) day\(upcomingDaysAhead == 1 ? "" : "s") ahead")
                 }
-                Text("How far ahead the Upcoming view (and the compact menu's Upcoming list) loads.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            } header: {
+                SettingsSectionHeader("Upcoming Days", info: "How far ahead the Upcoming view (and the compact menu's Upcoming list) loads.")
             }
 
-            Section("Accent Color") {
+            Section {
                 ColorPicker("Highlight / accent color", selection: Binding(
                     get: { Color(hex: nextMeetingHighlightHex) },
                     set: { nextMeetingHighlightHex = $0.hexString }
                 ), supportsOpacity: false)
                 Button("Reset to default") { nextMeetingHighlightHex = defaultNextMeetingHighlightHex }
                     .controlSize(.small)
-                Text("Used for the next meeting and accents throughout the dropdown (the Today/Upcoming switcher, the \"NEXT\" band, the day-timeline marker).")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            } header: {
+                SettingsSectionHeader("Accent Color", info: "Used for the next meeting and accents throughout the dropdown (the Today/Upcoming switcher, the \"NEXT\" band, the day-timeline marker).")
             }
         }
         .formStyle(.grouped)
@@ -661,11 +752,7 @@ struct SettingsView: View {
 
     private var countdownTab: some View {
         Form {
-            Section("Countdown Triggers") {
-                Text("Choose when to be reminded and how. Each trigger can overlay, notify, or speak.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
+            Section {
                 ForEach(CountdownConfigManager.availableMinutes, id: \.self) { minutes in
                     let isEnabled = countdownConfig.triggers.contains { $0.minutes == minutes }
                     DisclosureGroup {
@@ -719,32 +806,35 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.orange)
                 }
+            } header: {
+                SettingsSectionHeader("Countdown Triggers", info: "Choose when to be reminded and how. Each trigger can overlay, notify, or speak.")
             }
 
-            Section("Join Meeting Button") {
+            Section {
                 Toggle("Show \"Join Meeting\" button when a link is detected", isOn: $countdownConfig.joinButtonEnabled)
-                Text("MeetingIntro scans the event's URL field, description, and location for Zoom, Teams, Google Meet, Webex, and GoToMeeting links.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            } header: {
+                SettingsSectionHeader("Join Meeting Button", info: "MeetingIntro scans the event's URL field, description, and location for Zoom, Teams, Google Meet, Webex, and GoToMeeting links.")
             }
 
-            Section("Meeting Start") {
+            Section {
                 Toggle("Notify me when a meeting starts", isOn: $notificationManager.notifyAtStartEnabled)
-                Text("Posts a system notification at the meeting's start time, in addition to your pre-meeting reminders. Skipped for meetings you've armed with \"Start at Time\" (those open automatically) and for declined invitations.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            } header: {
+                SettingsSectionHeader("Meeting Start", info: "Posts a system notification at the meeting's start time, in addition to your pre-meeting reminders. Skipped for meetings you've armed with \"Start at Time\" (those open automatically) and for declined invitations.")
             }
 
-            Section("Start at Time (auto-join)") {
+            Section {
+                Toggle("Notify me when a meeting is moved", isOn: $notificationManager.timeChangeNotifyEnabled)
+            } header: {
+                SettingsSectionHeader("Rescheduled Meetings", info: "Posts a notification when an existing meeting's start time changes, so you're not caught out by a meeting that was moved (e.g. overnight). The first time a meeting is seen it's only recorded — you're only alerted on an actual move.")
+            }
+
+            Section {
                 Toggle("Show \"Start at Time\" button on the overlay", isOn: $countdownConfig.autoJoinEnabled)
                     .disabled(!countdownConfig.joinButtonEnabled)
                 Stepper(value: $countdownConfig.autoJoinGraceMinutes, in: 1...30) {
                     Text("Skip auto-join if started more than \(countdownConfig.autoJoinGraceMinutes) min ago")
                 }
                 .disabled(!countdownConfig.autoJoinEnabled || !countdownConfig.joinButtonEnabled)
-                Text("When armed from the overlay, the meeting shows a live countdown in the menu bar (click it to cancel) and its link opens automatically at start time. If your Mac was asleep and the meeting started more than the grace window ago, the join is skipped (you get a \"missed\" notification instead). Requires the Join button (above).")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
 
                 Toggle("Show a heads-up overlay before an armed meeting starts", isOn: $countdownConfig.autoJoinImminentOverlayEnabled)
                     .disabled(!countdownConfig.autoJoinEnabled || !countdownConfig.joinButtonEnabled)
@@ -752,24 +842,25 @@ struct SettingsView: View {
                     Text("Heads-up appears \(countdownConfig.autoJoinOverlayLeadSeconds)s before start")
                 }
                 .disabled(!countdownConfig.autoJoinImminentOverlayEnabled || !countdownConfig.autoJoinEnabled || !countdownConfig.joinButtonEnabled)
-                Text("A small, non-blocking heads-up (with Join now / Cancel) appears in the corner shortly before an armed meeting opens.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+
+                Toggle("Play a beep with the heads-up", isOn: $countdownConfig.autoJoinAudibleCountdownEnabled)
+                    .disabled(!countdownConfig.autoJoinImminentOverlayEnabled || !countdownConfig.autoJoinEnabled || !countdownConfig.joinButtonEnabled)
+            } header: {
+                SettingsSectionHeader("Start at Time (auto-join)", info: "When armed from the overlay, the meeting shows a live countdown in the menu bar (click it to cancel) and its link opens automatically at start time. If your Mac was asleep and the meeting started more than the grace window ago, the join is skipped (you get a \"missed\" notification instead). Requires the Join button (above).\n\nA small, non-blocking heads-up (with Join now / Cancel) appears in the corner shortly before an armed meeting opens.\n\nThe beep sounds three short tones when the heads-up appears, so you get a moment to stop typing before the meeting opens.")
             }
 
-            Section("Meeting Details Panel") {
+            Section {
                 Toggle("Show notes in overlay", isOn: $contextPanelShowNotes)
                 Toggle("Show attendees in overlay", isOn: $contextPanelShowAttendees)
                 Toggle("Show secondary join link in overlay", isOn: $contextPanelShowJoinURL)
                 Stepper(value: $contextPanelMinThreshold, in: 0...60) {
                     Text("Hide panel when meeting is closer than \(contextPanelMinThreshold) min")
                 }
-                Text("The details panel adds notes, attendees, and a copy/open join link below the countdown ring. Use the stepper to suppress it on last-minute reminders.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            } header: {
+                SettingsSectionHeader("Meeting Details Panel", info: "The details panel adds notes, attendees, and a copy/open join link below the countdown ring. Use the stepper to suppress it on last-minute reminders.")
             }
 
-            Section("Cancelled Meetings") {
+            Section {
                 Toggle("Notify me immediately when a meeting is cancelled",
                        isOn: $notificationManager.cancellationNotifyEnabled)
                 Toggle("Play sound with cancellation notifications",
@@ -785,9 +876,6 @@ struct SettingsView: View {
                     }
                 }
                 .disabled(!cancellationShowOverlay)
-                Text("Reminders, voice prompts, and auto-recording are always suppressed for cancelled meetings — these settings only control how you're told about the cancellation. The overlay notice stays on screen until you dismiss it (even across restarts and sleep), and politely hides while you're in a call or sharing your screen.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
                 Button("Test Cancellation Notice") {
                     let testMeeting = MeetingEvent(
                         id: "cancel-test",
@@ -807,6 +895,8 @@ struct SettingsView: View {
                     )
                     overlayController.showCancellation(for: testMeeting)
                 }
+            } header: {
+                SettingsSectionHeader("Cancelled Meetings", info: "Reminders, voice prompts, and auto-recording are always suppressed for cancelled meetings — these settings only control how you're told about the cancellation. The overlay notice stays on screen until you dismiss it (even across restarts and sleep), and politely hides while you're in a call or sharing your screen.")
             }
 
             Section("Preview") {
@@ -841,7 +931,7 @@ struct SettingsView: View {
 
     private var smartTab: some View {
         Form {
-            Section("Context-Aware Reminders") {
+            Section {
                 Toggle("Suppress when I'm already in a call",
                        isOn: $smartConfig.suppressWhenInCall)
                 Toggle("Visual-only when Focus is on",
@@ -850,21 +940,18 @@ struct SettingsView: View {
                        isOn: $smartConfig.noVoiceWhenScreenSharing)
                 Toggle("Escalate when a fullscreen app is active",
                        isOn: $smartConfig.escalateWhenFullscreen)
-
-                Text("MeetingIntro reads four live signals to decide which channels should fire. Rules are evaluated top-to-bottom — the first matching rule wins.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            } header: {
+                SettingsSectionHeader("Context-Aware Reminders", info: "MeetingIntro reads four live signals to decide which channels should fire. Rules are evaluated top-to-bottom — the first matching rule wins.")
             }
 
-            Section("Meeting Responses (RSVP)") {
+            Section {
                 Toggle("Skip meetings I've declined",
                        isOn: $smartConfig.skipDeclinedMeetings)
                 Toggle("…and ones I haven't responded to",
                        isOn: $smartConfig.skipNoResponseMeetings)
                     .disabled(!smartConfig.skipDeclinedMeetings)
-                Text("Quietens reminders **and** auto-recording for invitations you've declined (and optionally not answered). Tentative invites still remind. Personal events, meetings you organize, and anything without RSVP data are never affected — this only applies to real invitations.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            } header: {
+                SettingsSectionHeader("Meeting Responses (RSVP)", info: "Quietens reminders **and** auto-recording for invitations you've declined (and optionally not answered). Tentative invites still remind. Personal events, meetings you organize, and anything without RSVP data are never affected — this only applies to real invitations.")
             }
 
             Section("Live Signals") {
@@ -994,10 +1081,10 @@ struct SettingsView: View {
                 }
             }
 
-            Section("Restore") {
+            Section {
                 Toggle("Restore prior audio + Focus state when meeting ends", isOn: $handoffConfig.restoreOnEnd)
-                Text("A snapshot of the prior state is taken when the meeting starts. If MeetingIntro crashes mid-meeting, the state is restored on next launch.")
-                    .font(.caption).foregroundStyle(.secondary)
+            } header: {
+                SettingsSectionHeader("Restore", info: "A snapshot of the prior state is taken when the meeting starts. If MeetingIntro crashes mid-meeting, the state is restored on next launch.")
             }
         }
         .formStyle(.grouped)
@@ -1038,7 +1125,7 @@ struct SettingsView: View {
 
     private var recordingTab: some View {
         Form {
-            Section("Auto-Record Meetings") {
+            Section {
                 Toggle("Record meetings with conference links automatically",
                        isOn: Binding(
                         get: { recordingConfig.isEnabled },
@@ -1049,9 +1136,6 @@ struct SettingsView: View {
                                 recordingConfig.isEnabled = newValue
                             }
                         }))
-                Text("MeetingIntro starts a mic + system-audio recording at the meeting's start time and stops at its end time. Meetings without a detected Zoom/Teams/Meet/Webex link are skipped.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
 
                 if recordingController.isRecording, let title = recordingController.currentMeetingTitle {
                     HStack {
@@ -1062,6 +1146,8 @@ struct SettingsView: View {
                             .tint(.red)
                     }
                 }
+            } header: {
+                SettingsSectionHeader("Auto-Record Meetings", info: "MeetingIntro starts a mic + system-audio recording at the meeting's start time and stops at its end time. Meetings without a detected Zoom/Teams/Meet/Webex link are skipped.")
             }
 
             if recordingConfig.isEnabled {
@@ -1134,6 +1220,7 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 } else {
                     SecureField("Groq API key (gsk_…)", text: $groqKeyDraft)
+                        .textFieldStyle(.roundedBorder)
                     HStack {
                         Button(notesConfig.groqKey.isEmpty ? "Save key" : "Update key") {
                             notesConfig.groqKey = groqKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1343,16 +1430,14 @@ struct SettingsView: View {
 
     private var soundsTab: some View {
         Form {
-            Section("Notification Sound") {
-                Text("Download free notification sounds from Mixkit. The selected sound plays with each countdown notification.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
+            Section {
                 if mixkitSounds.selectedSoundID == nil {
                     Text("Using default system sound")
                         .font(.caption)
                         .foregroundStyle(.orange)
                 }
+            } header: {
+                SettingsSectionHeader("Notification Sound", info: "Download free notification sounds from Mixkit. The selected sound plays with each countdown notification.")
             }
 
             Section("Sound Library") {
@@ -1900,12 +1985,10 @@ struct SettingsView: View {
 
     private var voiceTab: some View {
         Form {
-            Section("Voice Reminder") {
+            Section {
                 Toggle("Enable voice reminders", isOn: $voiceReminder.isEnabled)
-
-                Text("A voice will announce your upcoming meeting at the configured time.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            } header: {
+                SettingsSectionHeader("Voice Reminder", info: "A voice will announce your upcoming meeting at the configured time.")
             }
 
             if voiceReminder.isEnabled {
@@ -1918,7 +2001,7 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                Section("Reminder Timing") {
+                Section {
                     Picker("Announce", selection: $voiceReminder.reminderMinutesBefore) {
                         Text("1 minute before").tag(1)
                         Text("2 minutes before").tag(2)
@@ -1927,10 +2010,8 @@ struct SettingsView: View {
                         Text("10 minutes before").tag(10)
                         Text("15 minutes before").tag(15)
                     }
-
-                    Text("The voice reminder fires separately from the countdown overlay.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                } header: {
+                    SettingsSectionHeader("Reminder Timing", info: "The voice reminder fires separately from the countdown overlay.")
                 }
 
                 Section("Voice") {
@@ -2027,6 +2108,51 @@ struct SettingsView: View {
     private func showCountdownOverlay(for meeting: MeetingEvent) {
         calendarManager.countdownMeeting = meeting
         calendarManager.shouldShowCountdown = true
+    }
+}
+
+// MARK: - Settings section header with ⓘ info popover
+
+/// A grouped-`Form` section header with an optional ⓘ button that reveals explanatory
+/// text in a click-to-open popover (v2.9.7). Keeps the form body uncluttered — the
+/// long "what this does" captions move behind the ⓘ. Permission warnings, error states,
+/// and hard caveats stay inline in the body (they shouldn't be a click away).
+///
+/// Usage: `Section { rows } header: { SettingsSectionHeader("Title", info: "…") }`.
+/// The title `Text` inherits the native section-header style from the environment; the
+/// info string is rendered as markdown (so backticks / **bold** / links work).
+struct SettingsSectionHeader: View {
+    let title: String
+    var info: String? = nil
+    @State private var showInfo = false
+
+    init(_ title: String, info: String? = nil) {
+        self.title = title
+        self.info = info
+    }
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Text(title)
+            if let info {
+                Button { showInfo.toggle() } label: {
+                    Image(systemName: "info.circle")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("More info")
+                .popover(isPresented: $showInfo) {
+                    Text(.init(info))
+                        .font(.callout)
+                        .foregroundStyle(.primary)
+                        .multilineTextAlignment(.leading)
+                        .padding(14)
+                        .frame(width: 300, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Spacer()
+        }
     }
 }
 

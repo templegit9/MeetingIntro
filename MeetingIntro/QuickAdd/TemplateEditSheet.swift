@@ -30,6 +30,7 @@ struct TemplateEditSheet: View {
                         Text("/").font(.system(.body, design: .monospaced)).foregroundStyle(.secondary)
                         TextField("standup", text: $trigger)
                             .font(.system(.body, design: .monospaced))
+                            .textFieldStyle(.roundedBorder)
                     }
                     Text("Type /\(trigger.isEmpty ? "standup" : sanitizedTrigger) in Quick Add to use this template.")
                         .font(.caption2).foregroundStyle(.secondary)
@@ -37,10 +38,12 @@ struct TemplateEditSheet: View {
 
                 Section("Event") {
                     TextField("Title (e.g. Daily Standup)", text: $title)
+                        .textFieldStyle(.roundedBorder)
                     Stepper(value: $durationMinutes, in: 5...480, step: 5) {
                         Text("Duration: \(durationMinutes) min")
                     }
                     TextField("Location (optional)", text: $location)
+                        .textFieldStyle(.roundedBorder)
                 }
 
                 Section("Meeting link") {
