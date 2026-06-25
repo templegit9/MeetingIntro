@@ -16,7 +16,7 @@ import Foundation
 /// `imminentMeeting` (the soonest armed meeting once it enters the lead-time window) so
 /// the gentle heads-up overlay can show/hide.
 @MainActor
-final class MenuBarCountdownModel: ObservableObject {
+final class MenuBarCountdownModel: NSObject, ObservableObject {
 
     /// The soonest armed meeting once it's within the heads-up lead window (else nil).
     /// Drives the gentle pre-start overlay; the subscriber dedups on id.
@@ -100,9 +100,13 @@ final class MenuBarCountdownModel: ObservableObject {
             img?.isTemplate = true
             button.image = img
             button.imagePosition = .imageLeading
-            button.target = self
-            button.action = #selector(statusItemClicked)
         }
+        // A click opens a menu of options rather than instantly canceling — clicking
+        // the countdown to show someone must NOT silently disarm it (Issue #6). The
+        // menu is rebuilt on open (menuNeedsUpdate) so the title/time stay current.
+        let menu = NSMenu()
+        menu.delegate = self
+        item.menu = menu
         statusItem = item
     }
 
@@ -110,7 +114,7 @@ final class MenuBarCountdownModel: ObservableObject {
         guard let button = statusItem?.button else { return }
         button.title = " " + Self.format(remaining)
         let timeStr = meeting.formattedStartTime
-        button.toolTip = "Auto-join armed: \(meeting.title) at \(timeStr) — click to cancel"
+        button.toolTip = "Auto-join armed: \(meeting.title) at \(timeStr) — click for options"
     }
 
     private func removeStatusItem() {
@@ -118,10 +122,67 @@ final class MenuBarCountdownModel: ObservableObject {
         statusItem = nil
     }
 
-    /// Single click on the countdown cancels (disarms) the soonest armed meeting.
-    @objc private func statusItemClicked() {
+    /// Open the conference link now (and disarm) for the soonest armed meeting.
+    @objc private func joinNowClicked() {
+        guard let cm = calendarManager, let next = cm.armedAutoJoinMeetings.first else { return }
+        cm.joinNowAndDisarm(next.id)
+    }
+
+    /// Cancel auto-join for the soonest armed meeting — a deliberate menu choice now,
+    /// not a stray click.
+    @objc private func cancelArmClicked() {
         guard let cm = calendarManager, let next = cm.armedAutoJoinMeetings.first else { return }
         cm.disarmAutoJoin(next.id)
+    }
+
+    // MARK: - Click menu
+
+    /// Rebuilds the status-item menu each time it opens so the header reflects the
+    /// soonest armed meeting + its live countdown.
+    private func rebuildMenu(_ menu: NSMenu) {
+        menu.removeAllItems()
+        guard let cm = calendarManager, let next = cm.armedAutoJoinMeetings.first else {
+            menu.addItem(disabledItem("No meeting armed"))
+            return
+        }
+        let remaining = next.startDate.timeIntervalSinceNow
+        let when = remaining > 0
+            ? "starts in \(Self.format(remaining))"
+            : "started \(Self.format(-remaining)) ago"
+        menu.addItem(disabledItem("\(next.title) — \(when)"))
+        menu.addItem(.separator())
+
+        if next.url != nil {
+            let join = NSMenuItem(title: "Join Now", action: #selector(joinNowClicked), keyEquivalent: "")
+            join.target = self
+            join.image = NSImage(systemSymbolName: "video.fill", accessibilityDescription: nil)
+            menu.addItem(join)
+        }
+        let cancel = NSMenuItem(title: "Cancel Auto-join", action: #selector(cancelArmClicked), keyEquivalent: "")
+        cancel.target = self
+        cancel.image = NSImage(systemSymbolName: "xmark.circle", accessibilityDescription: nil)
+        menu.addItem(cancel)
+    }
+
+    private func disabledItem(_ title: String) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+        item.isEnabled = false
+        return item
+    }
+
+    /// Three short beeps ("beep, beep, beep") as the audible heads-up before an armed
+    /// meeting auto-joins. Uses a fresh `NSSound` per beep so they don't cut each other
+    /// off; falls back to the system alert if the named sound is unavailable.
+    static func playHeadsUpChime() {
+        for offset in [0.0, 0.45, 0.9] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + offset) {
+                if let sound = NSSound(named: NSSound.Name("Ping")) {
+                    sound.play()
+                } else {
+                    NSSound.beep()
+                }
+            }
+        }
     }
 
     /// Short, glanceable countdown. Seconds resolution under an hour; coarse above.
@@ -132,5 +193,13 @@ final class MenuBarCountdownModel: ObservableObject {
             return "\(h)h\(m)m"
         }
         return String(format: "%d:%02d", secs / 60, secs % 60)
+    }
+}
+
+// MARK: - NSMenuDelegate
+
+extension MenuBarCountdownModel: NSMenuDelegate {
+    nonisolated func menuNeedsUpdate(_ menu: NSMenu) {
+        MainActor.assumeIsolated { rebuildMenu(menu) }
     }
 }
