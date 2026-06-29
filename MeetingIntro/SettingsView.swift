@@ -98,6 +98,8 @@ struct SettingsView: View {
     @State private var editLinkName: String = ""
     @State private var editLinkURL: String = ""
     @State private var editLinkError: String?
+    @State private var subscribeURL: String = ""
+    @State private var subscribeError: String?
     @State private var editingTemplate: QuickAddTemplate?
 
     @AppStorage("upcomingDaysAhead") private var upcomingDaysAhead: Int = 7
@@ -234,9 +236,59 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+
+            if selectedProvider == .eventKit {
+                Section {
+                    HStack(spacing: 8) {
+                        TextField("https://…/calendar.ics  or  webcal://…", text: $subscribeURL)
+                            .textFieldStyle(.roundedBorder)
+                            .onSubmit { subscribeToCalendarURL() }
+                        Button("Subscribe") { subscribeToCalendarURL() }
+                            .disabled(subscribeURL.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                    if let subscribeError {
+                        Text(subscribeError).font(.caption2).foregroundStyle(.red)
+                    }
+                } header: {
+                    SettingsSectionHeader("Subscribe to a Calendar by URL", info: "Paste an internet calendar (.ics / webcal) link — e.g. a sports fixtures, holidays, or team calendar. MeetingIntro hands it to macOS Calendar, which shows a Subscribe dialog where you set how often it refreshes. Once subscribed, it appears in “Calendars to Monitor” above to tick on.\n\nTip: for calendars whose events are weeks out, raise Menu Bar → Upcoming Days (default 7) so they all show. All-day events aren't shown (there's no countdown to an all-day event).")
+                }
+            }
         }
         .formStyle(.grouped)
         .padding()
+    }
+
+    /// Normalize an http(s)/webcal calendar link to `webcal://` and hand it to macOS
+    /// Calendar, which runs its native subscription flow (EventKit has no subscribe API).
+    private func subscribeToCalendarURL() {
+        let raw = subscribeURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty else { return }
+        let lower = raw.lowercased()
+        let urlString: String
+        if lower.hasPrefix("webcal://") {
+            urlString = raw
+        } else if lower.hasPrefix("https://") {
+            urlString = "webcal://" + raw.dropFirst("https://".count)
+        } else if lower.hasPrefix("http://") {
+            urlString = "webcal://" + raw.dropFirst("http://".count)
+        } else if !lower.contains("://") {
+            urlString = "webcal://" + raw
+        } else {
+            subscribeError = "Use an http(s) or webcal calendar link."
+            return
+        }
+        guard let url = URL(string: urlString), url.host != nil else {
+            subscribeError = "That doesn't look like a valid calendar URL."
+            return
+        }
+        NSWorkspace.shared.open(url)
+        subscribeError = nil
+        subscribeURL = ""
+        // After macOS finishes subscribing, reload so the new calendar shows above.
+        Task {
+            try? await Task.sleep(nanoseconds: 2_500_000_000)
+            await loadCalendars()
+        }
     }
 
     // MARK: - Graph Settings Section
