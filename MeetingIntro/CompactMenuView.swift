@@ -13,10 +13,24 @@ struct CompactMenuView: View {
     @ObservedObject var recordingCoordinator: MeetingRecordingCoordinator
     @ObservedObject var quickAddPanel: QuickAddPanelController
     @ObservedObject var updater: AppUpdater
+    @ObservedObject var smartConfig: SmartConfigManager
+    @ObservedObject var contextMonitor: MeetingContextMonitor
+    @ObservedObject var quickAddService: QuickAddService
+    @ObservedObject var quickAddConfig: QuickAddConfig
+
+    /// #13 focus spike: an inline compact New Event form embedded in the dropdown.
+    @State private var showingNewEvent = false
+    @State private var creatingEvent = false
+    @FocusState private var newEventFocused: Bool
 
     @Environment(\.openWindow) private var openWindow
     @AppStorage("cancellationShowInTodayView") private var showCancelled: Bool = true
     @AppStorage("nextMeetingHighlightHex") private var nextMeetingHighlightHex: String = defaultNextMeetingHighlightHex
+
+    /// Hover-to-detail (Issue #16): `hoveredID` drives the popover; `pendingHoverID`
+    /// gates a short show-delay so brushing across rows doesn't flicker cards.
+    @State private var hoveredID: String?
+    @State private var pendingHoverID: String?
 
     private var accent: Color { Color(hex: nextMeetingHighlightHex) }
 
@@ -24,7 +38,98 @@ struct CompactMenuView: View {
         showCancelled ? calendarManager.todaysMeetings : calendarManager.todaysMeetings.filter { !$0.isCancelled }
     }
 
+    /// #13 focus spike: a compact New Event form inside the dropdown popover. The open
+    /// question is whether the `.window` MenuBarExtra reliably first-responds this field.
+    private var newEventForm: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Button { showingNewEvent = false; quickAddService.reset() } label: {
+                    Image(systemName: "chevron.left")
+                }
+                .buttonStyle(.borderless)
+                Text("New Event").font(.headline)
+                Spacer()
+            }
+            TextField("Lunch with Sam tomorrow 1pm", text: $quickAddService.inputText)
+                .textFieldStyle(.roundedBorder)
+                .focused($newEventFocused)
+                .onSubmit { create() }
+            if let draft = quickAddService.draft {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(draft.title).font(.callout.weight(.semibold)).lineLimit(1)
+                    Text(draft.startDate.formatted(date: .abbreviated, time: .shortened))
+                        .font(.caption).foregroundStyle(.secondary)
+                    newEventLinkControl(draft)
+                    if !quickAddService.conflicts.isEmpty {
+                        Label("Overlaps “\(quickAddService.conflicts[0])”" + (quickAddService.conflicts.count > 1 ? " + \(quickAddService.conflicts.count - 1) more" : ""),
+                              systemImage: "calendar.badge.exclamationmark")
+                            .font(.caption).foregroundStyle(.orange).lineLimit(1)
+                    }
+                }
+            } else if !quickAddService.inputText.isEmpty {
+                Text(quickAddService.isParsing ? "Parsing…" : "Keep typing…")
+                    .font(.caption).foregroundStyle(.tertiary)
+            }
+            HStack {
+                Spacer()
+                Button(creatingEvent ? "Creating…" : "Create") { create() }
+                    .disabled(quickAddService.draft == nil || creatingEvent)
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(14)
+        .frame(width: 300, alignment: .leading)
+        .onAppear { newEventFocused = true }
+        .onExitCommand { showingNewEvent = false; quickAddService.reset() }
+    }
+
+    private func create() {
+        guard let draft = quickAddService.draft, !creatingEvent else { return }
+        creatingEvent = true
+        Task {
+            try? await calendarManager.createEvent(from: draft, calendarID: quickAddConfig.defaultCalendarID)
+            creatingEvent = false
+            showingNewEvent = false
+            quickAddService.reset()
+        }
+    }
+
+    /// Meeting-link attach/switch/remove (mirrors QuickAddView.linkControl).
+    private func newEventLinkControl(_ draft: EventDraft) -> some View {
+        Menu {
+            Button { quickAddService.linkChoice = .none } label: {
+                Label("No link", systemImage: draft.url == nil ? "checkmark" : "")
+            }
+            if !quickAddConfig.meetingLinks.isEmpty { Divider() }
+            ForEach(quickAddConfig.meetingLinks) { link in
+                Button { quickAddService.linkChoice = .specific(link.id) } label: {
+                    Label(link.name + (link.isDefault ? " (default)" : ""),
+                          systemImage: draft.attachedLinkName == link.name ? "checkmark" : "")
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: draft.url != nil ? "video.fill" : "video.slash.fill")
+                    .foregroundStyle(draft.url != nil ? accent : .secondary)
+                Text(draft.attachedLinkName ?? (draft.url != nil ? "Meeting link" : "No meeting link"))
+                    .foregroundStyle(draft.url != nil ? .primary : .secondary)
+                Image(systemName: "chevron.up.chevron.down").font(.caption2).foregroundStyle(.tertiary)
+            }
+            .font(.caption)
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+    }
+
     var body: some View {
+        if showingNewEvent {
+            newEventForm
+        } else {
+            menuBody
+        }
+    }
+
+    private var menuBody: some View {
         VStack(alignment: .leading, spacing: 0) {
             if case .available(let v) = updater.state {
                 actionRow(icon: "arrow.down.circle.fill", tint: accent,
@@ -41,6 +146,15 @@ struct CompactMenuView: View {
                     Spacer()
                     Button("Stop") { Task { await recordingCoordinator.stopManually() } }
                         .controlSize(.small)
+                }
+                .padding(.horizontal, 14).padding(.vertical, 6)
+                Divider()
+            }
+
+            if smartConfig.suppressWhenInCall && contextMonitor.snapshot.isInActiveCall {
+                HStack(spacing: 8) {
+                    Image(systemName: "bell.slash.fill").foregroundStyle(.orange)
+                    Text("Reminders paused — you're on a call").font(.caption.weight(.semibold)).foregroundStyle(.orange).lineLimit(1)
                 }
                 .padding(.horizontal, 14).padding(.vertical, 6)
                 Divider()
@@ -117,7 +231,10 @@ struct CompactMenuView: View {
             }
 
             Divider()
-            actionRow(icon: "plus", tint: .primary, label: "New Event…", trailing: "⌘N") { quickAddPanel.show() }
+            actionRow(icon: "plus", tint: .primary, label: "New Event…", trailing: "⌘N") {
+                quickAddService.reset()
+                showingNewEvent = true
+            }
             actionRow(icon: "note.text", tint: .primary, label: "Meeting Notes…", trailing: "⌘M") {
                 openWindow(id: "meetingNotes"); NSApp.activate(ignoringOtherApps: true)
             }
@@ -170,12 +287,20 @@ struct CompactMenuView: View {
                 }
                 .buttonStyle(.borderless).help("Join")
             }
-            if calendarManager.supportsRSVPWrite, !meeting.isCancelled,
-               [.accepted, .declined, .tentative, .noResponse].contains(meeting.myResponse) {
+            if !meeting.isCancelled {
                 Menu {
-                    Button("Accept") { Task { try? await calendarManager.respond(to: meeting.id, status: .accepted) } }
-                    Button("Tentative") { Task { try? await calendarManager.respond(to: meeting.id, status: .tentative) } }
-                    Button("Decline") { Task { try? await calendarManager.respond(to: meeting.id, status: .declined) } }
+                    if calendarManager.supportsRSVPWrite,
+                       [.accepted, .declined, .tentative, .noResponse].contains(meeting.myResponse) {
+                        Button("Accept") { Task { try? await calendarManager.respond(to: meeting.id, status: .accepted) } }
+                        Button("Tentative") { Task { try? await calendarManager.respond(to: meeting.id, status: .tentative) } }
+                        Button("Decline") { Task { try? await calendarManager.respond(to: meeting.id, status: .declined) } }
+                        Divider()
+                    }
+                    if calendarManager.remindersDismissed(meeting.id) {
+                        Button("Re-enable reminders") { calendarManager.undismissReminders(meeting.id) }
+                    } else {
+                        Button("Dismiss reminders for this event") { calendarManager.dismissReminders(meeting.id) }
+                    }
                 } label: {
                     Image(systemName: "ellipsis.circle").foregroundStyle(.secondary)
                 }
@@ -184,6 +309,26 @@ struct CompactMenuView: View {
         }
         .padding(.horizontal, 14).padding(.vertical, 6)
         .contentShape(Rectangle())
+        .onHover { inside in handleHover(inside, meeting.id) }
+        .popover(isPresented: Binding(
+            get: { hoveredID == meeting.id },
+            set: { if !$0 { hoveredID = nil } }
+        ), arrowEdge: .trailing) {
+            MeetingHoverCard(meeting: meeting)
+        }
+    }
+
+    /// Show the detail card after a brief dwell; hide immediately on exit.
+    private func handleHover(_ inside: Bool, _ id: String) {
+        if inside {
+            pendingHoverID = id
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                if pendingHoverID == id { hoveredID = id }
+            }
+        } else {
+            if pendingHoverID == id { pendingHoverID = nil }
+            if hoveredID == id { hoveredID = nil }
+        }
     }
 
     private func glyphRow(icon: String, tint: Color, time: String, title: String, action: @escaping () -> Void) -> some View {

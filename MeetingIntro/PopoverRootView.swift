@@ -12,10 +12,23 @@ struct PopoverRootView: View {
     @ObservedObject var quickAddPanel: QuickAddPanelController
     @ObservedObject var updater: AppUpdater
     @ObservedObject var diagnosticLog: DiagnosticLog
+    @ObservedObject var smartConfig: SmartConfigManager
+    @ObservedObject var contextMonitor: MeetingContextMonitor
+    @ObservedObject var quickAddService: QuickAddService
+    @ObservedObject var quickAddConfig: QuickAddConfig
+
+    /// #13: inline compact New Event form embedded in the rich popover.
+    @State private var showingNewEvent = false
+    @State private var creatingEvent = false
+    @FocusState private var newEventFocused: Bool
 
     @Environment(\.openWindow) private var openWindow
     @AppStorage("cancellationShowInTodayView") private var showCancelled: Bool = true
     @AppStorage("nextMeetingHighlightHex") private var nextMeetingHighlightHex: String = defaultNextMeetingHighlightHex
+
+    /// Hover-to-detail (Issue #16) — see CompactMenuView for the delay rationale.
+    @State private var hoveredID: String?
+    @State private var pendingHoverID: String?
 
     private enum Tab { case today, upcoming }
     @State private var tab: Tab = .today
@@ -35,6 +48,14 @@ struct PopoverRootView: View {
     }
 
     var body: some View {
+        if showingNewEvent {
+            newEventForm
+        } else {
+            popoverBody
+        }
+    }
+
+    private var popoverBody: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
             Divider()
@@ -71,12 +92,115 @@ struct PopoverRootView: View {
             || !calendarManager.armedAutoJoinMeetings.isEmpty
             || !calendarManager.pendingCancellations.isEmpty
             || isUpdateAvailable
+            || remindersMutedByCall
             || calendarManager.errorMessage != nil
     }
 
     private var isUpdateAvailable: Bool {
         if case .available = updater.state { return true }
         return false
+    }
+
+    /// Reminders currently muted by the in-call rule (mic in use elsewhere).
+    private var remindersMutedByCall: Bool {
+        smartConfig.suppressWhenInCall && contextMonitor.snapshot.isInActiveCall
+    }
+
+    // MARK: - New Event (Issue #13, embedded in the rich popover)
+
+    private var newEventForm: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Button { showingNewEvent = false; quickAddService.reset() } label: {
+                    Image(systemName: "chevron.left").font(.system(size: 13, weight: .semibold))
+                }
+                .buttonStyle(.borderless).foregroundStyle(accent)
+                Text("New Event").font(.system(size: 15, weight: .semibold))
+                Spacer()
+            }
+            TextField("Lunch with Sam tomorrow 1pm", text: $quickAddService.inputText)
+                .textFieldStyle(.roundedBorder)
+                .focused($newEventFocused)
+                .onSubmit { create() }
+
+            if let draft = quickAddService.draft {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(draft.title).font(.system(.callout, weight: .semibold)).lineLimit(1)
+                    Label(draft.startDate.formatted(date: .abbreviated, time: .shortened),
+                          systemImage: "clock")
+                        .font(.caption).foregroundStyle(.secondary)
+                    if let loc = draft.location, !loc.isEmpty {
+                        Label(loc, systemImage: "location").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                    newEventLinkControl(draft)
+                    ForEach(draft.assumptions, id: \.self) { a in
+                        Label(a, systemImage: "exclamationmark.triangle.fill").font(.caption2).foregroundStyle(.orange)
+                    }
+                    if !quickAddService.conflicts.isEmpty {
+                        Label("Overlaps “\(quickAddService.conflicts[0])”" + (quickAddService.conflicts.count > 1 ? " + \(quickAddService.conflicts.count - 1) more" : ""),
+                              systemImage: "calendar.badge.exclamationmark")
+                            .font(.caption2).foregroundStyle(.orange).lineLimit(1)
+                    }
+                }
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+            } else if !quickAddService.inputText.isEmpty {
+                Text(quickAddService.isParsing ? "Parsing…" : "Keep typing…")
+                    .font(.caption).foregroundStyle(.tertiary)
+            }
+
+            HStack {
+                Text("↩ to create · esc to cancel").font(.caption2).foregroundStyle(.tertiary)
+                Spacer()
+                Button(creatingEvent ? "Creating…" : "Create") { create() }
+                    .disabled(quickAddService.draft == nil || creatingEvent)
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(14)
+        .frame(width: 340, alignment: .leading)
+        .onAppear { newEventFocused = true }
+        .onExitCommand { showingNewEvent = false; quickAddService.reset() }
+    }
+
+    private func create() {
+        guard let draft = quickAddService.draft, !creatingEvent else { return }
+        creatingEvent = true
+        Task {
+            try? await calendarManager.createEvent(from: draft, calendarID: quickAddConfig.defaultCalendarID)
+            creatingEvent = false
+            showingNewEvent = false
+            quickAddService.reset()
+        }
+    }
+
+    /// Meeting-link attach/switch/remove (mirrors QuickAddView.linkControl) so the
+    /// embedded form has the same link affordance as the old floating panel.
+    private func newEventLinkControl(_ draft: EventDraft) -> some View {
+        Menu {
+            Button { quickAddService.linkChoice = .none } label: {
+                Label("No link", systemImage: draft.url == nil ? "checkmark" : "")
+            }
+            if !quickAddConfig.meetingLinks.isEmpty { Divider() }
+            ForEach(quickAddConfig.meetingLinks) { link in
+                Button { quickAddService.linkChoice = .specific(link.id) } label: {
+                    Label(link.name + (link.isDefault ? " (default)" : ""),
+                          systemImage: draft.attachedLinkName == link.name ? "checkmark" : "")
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: draft.url != nil ? "video.fill" : "video.slash.fill")
+                    .foregroundStyle(draft.url != nil ? accent : .secondary)
+                Text(draft.attachedLinkName ?? (draft.url != nil ? "Meeting link" : "No meeting link"))
+                    .foregroundStyle(draft.url != nil ? .primary : .secondary)
+                Image(systemName: "chevron.up.chevron.down").font(.caption2).foregroundStyle(.tertiary)
+            }
+            .font(.caption)
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
     }
 
     // MARK: - Header
@@ -190,14 +314,28 @@ struct PopoverRootView: View {
                 calendarManager.dismissCancellation(m.id)
             }
         }
+        if remindersMutedByCall {
+            calloutCard(icon: "bell.slash.fill", tint: .orange, title: "Reminders paused — you're on a call")
+        }
     }
 
     private func calloutCard(icon: String, tint: Color, title: String, actionLabel: String, action: @escaping () -> Void) -> some View {
+        calloutCardContent(icon: icon, tint: tint, title: title) {
+            Button(actionLabel, action: action).font(.system(size: 11, weight: .semibold)).foregroundStyle(tint).buttonStyle(.borderless)
+        }
+    }
+
+    /// Informational variant — same styling, no trailing action button.
+    private func calloutCard(icon: String, tint: Color, title: String) -> some View {
+        calloutCardContent(icon: icon, tint: tint, title: title) { EmptyView() }
+    }
+
+    private func calloutCardContent<Trailing: View>(icon: String, tint: Color, title: String, @ViewBuilder trailing: () -> Trailing) -> some View {
         HStack(spacing: 10) {
             Image(systemName: icon).font(.system(size: 13, weight: .semibold)).foregroundStyle(tint).frame(width: 20)
             Text(title).font(.system(.caption, weight: .semibold)).foregroundStyle(.primary).lineLimit(1)
             Spacer(minLength: 4)
-            Button(actionLabel, action: action).font(.system(size: 11, weight: .semibold)).foregroundStyle(tint).buttonStyle(.borderless)
+            trailing()
         }
         .padding(.horizontal, 12).padding(.vertical, 8)
         .background(tint.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
@@ -277,12 +415,20 @@ struct PopoverRootView: View {
                 Button { NSWorkspace.shared.open(url) } label: { Image(systemName: "video.fill").foregroundStyle(.green) }
                     .buttonStyle(.borderless).help("Join")
             }
-            if calendarManager.supportsRSVPWrite, !meeting.isCancelled,
-               [.accepted, .declined, .tentative, .noResponse].contains(meeting.myResponse) {
+            if !meeting.isCancelled {
                 Menu {
-                    Button("Accept") { Task { try? await calendarManager.respond(to: meeting.id, status: .accepted) } }
-                    Button("Tentative") { Task { try? await calendarManager.respond(to: meeting.id, status: .tentative) } }
-                    Button("Decline") { Task { try? await calendarManager.respond(to: meeting.id, status: .declined) } }
+                    if calendarManager.supportsRSVPWrite,
+                       [.accepted, .declined, .tentative, .noResponse].contains(meeting.myResponse) {
+                        Button("Accept") { Task { try? await calendarManager.respond(to: meeting.id, status: .accepted) } }
+                        Button("Tentative") { Task { try? await calendarManager.respond(to: meeting.id, status: .tentative) } }
+                        Button("Decline") { Task { try? await calendarManager.respond(to: meeting.id, status: .declined) } }
+                        Divider()
+                    }
+                    if calendarManager.remindersDismissed(meeting.id) {
+                        Button("Re-enable reminders") { calendarManager.undismissReminders(meeting.id) }
+                    } else {
+                        Button("Dismiss reminders for this event") { calendarManager.dismissReminders(meeting.id) }
+                    }
                 } label: {
                     Image(systemName: "ellipsis.circle").foregroundStyle(.secondary)
                 }
@@ -291,13 +437,36 @@ struct PopoverRootView: View {
         }
         .padding(.horizontal, 14).padding(.vertical, 6)
         .contentShape(Rectangle())
+        .onHover { inside in handleHover(inside, meeting.id) }
+        .popover(isPresented: Binding(
+            get: { hoveredID == meeting.id },
+            set: { if !$0 { hoveredID = nil } }
+        ), arrowEdge: .trailing) {
+            MeetingHoverCard(meeting: meeting)
+        }
+    }
+
+    /// Show the detail card after a brief dwell; hide immediately on exit.
+    private func handleHover(_ inside: Bool, _ id: String) {
+        if inside {
+            pendingHoverID = id
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                if pendingHoverID == id { hoveredID = id }
+            }
+        } else {
+            if pendingHoverID == id { pendingHoverID = nil }
+            if hoveredID == id { hoveredID = nil }
+        }
     }
 
     // MARK: - Footer
 
     private var footer: some View {
         VStack(spacing: 0) {
-            footerRow("New Event…", "plus", "⌘N") { quickAddPanel.show() }
+            footerRow("New Event…", "plus", "⌘N") {
+                quickAddService.reset()
+                showingNewEvent = true
+            }
             footerRow("Meeting Notes…", "note.text", "⌘M") { openWindow(id: "meetingNotes"); NSApp.activate(ignoringOtherApps: true) }
             SettingsLink { footerLabel("Settings…", "gearshape", "⌘,") }.buttonStyle(.plain)
             footerRow("Quit MeetingIntro", "power", "⌘Q") { NSApplication.shared.terminate(nil) }
