@@ -42,6 +42,10 @@ final class OverlayWindowController: ObservableObject {
                 // automatically at start time (CalendarManager.evaluateAutoJoin).
                 self?.calendarManager?.armAutoJoin(meeting.id)
                 self?.dismiss()
+            },
+            onDismissFutureReminders: { [weak self] in
+                self?.calendarManager?.dismissReminders(meeting.id)
+                self?.dismiss()
             }
         )
 

@@ -9,6 +9,9 @@ struct CountdownOverlayView: View {
     /// Arms auto-join for this meeting (opens the link automatically at start time)
     /// and dismisses the overlay. Wired by `OverlayWindowController`.
     var onArmAutoJoin: (() -> Void)?
+    /// Stop all future reminders for this event (Issue #15) and dismiss. Wired by
+    /// `OverlayWindowController`.
+    var onDismissFutureReminders: (() -> Void)?
 
     @State private var timeRemaining: TimeInterval = 0
     @State private var timer: Timer?
@@ -241,7 +244,19 @@ struct CountdownOverlayView: View {
                         )
                 }
                 .buttonStyle(.plain)
-                .padding(.bottom, 40)
+
+                // Stop all future reminders for this event (Issue #15).
+                if let onDismissFutureReminders {
+                    Button(action: onDismissFutureReminders) {
+                        Label("Don't remind me again for this", systemImage: "bell.slash")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 10)
+                    .help("Skip the remaining reminders for this meeting")
+                }
+                Spacer().frame(height: 40)
             }
 
             // Armed confirmation — covers the content (and the other buttons, so a

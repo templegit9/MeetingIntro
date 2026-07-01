@@ -125,6 +125,18 @@ final class CalendarManager: ObservableObject {
             .sorted { $0.startDate < $1.startDate }
     }
 
+    /// Existing timed meetings that overlap the given window (Issue #10 — Quick Add
+    /// conflict warning). Reuses the already-fetched `upcomingWeek`, so it needs no
+    /// EventKit call; note it's bounded by the browse window (`upcomingDaysAhead` days),
+    /// so a draft further out than that won't surface conflicts.
+    func conflicts(start: Date, end: Date) -> [MeetingEvent] {
+        upcomingWeek.filter { ev in
+            !ev.isAllDay && !ev.isCancelled
+                && ev.startDate < end && ev.endDate > start
+        }
+        .sorted { $0.startDate < $1.startDate }
+    }
+
     /// Set of calendar IDs to monitor (empty = all).
     var selectedCalendarIDs: Set<String> {
         get {
@@ -191,6 +203,12 @@ final class CalendarManager: ObservableObject {
     private static let k_notifiedCancellations = "notifiedCancellationIDs"
     private static let k_dismissedCancellations = "dismissedCancellationIDs"
 
+    /// Meeting IDs the user chose to stop reminding for (Issue #15). Keyed by bare event
+    /// id — dismissing one threshold's reminder kills ALL remaining thresholds for that
+    /// event. Persisted so it survives relaunch; pruned when the meeting ends.
+    @Published private(set) var dismissedReminderIDs: Set<String> = []
+    private static let k_dismissedReminders = "dismissedReminderIDs"
+
     // MARK: - Auto-join ("Start at Time", Issue #2)
 
     /// Meeting IDs the user armed for auto-join from the countdown overlay. Persisted
@@ -252,6 +270,7 @@ final class CalendarManager: ObservableObject {
         let d = UserDefaults.standard
         self.notifiedCancellationIDs = Set(d.stringArray(forKey: Self.k_notifiedCancellations) ?? [])
         self.dismissedCancellationIDs = Set(d.stringArray(forKey: Self.k_dismissedCancellations) ?? [])
+        self.dismissedReminderIDs = Set(d.stringArray(forKey: Self.k_dismissedReminders) ?? [])
         self.armedAutoJoinIDs = Set(d.stringArray(forKey: Self.k_armedAutoJoin) ?? [])
         self.joinedAutoJoinIDs = Set(d.stringArray(forKey: Self.k_joinedAutoJoin) ?? [])
         if let data = d.data(forKey: Self.k_knownStartTimes),
@@ -406,6 +425,8 @@ final class CalendarManager: ObservableObject {
                 reason = "RSVP gate (you declined / didn't respond, with the skip setting on)"
             } else if armedAutoJoinIDs.contains(event.id) {
                 reason = "armed for auto-join (shows a menu-bar countdown instead of the overlay)"
+            } else if dismissedReminderIDs.contains(event.id) {
+                reason = "dismissed by user (you chose to stop reminders for this event)"
             } else {
                 reason = nil
             }
@@ -420,7 +441,7 @@ final class CalendarManager: ObservableObject {
         // For each meeting, check each configured countdown time. Cancelled
         // meetings are skipped — their reminders fire as a one-shot system
         // notification at detection time instead (see AppLifecycleManager).
-        for event in upcomingMeetings where event.timeUntilStart > 0 && !event.isCancelled && !(responseGate?(event) ?? false) && !armedAutoJoinIDs.contains(event.id) {
+        for event in upcomingMeetings where event.timeUntilStart > 0 && !event.isCancelled && !(responseGate?(event) ?? false) && !armedAutoJoinIDs.contains(event.id) && !dismissedReminderIDs.contains(event.id) {
             for minutes in countdownMinutesList {
                 let thresholdSeconds = TimeInterval(minutes * 60)
                 let comboKey = "\(event.id)_\(minutes)"
@@ -497,6 +518,27 @@ final class CalendarManager: ObservableObject {
         pendingCancellations.removeAll { $0.id == id }
     }
 
+    /// User chose "stop reminding me for this event" (Issue #15) — suppresses every
+    /// remaining threshold for the event, across both the overlay and notification/voice
+    /// gates. Persisted.
+    func dismissReminders(_ id: String) {
+        guard !dismissedReminderIDs.contains(id) else { return }
+        dismissedReminderIDs.insert(id)
+        UserDefaults.standard.set(Array(dismissedReminderIDs), forKey: Self.k_dismissedReminders)
+        if let meeting = upcomingMeetings.first(where: { $0.id == id }) {
+            diagnosticLog?.info(.reminder, "Reminders dismissed by user for \"\(meeting.title)\" — no further thresholds will fire")
+        }
+    }
+
+    /// Re-enable reminders for an event the user previously dismissed.
+    func undismissReminders(_ id: String) {
+        guard dismissedReminderIDs.contains(id) else { return }
+        dismissedReminderIDs.remove(id)
+        UserDefaults.standard.set(Array(dismissedReminderIDs), forKey: Self.k_dismissedReminders)
+    }
+
+    func remindersDismissed(_ id: String) -> Bool { dismissedReminderIDs.contains(id) }
+
     /// Drop notified/dismissed entries whose meeting has already ended — keeps the
     /// UserDefaults sets bounded and prevents stale IDs from accumulating forever.
     private func pruneCancellationState(against events: [MeetingEvent]) {
@@ -513,6 +555,12 @@ final class CalendarManager: ObservableObject {
         if prunedDismissed != dismissedCancellationIDs {
             dismissedCancellationIDs = prunedDismissed
             UserDefaults.standard.set(Array(prunedDismissed), forKey: Self.k_dismissedCancellations)
+        }
+        // Same bounding for the reminder-dismiss set (Issue #15).
+        let prunedReminders = dismissedReminderIDs.intersection(liveIDs)
+        if prunedReminders != dismissedReminderIDs {
+            dismissedReminderIDs = prunedReminders
+            UserDefaults.standard.set(Array(prunedReminders), forKey: Self.k_dismissedReminders)
         }
     }
 
