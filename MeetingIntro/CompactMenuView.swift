@@ -11,7 +11,6 @@ struct CompactMenuView: View {
     @ObservedObject var calendarManager: CalendarManager
     @ObservedObject var recordingController: RecordingController
     @ObservedObject var recordingCoordinator: MeetingRecordingCoordinator
-    @ObservedObject var quickAddPanel: QuickAddPanelController
     @ObservedObject var updater: AppUpdater
     @ObservedObject var smartConfig: SmartConfigManager
     @ObservedObject var contextMonitor: MeetingContextMonitor

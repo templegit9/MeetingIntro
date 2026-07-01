@@ -63,7 +63,6 @@ struct SettingsView: View {
     @ObservedObject var recordingCoordinator: MeetingRecordingCoordinator
     @ObservedObject var overlayController: OverlayWindowController
     @ObservedObject var quickAddConfig: QuickAddConfig
-    @ObservedObject var quickAddPanel: QuickAddPanelController
     @ObservedObject var notesConfig: MeetingNotesConfig
     @ObservedObject var diagnosticLog: DiagnosticLog
     @ObservedObject var mirrorConfig: MirrorConfigManager
@@ -355,7 +354,8 @@ struct SettingsView: View {
     private var quickAddTab: some View {
         Form {
             Section {
-                Button("Try it now") { quickAddPanel.show() }
+                Text("Open the menu-bar dropdown and choose **New Event…** to create an event by typing plain English.")
+                    .font(.caption).foregroundStyle(.secondary)
             } header: {
                 SettingsSectionHeader("Text to Calendar", info: "Create events by typing plain English — \"Coffee with Sam tomorrow 3pm\". Open from the menu bar: New Event… (⌘N while the menu is open).")
             }

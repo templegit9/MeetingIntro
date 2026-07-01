@@ -9,7 +9,6 @@ struct PopoverRootView: View {
     @ObservedObject var calendarManager: CalendarManager
     @ObservedObject var recordingController: RecordingController
     @ObservedObject var recordingCoordinator: MeetingRecordingCoordinator
-    @ObservedObject var quickAddPanel: QuickAddPanelController
     @ObservedObject var updater: AppUpdater
     @ObservedObject var diagnosticLog: DiagnosticLog
     @ObservedObject var smartConfig: SmartConfigManager

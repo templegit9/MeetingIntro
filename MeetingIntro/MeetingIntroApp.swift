@@ -68,7 +68,6 @@ struct MeetingIntroApp: App {
     @StateObject private var recordingCoordinator: MeetingRecordingCoordinator
     @StateObject private var quickAddConfig: QuickAddConfig
     @StateObject private var quickAddService: QuickAddService
-    @StateObject private var quickAddPanel: QuickAddPanelController
     @StateObject private var notesConfig: MeetingNotesConfig
     @StateObject private var notesPipeline: MeetingNotesPipeline
     @StateObject private var diagnosticLog = DiagnosticLog()
@@ -96,7 +95,6 @@ struct MeetingIntroApp: App {
         let qaService = QuickAddService(config: qaConfig)
         _quickAddConfig = StateObject(wrappedValue: qaConfig)
         _quickAddService = StateObject(wrappedValue: qaService)
-        _quickAddPanel = StateObject(wrappedValue: QuickAddPanelController(service: qaService, config: qaConfig))
 
         let nConfig = MeetingNotesConfig()
         _notesConfig = StateObject(wrappedValue: nConfig)
@@ -118,7 +116,7 @@ struct MeetingIntroApp: App {
             smartConfig: smartConfig,
             handoffCoordinator: handoffCoordinator,
             recordingCoordinator: recordingCoordinator,
-            quickAddPanel: quickAddPanel,
+            quickAddService: quickAddService,
             notesPipeline: notesPipeline,
             diagnosticLog: diagnosticLog,
             mirrorConfig: mirrorConfig,
@@ -162,7 +160,6 @@ struct MeetingIntroApp: App {
                 calendarManager: calendarManager,
                 recordingController: recordingController,
                 recordingCoordinator: recordingCoordinator,
-                quickAddPanel: quickAddPanel,
                 updater: updater,
                 diagnosticLog: diagnosticLog,
                 smartConfig: smartConfig,
@@ -175,7 +172,6 @@ struct MeetingIntroApp: App {
                 calendarManager: calendarManager,
                 recordingController: recordingController,
                 recordingCoordinator: recordingCoordinator,
-                quickAddPanel: quickAddPanel,
                 updater: updater,
                 smartConfig: smartConfig,
                 contextMonitor: contextMonitor,
@@ -213,7 +209,6 @@ struct MeetingIntroApp: App {
                 recordingCoordinator: recordingCoordinator,
                 overlayController: overlayController,
                 quickAddConfig: quickAddConfig,
-                quickAddPanel: quickAddPanel,
                 notesConfig: notesConfig,
                 diagnosticLog: diagnosticLog,
                 mirrorConfig: mirrorConfig,
@@ -285,7 +280,7 @@ final class AppLifecycleManager: ObservableObject {
         smartConfig: SmartConfigManager,
         handoffCoordinator: MeetingHandoffCoordinator,
         recordingCoordinator: MeetingRecordingCoordinator,
-        quickAddPanel: QuickAddPanelController,
+        quickAddService: QuickAddService,
         notesPipeline: MeetingNotesPipeline,
         diagnosticLog: DiagnosticLog,
         mirrorConfig: MirrorConfigManager,
@@ -311,7 +306,11 @@ final class AppLifecycleManager: ObservableObject {
         recordingCoordinator.notificationManager = notificationManager
         recordingCoordinator.notesPipeline = notesPipeline
         recordingCoordinator.attach(to: calendarManager)
-        quickAddPanel.calendarManager = calendarManager
+        // Wire the Quick Add conflict check (Issue #10) to the live calendar — this used
+        // to ride on the retired QuickAddPanelController's calendarManager setter.
+        quickAddService.conflictProvider = { [weak calendarManager] start, end in
+            calendarManager?.conflicts(start: start, end: end).map(\.title) ?? []
+        }
         notesPipeline.notificationManager = notificationManager
         mirrorEngine.diagnosticLog = diagnosticLog
         mirrorEngine.attach(config: mirrorConfig, calendarManager: calendarManager)
