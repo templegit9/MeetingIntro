@@ -1,6 +1,21 @@
 import Combine
 import Foundation
 
+/// Why the policy downgraded a reminder's channels — surfaced in the diagnostic log so
+/// a silent suppression ("notify=false overlay=false") isn't a black box, and used to
+/// scope the in-call auto-release (only the `.inCall` mute is overridden by the cap).
+enum ReminderSuppression: Equatable {
+    case inCall, focus, screenSharing
+
+    var logDescription: String {
+        switch self {
+        case .inCall:        return "on a call — mic in use"
+        case .focus:         return "Focus on — visual only"
+        case .screenSharing: return "screen sharing — voice off"
+        }
+    }
+}
+
 /// What the policy decided for a single reminder firing. The fields shadow the per-trigger
 /// flags on `CountdownTrigger`; the policy may downgrade (e.g. turn off `playVoice` even
 /// when the trigger requested it) but never upgrade beyond what the trigger asked for.
@@ -9,6 +24,9 @@ struct ReminderDecision: Equatable {
     var sendNotification: Bool
     var playVoice: Bool
     var escalateOverlay: Bool
+    /// The context signal that reduced this decision's channels, if any (nil for a
+    /// full-trigger firing or an escalation).
+    var suppressedBy: ReminderSuppression? = nil
 
     static func fromTrigger(_ trigger: CountdownTrigger) -> ReminderDecision {
         ReminderDecision(
@@ -23,7 +41,8 @@ struct ReminderDecision: Equatable {
         showOverlay: false,
         sendNotification: false,
         playVoice: false,
-        escalateOverlay: false
+        escalateOverlay: false,
+        suppressedBy: .inCall
     )
 }
 
@@ -34,6 +53,19 @@ final class SmartConfigManager: ObservableObject {
 
     @Published var suppressWhenInCall: Bool {
         didSet { UserDefaults.standard.set(suppressWhenInCall, forKey: Self.k_suppressWhenInCall) }
+    }
+    /// Auto-release the in-call mute after this many minutes of *continuous* detected
+    /// call, so a stuck/held mic can't silently mute reminders forever (the v2.7.0-family
+    /// failure). Default 30; `0` = never auto-release (a persistent stuck mic still
+    /// surfaces via the legacy 90-min WARN).
+    @Published var maxInCallSuppressionMinutes: Int {
+        didSet { UserDefaults.standard.set(maxInCallSuppressionMinutes, forKey: Self.k_maxInCallSuppressionMinutes) }
+    }
+    /// When suppressing in a call, still deliver the (quiet) system notification so you
+    /// know a meeting is imminent — only the overlay + voice are dropped (Issue #12).
+    /// Off by default: the plain in-call rule stays full-silence unless you opt in.
+    @Published var inCallStillNotify: Bool {
+        didSet { UserDefaults.standard.set(inCallStillNotify, forKey: Self.k_inCallStillNotify) }
     }
     @Published var visualOnlyWhenFocus: Bool {
         didSet { UserDefaults.standard.set(visualOnlyWhenFocus, forKey: Self.k_visualOnlyWhenFocus) }
@@ -59,6 +91,8 @@ final class SmartConfigManager: ObservableObject {
     init() {
         let d = UserDefaults.standard
         self.suppressWhenInCall = d.object(forKey: Self.k_suppressWhenInCall) as? Bool ?? true
+        self.maxInCallSuppressionMinutes = d.object(forKey: Self.k_maxInCallSuppressionMinutes) as? Int ?? 30
+        self.inCallStillNotify = d.object(forKey: Self.k_inCallStillNotify) as? Bool ?? false
         self.visualOnlyWhenFocus = d.object(forKey: Self.k_visualOnlyWhenFocus) as? Bool ?? true
         self.noVoiceWhenScreenSharing = d.object(forKey: Self.k_noVoiceWhenScreenSharing) as? Bool ?? true
         self.escalateWhenFullscreen = d.object(forKey: Self.k_escalateWhenFullscreen) as? Bool ?? false
@@ -73,6 +107,8 @@ final class SmartConfigManager: ObservableObject {
     }
 
     private static let k_suppressWhenInCall = "smart_suppressWhenInCall"
+    private static let k_maxInCallSuppressionMinutes = "smart_maxInCallSuppressionMinutes"
+    private static let k_inCallStillNotify = "smart_inCallStillNotify"
     private static let k_visualOnlyWhenFocus = "smart_visualOnlyWhenFocus"
     private static let k_noVoiceWhenScreenSharing = "smart_noVoiceWhenScreenSharing"
     private static let k_escalateWhenFullscreen = "smart_escalateWhenFullscreen"
@@ -93,6 +129,17 @@ enum ReminderEscalationPolicy {
         config: SmartConfigManager
     ) -> ReminderDecision {
         if config.suppressWhenInCall && context.isInActiveCall {
+            // Opt-in (Issue #12): keep the (quiet) system notification so you still know a
+            // meeting's coming, but drop the intrusive overlay + voice while you're on a call.
+            if config.inCallStillNotify {
+                return ReminderDecision(
+                    showOverlay: false,
+                    sendNotification: trigger.sendNotification,
+                    playVoice: false,
+                    escalateOverlay: false,
+                    suppressedBy: .inCall
+                )
+            }
             return .suppressAll
         }
         if config.visualOnlyWhenFocus && context.isFocusActive {
@@ -100,7 +147,8 @@ enum ReminderEscalationPolicy {
                 showOverlay: trigger.showOverlay,
                 sendNotification: false,
                 playVoice: false,
-                escalateOverlay: false
+                escalateOverlay: false,
+                suppressedBy: .focus
             )
         }
         if config.noVoiceWhenScreenSharing && context.isScreenCaptured {
@@ -108,7 +156,8 @@ enum ReminderEscalationPolicy {
                 showOverlay: trigger.showOverlay,
                 sendNotification: trigger.sendNotification,
                 playVoice: false,
-                escalateOverlay: false
+                escalateOverlay: false,
+                suppressedBy: .screenSharing
             )
         }
         if config.escalateWhenFullscreen && context.isFullscreenAppActive {

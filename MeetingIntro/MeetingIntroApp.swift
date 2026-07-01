@@ -129,10 +129,19 @@ struct MeetingIntroApp: App {
 
     /// The always-present status-bar label. observe() (the single wiring point) runs on
     /// its onAppear so it fires in both menu and popover styles. Red while recording.
+    /// Reminders are being muted right now because the "suppress when in a call" rule is on
+    /// and the mic is in use elsewhere. Drives the menu-bar icon + dropdown indicator so the
+    /// mute is a visible state, not a silent "it stopped working."
+    private var remindersMutedByCall: Bool {
+        smartConfig.suppressWhenInCall && contextMonitor.snapshot.isInActiveCall
+    }
+
     @ViewBuilder private var menuBarLabel: some View {
         Group {
             if recordingController.isRecording {
                 Label("Recording", systemImage: "record.circle.fill")
+            } else if remindersMutedByCall {
+                Label("Reminders paused", systemImage: "bell.slash.fill")
             } else {
                 Label("MeetingIntro", systemImage: "clock.badge.checkmark")
             }
@@ -155,7 +164,11 @@ struct MeetingIntroApp: App {
                 recordingCoordinator: recordingCoordinator,
                 quickAddPanel: quickAddPanel,
                 updater: updater,
-                diagnosticLog: diagnosticLog
+                diagnosticLog: diagnosticLog,
+                smartConfig: smartConfig,
+                contextMonitor: contextMonitor,
+                quickAddService: quickAddService,
+                quickAddConfig: quickAddConfig
             )
         } else {
             CompactMenuView(
@@ -163,7 +176,11 @@ struct MeetingIntroApp: App {
                 recordingController: recordingController,
                 recordingCoordinator: recordingCoordinator,
                 quickAddPanel: quickAddPanel,
-                updater: updater
+                updater: updater,
+                smartConfig: smartConfig,
+                contextMonitor: contextMonitor,
+                quickAddService: quickAddService,
+                quickAddConfig: quickAddConfig
             )
         }
     }
@@ -237,6 +254,10 @@ final class AppLifecycleManager: ObservableObject {
     private var inCallSince: Date?
     /// Whether we've already emitted the "stuck suppression" warn for the current episode.
     private var loggedStuckSuppressionWarn = false
+    /// Set once the current in-call episode passes the user's auto-release cap: the
+    /// `decide` closure reads it to override the `.inCall` mute so a stuck/held mic stops
+    /// silencing reminders. Reset when the call ends. (0-minute cap = never set.)
+    private var inCallSuppressionCapExceeded = false
 
     /// After this long, surface a held cancellation notice anyway — an acknowledgment
     /// surface must never hide indefinitely (overnight cancellations were stuck ~11.5h
@@ -306,12 +327,19 @@ final class AppLifecycleManager: ObservableObject {
         // Single decision point for all three channels (overlay / notification / voice).
         // The closure reads the live snapshot each time it's called, so toggling Focus or
         // muting in another call takes effect on the next firing without any further wiring.
-        let decide: @MainActor (CountdownTrigger) -> ReminderDecision = { trigger in
-            ReminderEscalationPolicy.decide(
+        let decide: @MainActor (CountdownTrigger) -> ReminderDecision = { [weak self] trigger in
+            var decision = ReminderEscalationPolicy.decide(
                 trigger: trigger,
                 context: contextMonitor.snapshot,
                 config: smartConfig
             )
+            // Auto-release: if a stuck/held mic muted reminders past the configured cap,
+            // resume them. Only the in-call mute is overridden — Focus / screen-sharing
+            // suppression is left intact (guarded on `.inCall`).
+            if decision.suppressedBy == .inCall, self?.inCallSuppressionCapExceeded == true {
+                decision = .fromTrigger(trigger)
+            }
+            return decision
         }
         calendarManager.shouldFireOverlay = { decide($0).showOverlay }
 
@@ -398,7 +426,7 @@ final class AppLifecycleManager: ObservableObject {
 
                 // Track continuous in-call episodes and warn if all-channel suppression
                 // latches abnormally long (additive triage trail — naming the signal).
-                self.trackInCallSuppression(context: context, diagnosticLog: diagnosticLog)
+                self.trackInCallSuppression(context: context, config: smartConfig, diagnosticLog: diagnosticLog)
 
                 guard UserDefaults.standard.bool(forKey: "cancellationShowOverlay") else {
                     self.cancellationHoldStartedAt = nil
@@ -467,6 +495,8 @@ final class AppLifecycleManager: ObservableObject {
                     // Armed for auto-join → the menu-bar countdown is the only surface;
                     // suppress every original-start-time reminder for this event.
                     if calendarManager.armedAutoJoinIDs.contains(meeting.id) { continue }
+                    // User dismissed this event's reminders (Issue #15) — no threshold fires.
+                    if calendarManager.dismissedReminderIDs.contains(meeting.id) { continue }
                     // RSVP gate: skip invitations the user declined / didn't answer.
                     if smartConfig.suppresses(meeting) {
                         // Log only when a reminder would actually have fired (avoids
@@ -488,7 +518,8 @@ final class AppLifecycleManager: ObservableObject {
                         guard secondsSinceCrossed <= 60 || catchUp else { continue }
 
                         let decision = decide(trigger)
-                        diagnosticLog.info(.reminder, "Reminder \(trigger.minutes)m fired for \(meeting.title) — notify=\(decision.sendNotification) voice=\(decision.playVoice) overlay=\(decision.showOverlay)")
+                        let reasonSuffix = decision.suppressedBy.map { " — suppressed: \($0.logDescription)" } ?? ""
+                        diagnosticLog.info(.reminder, "Reminder \(trigger.minutes)m fired for \(meeting.title) — notify=\(decision.sendNotification) voice=\(decision.playVoice) overlay=\(decision.showOverlay)\(reasonSuffix)")
 
                         if decision.sendNotification {
                             notificationManager.sendCountdownNotification(for: meeting, minutesBefore: trigger.minutes)
@@ -518,21 +549,33 @@ final class AppLifecycleManager: ObservableObject {
             .store(in: &cancellables)
     }
 
-    /// Tracks how long the system has continuously asserted "in a call" and emits a single
-    /// WARN naming the asserting signal once the episode passes the bound. The v2.7.0 stuck
-    /// suppression produced an entire broken day with zero WARN/ERROR — this makes an
-    /// abnormally long all-channel mute greppable.
-    private func trackInCallSuppression(context: MeetingContextSnapshot, diagnosticLog: DiagnosticLog) {
+    /// Tracks how long the system has continuously asserted "in a call." Two safety valves,
+    /// both keyed off the same episode clock:
+    ///   • **Auto-release cap** (`maxInCallSuppressionMinutes` > 0): once the episode passes
+    ///     the cap, set `inCallSuppressionCapExceeded` so the `decide` closure resumes
+    ///     reminders (a stuck/held mic can't mute forever — the v2.7.0-family failure),
+    ///     and WARN once naming the signal.
+    ///   • **Legacy WARN-only** (cap == 0, user opted out of auto-release): still emit a
+    ///     single WARN at the 90-min bound so an abnormally long mute stays greppable.
+    private func trackInCallSuppression(context: MeetingContextSnapshot, config: SmartConfigManager, diagnosticLog: DiagnosticLog) {
         guard context.isInActiveCall else {
             inCallSince = nil
             loggedStuckSuppressionWarn = false
+            inCallSuppressionCapExceeded = false
             return
         }
         let since = inCallSince ?? Date()
         inCallSince = since
         let elapsed = Date().timeIntervalSince(since)
-        if elapsed >= Self.stuckSuppressionWarnInterval && !loggedStuckSuppressionWarn {
-            let signal = context.isMicrophoneInUseElsewhere ? "mic in use" : "conference app"
+        let signal = context.isMicrophoneInUseElsewhere ? "mic in use" : "conference app"
+        let capMin = config.maxInCallSuppressionMinutes
+
+        if capMin > 0 {
+            if elapsed >= TimeInterval(capMin * 60) && !inCallSuppressionCapExceeded {
+                inCallSuppressionCapExceeded = true
+                diagnosticLog.warn(.reminder, "In-call suppression exceeded \(capMin)m cap — auto-resuming reminders (signal: \(signal)). If you're not on a call, an app may be holding the mic.")
+            }
+        } else if elapsed >= Self.stuckSuppressionWarnInterval && !loggedStuckSuppressionWarn {
             diagnosticLog.warn(.reminder, "In-call suppression has persisted \(Int(elapsed / 60))m (signal: \(signal)) — reminders muted; verify this is a real call")
             loggedStuckSuppressionWarn = true
         }

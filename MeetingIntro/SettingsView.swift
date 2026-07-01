@@ -986,6 +986,15 @@ struct SettingsView: View {
             Section {
                 Toggle("Suppress when I'm already in a call",
                        isOn: $smartConfig.suppressWhenInCall)
+                Toggle("…but still send a notification (no overlay/sound)",
+                       isOn: $smartConfig.inCallStillNotify)
+                    .disabled(!smartConfig.suppressWhenInCall)
+                Stepper(value: $smartConfig.maxInCallSuppressionMinutes, in: 0...240, step: 5) {
+                    Text(smartConfig.maxInCallSuppressionMinutes == 0
+                         ? "Never auto-resume reminders on a call"
+                         : "Auto-resume reminders after \(smartConfig.maxInCallSuppressionMinutes) min on a call")
+                }
+                .disabled(!smartConfig.suppressWhenInCall)
                 Toggle("Visual-only when Focus is on",
                        isOn: $smartConfig.visualOnlyWhenFocus)
                 Toggle("No voice when I'm screen sharing",
@@ -993,7 +1002,7 @@ struct SettingsView: View {
                 Toggle("Escalate when a fullscreen app is active",
                        isOn: $smartConfig.escalateWhenFullscreen)
             } header: {
-                SettingsSectionHeader("Context-Aware Reminders", info: "MeetingIntro reads four live signals to decide which channels should fire. Rules are evaluated top-to-bottom — the first matching rule wins.")
+                SettingsSectionHeader("Context-Aware Reminders", info: "MeetingIntro reads four live signals to decide which channels should fire. Rules are evaluated top-to-bottom — the first matching rule wins.\n\n\"In a call\" means your microphone is in use by another app. To stop a stuck/held mic from muting reminders forever, reminders auto-resume after the minutes you set (0 = never).")
             }
 
             Section {
@@ -1020,6 +1029,10 @@ struct SettingsView: View {
                 signalRow(name: "Fullscreen app",
                           isOn: contextMonitor.snapshot.isFullscreenAppActive,
                           detail: contextMonitor.snapshot.frontmostBundleID ?? "—")
+                signalRow(name: "Reminders muted",
+                          isOn: smartConfig.suppressWhenInCall && contextMonitor.snapshot.isInActiveCall,
+                          detail: smartConfig.suppressWhenInCall && contextMonitor.snapshot.isInActiveCall
+                            ? "on a call" : "firing normally")
             }
 
             if contextMonitor.focus.authorizationStatus != .authorized {
