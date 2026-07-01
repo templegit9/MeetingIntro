@@ -192,6 +192,13 @@ final class QuickAddService: ObservableObject {
     }
     @Published private(set) var draft: EventDraft?
     @Published private(set) var isParsing: Bool = false
+    /// Titles of existing meetings that overlap the current draft's time (Issue #10).
+    /// Informational — surfaced in the preview as a warning; never blocks creation.
+    @Published private(set) var conflicts: [String] = []
+
+    /// Injected: returns the titles of existing events overlapping a `[start, end)`
+    /// window. Wired to `CalendarManager.conflicts` where a manager is available.
+    var conflictProvider: ((Date, Date) -> [String])?
 
     /// User's link choice from the preview controls. Changing it re-applies to the
     /// current draft without re-parsing (no network round-trip just to toggle a link).
@@ -290,6 +297,12 @@ final class QuickAddService: ObservableObject {
     private func publish(_ draft: EventDraft?) {
         baseDraft = draft
         self.draft = draft.map(applyingLink)
+        // Overlap check keys off the draft's time window (unaffected by link choice).
+        if let draft {
+            conflicts = conflictProvider?(draft.startDate, draft.endDate) ?? []
+        } else {
+            conflicts = []
+        }
     }
 
     /// Re-derive the link on the current base draft (called when the user flips the

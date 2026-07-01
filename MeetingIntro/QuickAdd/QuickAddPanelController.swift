@@ -21,7 +21,14 @@ final class QuickAddPanelController: ObservableObject {
     private let config: QuickAddConfig
     /// Injected by AppLifecycleManager.observe once the @StateObjects exist —
     /// same late-wiring pattern as the recording coordinator's notificationManager.
-    weak var calendarManager: CalendarManager?
+    weak var calendarManager: CalendarManager? {
+        didSet {
+            // Wire the Quick Add conflict check (Issue #10) to the live calendar.
+            service.conflictProvider = { [weak calendarManager] start, end in
+                calendarManager?.conflicts(start: start, end: end).map(\.title) ?? []
+            }
+        }
+    }
 
     init(service: QuickAddService, config: QuickAddConfig) {
         self.service = service

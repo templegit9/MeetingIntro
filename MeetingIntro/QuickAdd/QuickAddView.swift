@@ -143,6 +143,14 @@ struct QuickAddView: View {
                     .font(.caption)
                     .foregroundStyle(.orange)
             }
+            // Scheduling conflicts with existing meetings (Issue #10) — informational,
+            // never blocks creation.
+            if !service.conflicts.isEmpty {
+                Label(conflictWarningText, systemImage: "calendar.badge.exclamationmark")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .lineLimit(2)
+            }
             HStack {
                 Text(draft.parserUsed.displayName)
                     .font(.caption2)
@@ -228,6 +236,14 @@ struct QuickAddView: View {
         let time = DateFormatter()
         time.timeStyle = .short
         return "\(day.string(from: draft.startDate)) · \(time.string(from: draft.startDate)) – \(time.string(from: draft.endDate))"
+    }
+
+    /// "Overlaps 'Standup'" / "Overlaps 'Standup' + 2 more" — the conflict warning copy.
+    private var conflictWarningText: String {
+        let titles = service.conflicts
+        guard let first = titles.first else { return "" }
+        if titles.count == 1 { return "Overlaps “\(first)”" }
+        return "Overlaps “\(first)” + \(titles.count - 1) more"
     }
 
     private func durationLabel(_ draft: EventDraft) -> String {
