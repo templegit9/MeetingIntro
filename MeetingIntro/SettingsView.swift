@@ -100,6 +100,7 @@ struct SettingsView: View {
     @State private var subscribeURL: String = ""
     @State private var subscribeError: String?
     @State private var editingTemplate: QuickAddTemplate?
+    @State private var editingRule: NotificationRule?
 
     @AppStorage("upcomingDaysAhead") private var upcomingDaysAhead: Int = 7
     @AppStorage(MenuBarPresentation.storageKey) private var menuBarPresentationRaw: String = MenuBarPresentation.popover.rawValue
@@ -1015,6 +1016,32 @@ struct SettingsView: View {
                 SettingsSectionHeader("Meeting Responses (RSVP)", info: "Quietens reminders **and** auto-recording for invitations you've declined (and optionally not answered). Tentative invites still remind. Personal events, meetings you organize, and anything without RSVP data are never affected — this only applies to real invitations.")
             }
 
+            Section {
+                ForEach(smartConfig.reminderRules) { rule in
+                    Button { editingRule = rule } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: rule.enabled ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                                .foregroundStyle(rule.enabled ? Color.accentColor : .secondary)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(rule.name.isEmpty ? "Untitled rule" : rule.name)
+                                    .font(.callout).foregroundStyle(.primary)
+                                Text(ruleSummary(rule)).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right").font(.caption2).foregroundStyle(.tertiary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+                Button {
+                    editingRule = NotificationRule()
+                } label: {
+                    Label("New rule", systemImage: "plus")
+                }
+            } header: {
+                SettingsSectionHeader("Notification Rules", info: "Choose which channels fire for meetings matching a title or attendee condition — e.g. a rule matching \"Focus Time\" that allows only the system notification. Title match is plain-text \"contains\" by default, or a regular expression if the pattern uses regex characters. Rules are checked top-to-bottom; the first match wins. They can only **silence** channels, never add ones the reminder threshold didn't request.")
+            }
+
             Section("Live Signals") {
                 signalRow(name: "In a call",
                           isOn: contextMonitor.snapshot.isInActiveCall,
@@ -1056,6 +1083,36 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
+        .sheet(item: $editingRule) { rule in
+            RuleEditSheet(
+                rule: rule,
+                onSave: { saved in
+                    if smartConfig.reminderRules.contains(where: { $0.id == saved.id }) {
+                        smartConfig.updateRule(saved)
+                    } else {
+                        smartConfig.addRule(saved)
+                    }
+                    editingRule = nil
+                },
+                onDelete: smartConfig.reminderRules.contains(where: { $0.id == rule.id }) ? {
+                    smartConfig.removeRule(rule.id)
+                    editingRule = nil
+                } : nil,
+                onCancel: { editingRule = nil }
+            )
+        }
+    }
+
+    /// One-line summary of which channels a rule allows, for the list row.
+    private func ruleSummary(_ rule: NotificationRule) -> String {
+        var channels: [String] = []
+        if rule.showOverlay { channels.append("overlay") }
+        if rule.sendNotification { channels.append("notification") }
+        if rule.playVoice { channels.append("voice") }
+        let match = rule.titlePattern.trimmingCharacters(in: .whitespaces).isEmpty
+            ? rule.condition.label
+            : "“\(rule.titlePattern)”"
+        return "\(match) → " + (channels.isEmpty ? "silent" : channels.joined(separator: " + "))
     }
 
     private var focusAuthDetail: String {

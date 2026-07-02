@@ -134,12 +134,22 @@ struct MeetingIntroApp: App {
         smartConfig.suppressWhenInCall && contextMonitor.snapshot.isInActiveCall
     }
 
+    private var isUpdateAvailable: Bool {
+        if case .available = updater.state { return true }
+        return false
+    }
+
     @ViewBuilder private var menuBarLabel: some View {
         Group {
             if recordingController.isRecording {
                 Label("Recording", systemImage: "record.circle.fill")
             } else if remindersMutedByCall {
                 Label("Reminders paused", systemImage: "bell.slash.fill")
+            } else if isUpdateAvailable {
+                // Green checkmark badge = an app update is ready to install.
+                Label("Update available", systemImage: "clock.badge.checkmark")
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(.primary, .green)
             } else {
                 Label("MeetingIntro", systemImage: "clock.badge.checkmark")
             }
@@ -326,7 +336,7 @@ final class AppLifecycleManager: ObservableObject {
         // Single decision point for all three channels (overlay / notification / voice).
         // The closure reads the live snapshot each time it's called, so toggling Focus or
         // muting in another call takes effect on the next firing without any further wiring.
-        let decide: @MainActor (CountdownTrigger) -> ReminderDecision = { [weak self] trigger in
+        let decide: @MainActor (CountdownTrigger, MeetingEvent) -> ReminderDecision = { [weak self] trigger, meeting in
             var decision = ReminderEscalationPolicy.decide(
                 trigger: trigger,
                 context: contextMonitor.snapshot,
@@ -338,9 +348,16 @@ final class AppLifecycleManager: ObservableObject {
             if decision.suppressedBy == .inCall, self?.inCallSuppressionCapExceeded == true {
                 decision = .fromTrigger(trigger)
             }
+            // Per-event notification rules (downgrade-only): a matching rule ANDs its
+            // allowed channels onto the decision — it can silence but never add channels.
+            if let mask = smartConfig.channelMask(for: meeting) {
+                decision.showOverlay      = decision.showOverlay && mask.overlay
+                decision.sendNotification = decision.sendNotification && mask.notify
+                decision.playVoice        = decision.playVoice && mask.voice
+            }
             return decision
         }
-        calendarManager.shouldFireOverlay = { decide($0).showOverlay }
+        calendarManager.shouldFireOverlay = { trigger, meeting in decide(trigger, meeting).showOverlay }
 
         // RSVP gate (shared by overlay, notification/voice, and recording). Reads the
         // live settings each call. Personal events / organizer / unknown never match.
@@ -516,9 +533,10 @@ final class AppLifecycleManager: ObservableObject {
                         let catchUp = calendarManager.catchUpThresholdMinutes(for: meeting) == trigger.minutes
                         guard secondsSinceCrossed <= 60 || catchUp else { continue }
 
-                        let decision = decide(trigger)
+                        let decision = decide(trigger, meeting)
                         let reasonSuffix = decision.suppressedBy.map { " — suppressed: \($0.logDescription)" } ?? ""
-                        diagnosticLog.info(.reminder, "Reminder \(trigger.minutes)m fired for \(meeting.title) — notify=\(decision.sendNotification) voice=\(decision.playVoice) overlay=\(decision.showOverlay)\(reasonSuffix)")
+                        let ruleSuffix = smartConfig.matchingRuleName(for: meeting).map { " — rule: \($0)" } ?? ""
+                        diagnosticLog.info(.reminder, "Reminder \(trigger.minutes)m fired for \(meeting.title) — notify=\(decision.sendNotification) voice=\(decision.playVoice) overlay=\(decision.showOverlay)\(reasonSuffix)\(ruleSuffix)")
 
                         if decision.sendNotification {
                             notificationManager.sendCountdownNotification(for: meeting, minutesBefore: trigger.minutes)

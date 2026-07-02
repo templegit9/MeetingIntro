@@ -68,7 +68,7 @@ final class CalendarManager: ObservableObject {
     /// suppresses the overlay even when the trigger has `showOverlay = true` — used by
     /// `ReminderEscalationPolicy` to gate firings on live context (in-call, Focus, etc).
     /// Default behavior (when the hook is nil) is to respect the trigger flag directly.
-    var shouldFireOverlay: ((CountdownTrigger) -> Bool)?
+    var shouldFireOverlay: ((CountdownTrigger, MeetingEvent) -> Bool)?
 
     /// RSVP gate: returns true if a meeting should be suppressed because the user
     /// declined / didn't respond (per their settings). Injected in
@@ -466,7 +466,7 @@ final class CalendarManager: ObservableObject {
                     let triggerConfig = countdownConfigs?.trigger(for: minutes)
                     let allowed: Bool
                     if let triggerConfig {
-                        allowed = shouldFireOverlay?(triggerConfig) ?? triggerConfig.showOverlay
+                        allowed = shouldFireOverlay?(triggerConfig, event) ?? triggerConfig.showOverlay
                     } else {
                         allowed = true
                     }
