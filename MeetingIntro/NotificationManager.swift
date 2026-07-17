@@ -399,4 +399,30 @@ final class NotificationManager: ObservableObject {
         deliver(request, describing: "task due — \(task.title)")
         playSelectedSound()
     }
+
+    // MARK: - Executive Assistant (Issue #17, v2.13.0)
+
+    /// An automated organize run needs review — nothing has moved yet.
+    func sendAssistantReviewNotification(folder: String, count: Int) {
+        guard isEnabled else { return }
+        let content = UNMutableNotificationContent()
+        content.title = "Files ready to organize"
+        content.body = "\(count) file\(count == 1 ? "" : "s") in \(folder) — open Executive Assistant to review."
+        content.sound = .default
+        let key = "assistant_review_\(folder)"
+        deliver(UNNotificationRequest(identifier: key, content: content, trigger: nil), describing: "assistant review — \(folder)")
+        playSelectedSound()
+    }
+
+    /// An automated organize run applied changes (auto-apply on) — undo is available.
+    func sendAssistantOrganizedNotification(folder: String, count: Int) {
+        guard isEnabled else { return }
+        let content = UNMutableNotificationContent()
+        content.title = "Organized \(count) file\(count == 1 ? "" : "s")"
+        content.body = "in \(folder). Undo is available in Executive Assistant."
+        content.sound = .default
+        let key = "assistant_organized_\(folder)_\(Int(Date().timeIntervalSince1970))"
+        deliver(UNNotificationRequest(identifier: key, content: content, trigger: nil), describing: "assistant organized — \(folder)")
+        playSelectedSound()
+    }
 }

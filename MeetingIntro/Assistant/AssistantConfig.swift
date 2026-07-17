@@ -58,6 +58,10 @@ final class AssistantConfig: ObservableObject {
         if let i = jobs.firstIndex(where: { $0.id == job.id }) { jobs[i] = job }
     }
     func removeJob(_ id: UUID) { jobs.removeAll { $0.id == id } }
+    /// Stamp a job's last automated-run time (drives the scheduled cadence).
+    func markRun(_ id: UUID, at date: Date = Date()) {
+        if let i = jobs.firstIndex(where: { $0.id == id }) { jobs[i].lastRunAt = date }
+    }
 
     // MARK: - Undo history
     func recordUndo(_ batch: UndoBatch) {

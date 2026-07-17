@@ -74,6 +74,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 @main
 struct MeetingIntroApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @Environment(\.openWindow) private var openWindow
 
     @StateObject private var calendarManager = CalendarManager()
     @StateObject private var audioManager = AudioManager()
@@ -97,6 +98,7 @@ struct MeetingIntroApp: App {
     @StateObject private var taskReminderCoordinator = TaskReminderCoordinator()
     @StateObject private var assistantConfig = AssistantConfig()
     @StateObject private var fileOrganizer = FileOrganizer()
+    @StateObject private var fileOrganizerCoordinator = FileOrganizerCoordinator()
     @StateObject private var notesConfig: MeetingNotesConfig
     @StateObject private var notesPipeline: MeetingNotesPipeline
     @StateObject private var diagnosticLog = DiagnosticLog()
@@ -154,6 +156,7 @@ struct MeetingIntroApp: App {
             taskReminderCoordinator: taskReminderCoordinator,
             assistantConfig: assistantConfig,
             fileOrganizer: fileOrganizer,
+            fileOrganizerCoordinator: fileOrganizerCoordinator,
             notesPipeline: notesPipeline,
             diagnosticLog: diagnosticLog,
             mirrorConfig: mirrorConfig,
@@ -194,6 +197,12 @@ struct MeetingIntroApp: App {
         .onAppear {
             wireLifecycle()
             updater.startAutoChecks()
+        }
+        // An automated organize run that needs review → open the Assistant window (which
+        // renders the pending preview). Auto-apply runs don't publish a review, so no open.
+        .onReceive(fileOrganizerCoordinator.$pendingReview.compactMap { $0 }) { _ in
+            openWindow(id: "assistant")
+            NSApp.activate(ignoringOtherApps: true)
         }
     }
 
@@ -281,7 +290,7 @@ struct MeetingIntroApp: App {
 
         // Executive Assistant plugin (Issue #17) — opt-in file organizer.
         Window("Executive Assistant", id: "assistant") {
-            AssistantWindow(config: assistantConfig, organizer: fileOrganizer)
+            AssistantWindow(config: assistantConfig, organizer: fileOrganizer, coordinator: fileOrganizerCoordinator)
         }
         .defaultSize(width: 640, height: 560)
     }
@@ -343,6 +352,7 @@ final class AppLifecycleManager: ObservableObject {
         taskReminderCoordinator: TaskReminderCoordinator,
         assistantConfig: AssistantConfig,
         fileOrganizer: FileOrganizer,
+        fileOrganizerCoordinator: FileOrganizerCoordinator,
         notesPipeline: MeetingNotesPipeline,
         diagnosticLog: DiagnosticLog,
         mirrorConfig: MirrorConfigManager,
@@ -380,6 +390,8 @@ final class AppLifecycleManager: ObservableObject {
         // Executive Assistant (Issue #17): wire the organizer to its config + log.
         fileOrganizer.attach(config: assistantConfig)
         fileOrganizer.diagnosticLog = diagnosticLog
+        fileOrganizerCoordinator.attach(config: assistantConfig, organizer: fileOrganizer,
+                                        notificationManager: notificationManager, diagnosticLog: diagnosticLog)
         taskReminderCoordinator.attach(taskManager: taskManager,
                                        notificationManager: notificationManager,
                                        voiceReminder: voiceReminder,

@@ -6,17 +6,17 @@ import SwiftUI
 struct AssistantWindow: View {
     @ObservedObject var config: AssistantConfig
     @ObservedObject var organizer: FileOrganizer
+    @ObservedObject var coordinator: FileOrganizerCoordinator
 
     @State private var proposals: [FileProposal] = []
     @State private var activeJob: OrganizeJob?
-    @State private var testResult: String?
-    @State private var testing = false
+    @State private var editingJob: OrganizeJob?
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 header
-                modelSection
+                modelStatus
                 if proposals.isEmpty {
                     foldersSection
                     if !config.undoBatches.isEmpty { undoSection }
@@ -27,6 +27,24 @@ struct AssistantWindow: View {
             .padding(20)
         }
         .frame(minWidth: 580, minHeight: 500)
+        .onAppear { loadPendingReview() }
+        .onReceive(coordinator.$pendingReview.compactMap { $0 }) { _ in loadPendingReview() }
+        .sheet(item: $editingJob) { job in
+            AssistantJobEditSheet(
+                job: job,
+                onSave: { config.updateJob($0); editingJob = nil },
+                onRepick: { repickFolder(for: job) },
+                onCancel: { editingJob = nil })
+        }
+    }
+
+    /// A scheduled/watch run published a review — load its proposals into the preview.
+    private func loadPendingReview() {
+        guard let pr = coordinator.pendingReview,
+              let job = config.jobs.first(where: { $0.id == pr.jobID }) else { return }
+        activeJob = job
+        proposals = pr.proposals
+        coordinator.pendingReview = nil
     }
 
     private var header: some View {
@@ -37,31 +55,24 @@ struct AssistantWindow: View {
         }
     }
 
-    // MARK: - Model
+    // MARK: - Model (configured centrally in Settings → AI Models)
 
-    private var modelSection: some View {
-        GroupBox("Model") {
-            VStack(alignment: .leading, spacing: 8) {
-                Picker("Provider", selection: $config.provider) {
-                    ForEach(QuickAddProvider.allCases) { Text($0.displayName).tag($0) }
-                }
-                if config.provider.needsKey {
-                    SecureField(config.provider.keyPlaceholder, text: $config.key).textFieldStyle(.roundedBorder)
-                }
-                if config.provider == .custom {
-                    TextField("API base URL (OpenAI-compatible)", text: $config.apiBaseURL).textFieldStyle(.roundedBorder)
-                }
-                HStack {
-                    TextField("Model", text: $config.modelID).textFieldStyle(.roundedBorder)
-                    Button(testing ? "Testing…" : "Test") { testModel() }
-                        .disabled(testing || !config.llmReady)
-                }
-                if let testResult {
-                    Text(testResult).font(.caption2).foregroundStyle(testResult.hasPrefix("✓") ? .green : .red).lineLimit(2)
-                }
+    private var modelStatus: some View {
+        HStack(spacing: 8) {
+            Image(systemName: config.llmReady ? "cpu" : "exclamationmark.triangle.fill")
+                .foregroundStyle(config.llmReady ? Color.secondary : Color.orange)
+            if config.llmReady {
+                Text("Model: \(config.provider.displayName) · \(config.modelID)")
+                    .font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+            } else {
+                Text("No AI model set — add it in Settings → AI Models.")
+                    .font(.caption).foregroundStyle(.orange)
             }
-            .padding(6)
+            Spacer()
+            SettingsLink { Text("Settings → AI Models…").font(.caption) }
+                .buttonStyle(.link)
         }
+        .padding(.horizontal, 2)
     }
 
     // MARK: - Folders
@@ -79,10 +90,14 @@ struct AssistantWindow: View {
                         VStack(alignment: .leading, spacing: 1) {
                             Text(job.name.isEmpty ? "Folder" : job.name).font(.callout)
                             Text(path(for: job)).font(.caption2).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                            if let summary = automationSummary(job) {
+                                Label(summary, systemImage: "bolt.horizontal").font(.caption2).foregroundStyle(.tertiary)
+                            }
                         }
                         Spacer()
-                        Toggle("Rename", isOn: rename(job)).toggleStyle(.checkbox).font(.caption)
                         Button("Organize now") { organize(job) }.disabled(organizer.isPlanning || !config.llmReady)
+                        Button { editingJob = job } label: { Image(systemName: "slider.horizontal.3") }
+                            .buttonStyle(.borderless).help("Rename, schedule, watch…")
                         Button(role: .destructive) { config.removeJob(job.id) } label: { Image(systemName: "trash") }
                             .buttonStyle(.borderless).foregroundStyle(.red)
                     }
@@ -172,8 +187,28 @@ struct AssistantWindow: View {
     private var includedCount: Int { proposals.filter(\.include).count }
     private func setAll(_ v: Bool) { for i in proposals.indices { proposals[i].include = v } }
 
-    private func rename(_ job: OrganizeJob) -> Binding<Bool> {
-        Binding(get: { job.renameEnabled }, set: { var j = job; j.renameEnabled = $0; config.updateJob(j) })
+    /// One-line summary of a job's enabled options, or nil if all off.
+    private func automationSummary(_ job: OrganizeJob) -> String? {
+        var parts: [String] = []
+        if job.renameEnabled { parts.append("Rename") }
+        if job.scheduleEnabled { parts.append("Every \(job.scheduleIntervalHours)h") }
+        if job.watchEnabled { parts.append("Watch new files") }
+        if job.autoApply { parts.append("Auto-apply") }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    private func repickFolder(for job: OrganizeJob) {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Choose"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        var j = job
+        j.name = url.lastPathComponent
+        j.sourceBookmark = try? url.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil)
+        config.updateJob(j)
+        editingJob = j
     }
 
     private func path(for job: OrganizeJob) -> String {
@@ -208,19 +243,86 @@ struct AssistantWindow: View {
         proposals = []
         activeJob = nil
     }
+}
 
-    private func testModel() {
-        testing = true
-        testResult = nil
-        Task {
-            do {
-                let r = try await LLMClient.complete(system: "Reply with the single word: OK", user: "test",
-                                                     baseURL: config.apiBaseURL, key: config.key, model: config.modelID)
-                testResult = "✓ " + r.trimmingCharacters(in: .whitespacesAndNewlines).prefix(40)
-            } catch {
-                testResult = "✗ " + ((error as? LocalizedError)?.errorDescription ?? error.localizedDescription)
+/// Per-folder options (Issue #17, Phase 2): rename, and the automation triggers —
+/// run on a schedule and/or when new files land, applied automatically or reviewed first.
+struct AssistantJobEditSheet: View {
+    let job: OrganizeJob
+    let onSave: (OrganizeJob) -> Void
+    let onRepick: () -> Void
+    let onCancel: () -> Void
+
+    @State private var renameEnabled = true
+    @State private var autoApply = false
+    @State private var scheduleEnabled = false
+    @State private var scheduleIntervalHours = 24
+    @State private var watchEnabled = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text("Folder options").font(.headline).padding(.top, 16)
+            Form {
+                Section {
+                    LabeledContent("Folder") {
+                        HStack {
+                            Text(job.name.isEmpty ? "—" : job.name).foregroundStyle(.secondary).lineLimit(1)
+                            Button("Change…") { onRepick() }
+                        }
+                    }
+                    Toggle("Propose cleaner filenames (rename)", isOn: $renameEnabled)
+                }
+
+                Section {
+                    Toggle("Run on a schedule", isOn: $scheduleEnabled)
+                    if scheduleEnabled {
+                        Stepper("Every \(scheduleIntervalHours) hour\(scheduleIntervalHours == 1 ? "" : "s")",
+                                value: $scheduleIntervalHours, in: 1...168)
+                    }
+                    Toggle("Watch for new files", isOn: $watchEnabled)
+                } header: {
+                    Text("Automation")
+                } footer: {
+                    Text(autoApply
+                         ? "Automated runs apply changes immediately (undo stays available)."
+                         : "Automated runs open a preview for you to approve first.")
+                        .font(.caption)
+                }
+
+                if scheduleEnabled || watchEnabled {
+                    Section {
+                        Toggle("Apply automatically (skip the review)", isOn: $autoApply)
+                    }
+                }
             }
-            testing = false
+            .formStyle(.grouped)
+
+            HStack {
+                Spacer()
+                Button("Cancel") { onCancel() }
+                Button("Save") { save() }.keyboardShortcut(.defaultAction)
+            }
+            .padding(16)
         }
+        .frame(width: 460, height: 480)
+        .onAppear(perform: load)
+    }
+
+    private func load() {
+        renameEnabled = job.renameEnabled
+        autoApply = job.autoApply
+        scheduleEnabled = job.scheduleEnabled
+        scheduleIntervalHours = job.scheduleIntervalHours
+        watchEnabled = job.watchEnabled
+    }
+
+    private func save() {
+        var j = job
+        j.renameEnabled = renameEnabled
+        j.autoApply = autoApply
+        j.scheduleEnabled = scheduleEnabled
+        j.scheduleIntervalHours = scheduleIntervalHours
+        j.watchEnabled = watchEnabled
+        onSave(j)
     }
 }

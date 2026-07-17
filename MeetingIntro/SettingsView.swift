@@ -105,6 +105,10 @@ struct SettingsView: View {
     @State private var editingTemplate: QuickAddTemplate?
     @State private var editingRule: NotificationRule?
     @AppStorage("assistantEnabled") private var assistantEnabled: Bool = false
+    @State private var assistantTest: String?
+    @State private var assistantTesting = false
+    @State private var transcriptionTest: String?
+    @State private var transcriptionTesting = false
 
     @AppStorage("upcomingDaysAhead") private var upcomingDaysAhead: Int = 7
     @AppStorage(MenuBarPresentation.storageKey) private var menuBarPresentationRaw: String = MenuBarPresentation.popover.rawValue
@@ -165,6 +169,7 @@ struct SettingsView: View {
                 case .audio:     audioTab
                 case .handoff:   handoffTab
                 case .tasks:     tasksTab
+                case .models:    modelsTab
                 case .plugins:   pluginsTab
                 case .recording: recordingTab
                 case .whatsNew:  whatsNewTab
@@ -368,85 +373,16 @@ struct SettingsView: View {
             }
 
             Section("Parsing") {
+                LabeledContent("Parsing model") {
+                    Text(quickAddConfig.llmEnabled ? "\(quickAddConfig.provider.displayName) · \(quickAddConfig.modelID)" : "On-device only")
+                        .foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                }
                 Text(quickAddConfig.llmEnabled
                      ? (quickAddConfig.provider == .ollama
-                        ? "Smart parsing is ON via a local model — nothing you type leaves this Mac."
-                        : "Smart parsing is ON — text is sent to \(quickAddConfig.provider.displayName) for parsing.")
-                     : "On-device parsing only — nothing you type leaves this Mac. Pick a provider and add a key for smarter parsing.")
-                    .font(.caption)
-                    .foregroundStyle(quickAddConfig.llmEnabled ? .primary : .secondary)
-
-                Picker("Provider", selection: Binding(
-                    get: { quickAddConfig.provider },
-                    set: { quickAddConfig.setProvider($0) }
-                )) {
-                    ForEach(QuickAddProvider.allCases) { p in
-                        Text(p.displayName).tag(p)
-                    }
-                }
-
-                if quickAddConfig.provider == .custom {
-                    TextField("API base URL (OpenAI-compatible)", text: $quickAddConfig.apiBaseURL)
-                        .textFieldStyle(.roundedBorder)
-                }
-
-                if quickAddConfig.provider == .ollama {
-                    Text("Runs entirely on this Mac via Ollama — install from ollama.com, then `ollama pull \(quickAddConfig.modelID)`. No key, no network.")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                } else {
-                    SecureField(quickAddConfig.provider.keyPlaceholder, text: $quickAddKeyDraft)
-                        .textFieldStyle(.roundedBorder)
-                    HStack {
-                        Button(quickAddConfig.hasLLMKey ? "Update key" : "Save key") {
-                            quickAddConfig.openRouterKey = quickAddKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-                        }
-                        .disabled(quickAddKeyDraft.trimmingCharacters(in: .whitespaces).isEmpty)
-                        if quickAddConfig.hasLLMKey {
-                            Button("Remove key") {
-                                quickAddConfig.openRouterKey = ""
-                                quickAddKeyDraft = ""
-                            }
-                            .tint(.red)
-                        }
-                        if let console = quickAddConfig.provider.keyConsoleURL {
-                            Spacer()
-                            Button("Get a key ↗") {
-                                if let url = URL(string: console) { NSWorkspace.shared.open(url) }
-                            }
-                            .buttonStyle(.link)
-                            .font(.caption)
-                        }
-                    }
-                    Text("Key is stored in the macOS Keychain, never in plain preferences.")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                HStack(spacing: 8) {
-                    TextField("Model", text: $quickAddConfig.modelID)
-                        .textFieldStyle(.roundedBorder)
-                        .disabled(!quickAddConfig.llmEnabled)
-                    Button {
-                        testQuickAddModel()
-                    } label: {
-                        if quickAddTesting {
-                            ProgressView().controlSize(.small)
-                        } else {
-                            Label("Test", systemImage: "bolt.badge.checkmark")
-                        }
-                    }
-                    .disabled(!quickAddConfig.llmEnabled || quickAddTesting)
-                    .help("Send a sample phrase through this endpoint + model and show exactly what happens")
-                }
-                if let result = quickAddTestResult {
-                    Label(result.message, systemImage: result.passed ? "checkmark.circle.fill" : "xmark.circle.fill")
-                        .font(.caption)
-                        .foregroundStyle(result.passed ? .green : .orange)
-                        .textSelection(.enabled)
-                }
-                Text("Suggested for \(quickAddConfig.provider.displayName): \(quickAddConfig.provider.suggestedModel.isEmpty ? "any OpenAI-compatible model ID" : quickAddConfig.provider.suggestedModel). Avoid reasoning models — too slow for the 6-second live-parse window, and they often wrap output in thinking text instead of JSON.")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                        ? "Smart parsing runs locally via Ollama — nothing you type leaves this Mac."
+                        : "The parsing provider, key, and model are set in Settings → AI Models.")
+                     : "On-device date detection only. Add a provider + key in Settings → AI Models for smarter parsing.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
 
             Section {
@@ -1281,6 +1217,113 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
+    }
+
+    // MARK: - AI Models Tab (v2.13.0) — one place for every feature's API key
+
+    private var modelsTab: some View {
+        Form {
+            Section {
+                Picker("Provider", selection: $assistantConfig.provider) {
+                    ForEach(QuickAddProvider.allCases) { Text($0.displayName).tag($0) }
+                }
+                if assistantConfig.provider.needsKey {
+                    SecureField(assistantConfig.provider.keyPlaceholder, text: $assistantConfig.key).textFieldStyle(.roundedBorder)
+                }
+                if assistantConfig.provider == .custom {
+                    TextField("API base URL (OpenAI-compatible)", text: $assistantConfig.apiBaseURL).textFieldStyle(.roundedBorder)
+                }
+                HStack {
+                    TextField("Model", text: $assistantConfig.modelID).textFieldStyle(.roundedBorder)
+                    Button(assistantTesting ? "Testing…" : "Test") { testAssistantModel() }
+                        .disabled(assistantTesting || !assistantConfig.llmReady)
+                }
+                if let assistantTest {
+                    Text(assistantTest).font(.caption2).foregroundStyle(assistantTest.hasPrefix("✓") ? .green : .red).lineLimit(2)
+                }
+            } header: {
+                SettingsSectionHeader("Executive Assistant", info: "The AI model the Executive Assistant plugin uses to organize files. Local providers (Ollama) need no key and keep everything on-device.")
+            }
+
+            Section {
+                Picker("Provider", selection: quickAddProviderBinding) {
+                    ForEach(QuickAddProvider.allCases) { Text($0.displayName).tag($0) }
+                }
+                if quickAddConfig.provider.needsKey {
+                    SecureField(quickAddConfig.provider.keyPlaceholder, text: $quickAddConfig.openRouterKey).textFieldStyle(.roundedBorder)
+                }
+                if quickAddConfig.provider == .custom {
+                    TextField("API base URL (OpenAI-compatible)", text: $quickAddConfig.apiBaseURL).textFieldStyle(.roundedBorder)
+                }
+                HStack {
+                    TextField("Model", text: $quickAddConfig.modelID).textFieldStyle(.roundedBorder)
+                    Button(quickAddTesting ? "Testing…" : "Test") { testQuickAddModel() }
+                        .disabled(quickAddTesting || !quickAddConfig.llmEnabled)
+                }
+                if let result = quickAddTestResult {
+                    Label(result.message, systemImage: result.passed ? "checkmark.circle.fill" : "xmark.circle.fill")
+                        .font(.caption2).foregroundStyle(result.passed ? .green : .orange).textSelection(.enabled)
+                }
+            } header: {
+                SettingsSectionHeader("Quick Add & Meeting Notes", info: "The AI model for the natural-language event parser (Quick Add) and AI meeting-notes generation. A local provider (Ollama) needs no key; without one, Quick Add still works on-device with the built-in date detector.")
+            }
+
+            Section {
+                LabeledContent("Model", value: "whisper-large-v3-turbo")
+                SecureField("gsk_…", text: $notesConfig.groqKey).textFieldStyle(.roundedBorder)
+                HStack {
+                    Spacer()
+                    Button(transcriptionTesting ? "Testing…" : "Test key") { testTranscription() }
+                        .disabled(transcriptionTesting || notesConfig.groqKey.isEmpty)
+                }
+                if let transcriptionTest {
+                    Text(transcriptionTest).font(.caption2).foregroundStyle(transcriptionTest.hasPrefix("✓") ? .green : .red).lineLimit(2)
+                }
+            } header: {
+                SettingsSectionHeader("Transcription (Groq)", info: "API key for the Groq cloud transcription engine used by meeting recording → notes (model is fixed). Not needed if you transcribe on-device with WhisperKit — choose the engine in the Recording tab.")
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+    }
+
+    /// Settable provider binding for Quick Add (whose `provider` is derived from the base
+    /// URL) — mirrors AssistantConfig's provider switching: fill endpoint + suggested model.
+    private var quickAddProviderBinding: Binding<QuickAddProvider> {
+        Binding(get: { quickAddConfig.provider }, set: { quickAddConfig.setProvider($0) })
+    }
+
+    private func testAssistantModel() {
+        assistantTesting = true; assistantTest = nil
+        Task {
+            do {
+                let r = try await LLMClient.complete(system: "Reply with the single word: OK", user: "test",
+                                                     baseURL: assistantConfig.apiBaseURL, key: assistantConfig.key, model: assistantConfig.modelID)
+                assistantTest = "✓ " + r.trimmingCharacters(in: .whitespacesAndNewlines).prefix(40)
+            } catch {
+                assistantTest = "✗ " + ((error as? LocalizedError)?.errorDescription ?? error.localizedDescription)
+            }
+            assistantTesting = false
+        }
+    }
+
+    /// Validates the Groq key against the models endpoint (transcription itself needs audio).
+    private func testTranscription() {
+        transcriptionTesting = true; transcriptionTest = nil
+        let key = notesConfig.groqKey
+        Task {
+            do {
+                var req = URLRequest(url: URL(string: "https://api.groq.com/openai/v1/models")!)
+                req.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+                req.timeoutInterval = 15
+                let (_, resp) = try await URLSession.shared.data(for: req)
+                let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
+                transcriptionTest = code == 200 ? "✓ Key valid" : (code == 401 ? "✗ Invalid key" : "✗ HTTP \(code)")
+            } catch {
+                transcriptionTest = "✗ " + error.localizedDescription
+            }
+            transcriptionTesting = false
+        }
     }
 
     // MARK: - Plugins Tab (Issue #17)
@@ -2406,6 +2449,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
     case calendar
     case quickAdd
     case calendarSync
+    case models
     case countdown
     case menuBar
     case smart
@@ -2426,6 +2470,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
         case .calendar:  return "Calendar"
         case .quickAdd:  return "Quick Add"
         case .calendarSync: return "Calendar Sync"
+        case .models:    return "AI Models"
         case .countdown: return "Countdown"
         case .menuBar:   return "Menu Bar"
         case .smart:     return "Smart"
@@ -2448,6 +2493,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
         case .calendar:  return "calendar"
         case .quickAdd:  return "square.and.pencil"
         case .calendarSync: return "arrow.triangle.2.circlepath"
+        case .models:    return "cpu"
         case .countdown: return "timer"
         case .menuBar:   return "menubar.rectangle"
         case .smart:     return "brain"
@@ -2467,7 +2513,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
 
     var group: SettingsGroup {
         switch self {
-        case .calendar, .quickAdd, .calendarSync:        return .sources
+        case .calendar, .quickAdd, .calendarSync, .models: return .sources
         case .countdown, .menuBar, .smart, .voice, .sounds, .tasks: return .reminders
         case .audio, .handoff, .recording:               return .inMeeting
         case .plugins, .whatsNew, .diagnostics, .guide, .about: return .help

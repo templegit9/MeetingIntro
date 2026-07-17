@@ -9,8 +9,18 @@ struct OrganizeJob: Codable, Identifiable, Equatable {
     var sourceBookmark: Data? = nil
     /// Propose cleaner filenames in addition to foldering.
     var renameEnabled: Bool = true
-    /// v1 always previews; kept for v2 automation (default off = preview-first).
+    /// When an automated run fires (schedule/watch): true = apply immediately (with undo),
+    /// false = notify + open the preview to review first. Manual "Organize now" always previews.
     var autoApply: Bool = false
+    // MARK: Phase 2 automation triggers (v2.13.0)
+    /// Run on a recurring interval.
+    var scheduleEnabled: Bool = false
+    /// Interval between scheduled runs, in hours.
+    var scheduleIntervalHours: Int = 24
+    /// React when new files land in the folder (debounced).
+    var watchEnabled: Bool = false
+    /// Last time an automated run fired (for scheduling cadence). Persisted.
+    var lastRunAt: Date? = nil
 }
 
 /// Metadata + a short content preview of one file, fed to the model for classification.

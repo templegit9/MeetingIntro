@@ -42,27 +42,64 @@ final class FileOrganizer: ObservableObject {
         let previews = files.map { FilePreviewExtractor.extract($0) }
         isPlanning = true
         defer { isPlanning = false }
-        do {
-            let raw = try await callModel(previews: previews, rename: job.renameEnabled)
-            let proposals = parse(raw, files: files)
-            if proposals.isEmpty { lastError = "The model returned no usable proposals." }
-            diagnosticLog?.info(.assistant, "Planned \"\(job.name)\": \(files.count) files → \(proposals.count) proposals")
-            return proposals
-        } catch {
-            lastError = describe(error)
-            diagnosticLog?.error(.assistant, "Plan failed for \"\(job.name)\": \(lastError ?? "")")
-            return []
+
+        // Large folders (e.g. Downloads) can exceed the model's context window, so
+        // classify in batches bounded by an approximate token budget. Folder names
+        // decided in earlier batches are fed forward so the grouping stays consistent.
+        let batches = makeBatches(files: files, previews: previews)
+        var all: [FileProposal] = []
+        var knownFolders: Set<String> = []
+        for (bi, batch) in batches.enumerated() {
+            do {
+                let raw = try await callModel(previews: batch.previews, rename: job.renameEnabled, existingFolders: knownFolders)
+                let proposals = parse(raw, files: batch.files)
+                all += proposals
+                knownFolders.formUnion(proposals.map { $0.proposedFolder }.filter { !$0.isEmpty })
+                if batches.count > 1 {
+                    diagnosticLog?.info(.assistant, "Planned batch \(bi + 1)/\(batches.count) of \"\(job.name)\": \(batch.files.count) files → \(proposals.count)")
+                }
+            } catch {
+                lastError = describe(error) + (all.isEmpty ? "" : " (showing \(all.count) already analyzed)")
+                diagnosticLog?.error(.assistant, "Plan batch \(bi + 1)/\(batches.count) failed for \"\(job.name)\": \(describe(error))")
+                break
+            }
         }
+        if all.isEmpty, lastError == nil { lastError = "The model returned no usable proposals." }
+        diagnosticLog?.info(.assistant, "Planned \"\(job.name)\": \(files.count) files, \(batches.count) batch(es) → \(all.count) proposals")
+        return all
     }
 
-    private func callModel(previews: [FilePreview], rename: Bool) async throws -> String {
+    /// Split aligned (files, previews) into batches under an approximate token budget
+    /// (~60K tokens ≈ 240K chars) and a file-count cap, so no single call overruns the
+    /// model context. A file whose preview alone exceeds the budget gets its own batch.
+    private func makeBatches(files: [URL], previews: [FilePreview]) -> [(files: [URL], previews: [FilePreview])] {
+        let maxChars = 240_000
+        let maxCount = 80
+        var batches: [(files: [URL], previews: [FilePreview])] = []
+        var curF: [URL] = []
+        var curP: [FilePreview] = []
+        var curChars = 0
+        for (u, p) in zip(files, previews) {
+            let approx = (p.contentPreview?.count ?? 0) + p.name.count + 120
+            if !curF.isEmpty && (curChars + approx > maxChars || curF.count >= maxCount) {
+                batches.append((curF, curP)); curF = []; curP = []; curChars = 0
+            }
+            curF.append(u); curP.append(p); curChars += approx
+        }
+        if !curF.isEmpty { batches.append((curF, curP)) }
+        return batches
+    }
+
+    private func callModel(previews: [FilePreview], rename: Bool, existingFolders: Set<String>) async throws -> String {
         guard let config else { throw NSError(domain: "assistant", code: 0) }
+        let reuse = existingFolders.isEmpty ? "" :
+            "\n- You already created these folders for earlier files — REUSE an existing name when a file fits it, only invent a new folder when none fits: \(existingFolders.sorted().joined(separator: ", "))."
         let system = """
         You organize files into subfolders by type and content. You get a numbered list of files with metadata and short content previews. For EACH file propose a destination subfolder and (if renaming is on) a cleaner filename.
         Reply with ONLY a JSON array, no prose, no code fences:
         [{"index": int, "folder": string, "newName": string or null, "observedReason": string, "renameReason": string or null}]
         Rules:
-        - "folder": a short Title Case destination subfolder grouping similar files (e.g. "Invoices", "Screenshots", "Contracts", "Images", "Receipts"). Reuse the same folder name for similar files.
+        - "folder": a short Title Case destination subfolder grouping similar files (e.g. "Invoices", "Screenshots", "Contracts", "Images", "Receipts"). Reuse the same folder name for similar files.\(reuse)
         - "newName": \(rename ? "a clean descriptive filename that KEEPS the original extension, or null to keep the current name. Prefer \"YYYY-MM-DD Description.ext\" when a date is evident." : "ALWAYS null (renaming is off).")
         - "observedReason": ONE short sentence on why that folder, grounded ONLY in the content/metadata you were shown. Never invent content you didn't see.
         - "renameReason": ONE short sentence, or null.
