@@ -24,6 +24,7 @@
 		4FAA179DD289F0BA7A5C83E8 /* ConferenceLinkExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28D229B727F2C87F6712FCC4 /* ConferenceLinkExtractor.swift */; };
 		52E3A860EC8A1BA2804CBF85 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5673A02C0FAC799726EA0BCF /* Assets.xcassets */; };
 		58CA9A36991C9BE9D8D4541A /* TemplateEditSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 675F9C5FC04AEF4EF60B3806 /* TemplateEditSheet.swift */; };
+		619706B6677E6431D5E126C4 /* TaskReminderCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7BD2399C4FDA17D3C26D848 /* TaskReminderCoordinator.swift */; };
 		6776C67C91580A90FAF868AB /* MeetingNotesConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7C7F0E8190A10BB8431B931 /* MeetingNotesConfig.swift */; };
 		67B654CACB98A5BBE32C5FC4 /* AppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A779B106BB03584C7E64259 /* AppUpdater.swift */; };
 		68ED75073588DF9609623340 /* WhisperKitEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72275B905671FFA1F87F986C /* WhisperKitEngine.swift */; };
@@ -31,6 +32,7 @@
 		6D89F0F14CE5474AF8968E50 /* RecordingConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A3DCA2311169ED15B355E39 /* RecordingConfig.swift */; };
 		70EA5C5D3C9C3001612AA4AC /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2415B0B2BBF77234529B496A /* NotificationManager.swift */; };
 		724871746BD559C816813C96 /* LLMClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C529555F228CD4BB1EF1E936 /* LLMClient.swift */; };
+		77BC54FBB62CDF7888C5F952 /* TaskModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAEF02F79EAE528318DB4E2D /* TaskModels.swift */; };
 		787C4DDF39E71D19EBB5C801 /* ReminderEscalationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B33CEBB2784C6AFE2BB1379 /* ReminderEscalationPolicy.swift */; };
 		7C988823B083DA90D7A0A78D /* VoiceReminderManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C58BE975466982E750F7FDA /* VoiceReminderManager.swift */; };
 		7ED2557749FC1DDB68203F28 /* EventDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF7DCEE0AA262DB746742A6A /* EventDraft.swift */; };
@@ -55,6 +57,7 @@
 		CC7683CA9E1E90FD5AC1A39F /* AudioRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06B89F3A47268C68A4AF32C6 /* AudioRouter.swift */; };
 		CCDB3EE0B029EDAD042EF8CF /* RuleEditSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC93CC9B88A798A86B40D559 /* RuleEditSheet.swift */; };
 		CEEF992EE3D7FEA673D18ADE /* RecordingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = E21F519F51FBE4A4BD52367A /* RecordingSession.swift */; };
+		CF6868BE11C313E4FDED3FD6 /* TaskDeadlineOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E61F0E3FE2659AEA9B917D /* TaskDeadlineOverlayView.swift */; };
 		D195FE28659E1B2C38932999 /* CountdownOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D81EBB57F5E6FDD478BC43 /* CountdownOverlayView.swift */; };
 		D1D8F3654A6020E2B6709C80 /* MenuBarCountdownModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57ADDD7395104BDD5BE47459 /* MenuBarCountdownModel.swift */; };
 		DD8A1A680768E76BFD44F679 /* MixkitSoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C252C77AB45CB10DE5063A4E /* MixkitSoundManager.swift */; };
@@ -64,9 +67,11 @@
 		EC5ECB498EC05BBEE61EFB34 /* MeetingContextMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68E04A0A0326198310A91568 /* MeetingContextMonitor.swift */; };
 		ECEE3D2B63C61C565B38BA13 /* MeetingIntroApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88FE80611C96045D0752ECE8 /* MeetingIntroApp.swift */; };
 		F1BA48E095AD45D6DCA7066D /* RecordingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF8C273D97F1B3730C901661 /* RecordingController.swift */; };
+		F2EB739753C3E4FA4B2245E1 /* TaskStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E6F06EB55EDCEAF3FA1D40B /* TaskStore.swift */; };
 		FAC89668E4EA7DFCDB5A4B06 /* QuickAddConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7269D692B89FD6576E4784D0 /* QuickAddConfig.swift */; };
 		FB90F3CE2CDDCA8630875C67 /* QuickAddParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 209F277C225C24CB3A0B517C /* QuickAddParser.swift */; };
 		FCE9B7AB56FB291DB7BEDD1F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4291882B0E4FE689BCFF6CA7 /* SettingsView.swift */; };
+		FE74C4FF6F6EBC66E2F627AE /* TaskEditSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89FCBBD6F8A0CE7B02ED0EBF /* TaskEditSheet.swift */; };
 		FFEB331CEE0D3DA8ECC29288 /* UpcomingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C80250FD654EC927A87CDAB4 /* UpcomingView.swift */; };
 /* End PBXBuildFile section */
 
@@ -101,6 +106,7 @@
 		6A779B106BB03584C7E64259 /* AppUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdater.swift; sourceTree = "<group>"; };
 		6B298FA1587E1C1B7A432A3C /* HandoffStateSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandoffStateSnapshot.swift; sourceTree = "<group>"; };
 		6B8186D8004986233B28EE7F /* FocusModeDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusModeDetector.swift; sourceTree = "<group>"; };
+		6E6F06EB55EDCEAF3FA1D40B /* TaskStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskStore.swift; sourceTree = "<group>"; };
 		711DFD4598AE2E83744CCFBD /* GraphCalendarProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphCalendarProvider.swift; sourceTree = "<group>"; };
 		71EA4E2BE1890659874BD76D /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		72275B905671FFA1F87F986C /* WhisperKitEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperKitEngine.swift; sourceTree = "<group>"; };
@@ -108,6 +114,7 @@
 		732B93F16D10E8BEED65BCBB /* QuickAddLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddLink.swift; sourceTree = "<group>"; };
 		79AB0D1338EB2A471C1C13FD /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
 		88FE80611C96045D0752ECE8 /* MeetingIntroApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingIntroApp.swift; sourceTree = "<group>"; };
+		89FCBBD6F8A0CE7B02ED0EBF /* TaskEditSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskEditSheet.swift; sourceTree = "<group>"; };
 		8A99A9D2EE9624DA582CD8D5 /* CalendarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarManager.swift; sourceTree = "<group>"; };
 		8B60DBB01A2C688FE793716C /* MicrophoneDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicrophoneDetector.swift; sourceTree = "<group>"; };
 		9B33CEBB2784C6AFE2BB1379 /* ReminderEscalationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderEscalationPolicy.swift; sourceTree = "<group>"; };
@@ -123,14 +130,17 @@
 		C529555F228CD4BB1EF1E936 /* LLMClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMClient.swift; sourceTree = "<group>"; };
 		C7C7F0E8190A10BB8431B931 /* MeetingNotesConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingNotesConfig.swift; sourceTree = "<group>"; };
 		C80250FD654EC927A87CDAB4 /* UpcomingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpcomingView.swift; sourceTree = "<group>"; };
+		C8E61F0E3FE2659AEA9B917D /* TaskDeadlineOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDeadlineOverlayView.swift; sourceTree = "<group>"; };
 		CB0286A0A45265AE24EABC58 /* TranscriptionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionEngine.swift; sourceTree = "<group>"; };
 		CC93CC9B88A798A86B40D559 /* RuleEditSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleEditSheet.swift; sourceTree = "<group>"; };
+		D7BD2399C4FDA17D3C26D848 /* TaskReminderCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskReminderCoordinator.swift; sourceTree = "<group>"; };
 		DDA27499ED2FB32E55234F2B /* HandoffConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandoffConfig.swift; sourceTree = "<group>"; };
 		DDFC8F7479FAF2BB94D98907 /* MeetingHandoffCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingHandoffCoordinator.swift; sourceTree = "<group>"; };
 		E1E98AD28DFC4BE3320297CA /* MeetingNotesPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingNotesPipeline.swift; sourceTree = "<group>"; };
 		E21F519F51FBE4A4BD52367A /* RecordingSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingSession.swift; sourceTree = "<group>"; };
 		EF585F8BEF5487338065E75D /* ReleaseNotesManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseNotesManager.swift; sourceTree = "<group>"; };
 		F2918B368AF626877462E126 /* CancellationOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CancellationOverlayView.swift; sourceTree = "<group>"; };
+		FAEF02F79EAE528318DB4E2D /* TaskModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskModels.swift; sourceTree = "<group>"; };
 		FF8C273D97F1B3730C901661 /* RecordingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -260,6 +270,11 @@
 				EF585F8BEF5487338065E75D /* ReleaseNotesManager.swift */,
 				CC93CC9B88A798A86B40D559 /* RuleEditSheet.swift */,
 				4291882B0E4FE689BCFF6CA7 /* SettingsView.swift */,
+				C8E61F0E3FE2659AEA9B917D /* TaskDeadlineOverlayView.swift */,
+				89FCBBD6F8A0CE7B02ED0EBF /* TaskEditSheet.swift */,
+				FAEF02F79EAE528318DB4E2D /* TaskModels.swift */,
+				D7BD2399C4FDA17D3C26D848 /* TaskReminderCoordinator.swift */,
+				6E6F06EB55EDCEAF3FA1D40B /* TaskStore.swift */,
 				C80250FD654EC927A87CDAB4 /* UpcomingView.swift */,
 				9C58BE975466982E750F7FDA /* VoiceReminderManager.swift */,
 				6C5F4290201EFC08B2B76043 /* CalendarSync */,
@@ -418,6 +433,11 @@
 				CCDB3EE0B029EDAD042EF8CF /* RuleEditSheet.swift in Sources */,
 				AD26A100B4AF3676FD59CBC9 /* ScreenCaptureDetector.swift in Sources */,
 				FCE9B7AB56FB291DB7BEDD1F /* SettingsView.swift in Sources */,
+				CF6868BE11C313E4FDED3FD6 /* TaskDeadlineOverlayView.swift in Sources */,
+				FE74C4FF6F6EBC66E2F627AE /* TaskEditSheet.swift in Sources */,
+				77BC54FBB62CDF7888C5F952 /* TaskModels.swift in Sources */,
+				619706B6677E6431D5E126C4 /* TaskReminderCoordinator.swift in Sources */,
+				F2EB739753C3E4FA4B2245E1 /* TaskStore.swift in Sources */,
 				58CA9A36991C9BE9D8D4541A /* TemplateEditSheet.swift in Sources */,
 				DF34F6437529E629568391AC /* TranscriptModels.swift in Sources */,
 				247B578665DCD441288D37AA /* TranscriptionEngine.swift in Sources */,
