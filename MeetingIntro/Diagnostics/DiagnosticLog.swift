@@ -30,6 +30,7 @@ final class DiagnosticLog: ObservableObject {
     enum Category: String, CaseIterable {
         case lifecycle, notification, reminder, cancellation, overlay
         case recording, transcription, notes, quickAdd, calendar, handoff
+        case assistant
     }
 
     struct Entry: Identifiable {

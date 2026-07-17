@@ -25,6 +25,7 @@ struct PopoverRootView: View {
     @Environment(\.openWindow) private var openWindow
     @AppStorage("cancellationShowInTodayView") private var showCancelled: Bool = true
     @AppStorage("nextMeetingHighlightHex") private var nextMeetingHighlightHex: String = defaultNextMeetingHighlightHex
+    @AppStorage("assistantEnabled") private var assistantEnabled: Bool = false
 
     /// Hover-to-detail (Issue #16) — see CompactMenuView for the delay rationale.
     @State private var hoveredID: String?
@@ -589,6 +590,9 @@ struct PopoverRootView: View {
                 editingTask = taskManager.makeTask(title: "", dueDate: nil)
             }
             footerRow("Meeting Notes…", "note.text", "⌘M") { openWindow(id: "meetingNotes"); NSApp.activate(ignoringOtherApps: true) }
+            if assistantEnabled {
+                footerRow("Executive Assistant…", "sparkles", "⌥⌘A") { openWindow(id: "assistant"); NSApp.activate(ignoringOtherApps: true) }
+            }
             SettingsLink { footerLabel("Settings…", "gearshape", "⌘,") }.buttonStyle(.plain)
             footerRow("Quit MeetingIntro", "power", "⌘Q") { NSApplication.shared.terminate(nil) }
         }

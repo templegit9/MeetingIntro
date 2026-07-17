@@ -6,6 +6,8 @@ import Foundation
 /// `custom` exposes the raw base-URL field for anything not listed.
 enum QuickAddProvider: String, CaseIterable, Identifiable {
     case openRouter
+    case anthropic
+    case openai
     case groq
     case gemini
     case cerebras
@@ -17,6 +19,8 @@ enum QuickAddProvider: String, CaseIterable, Identifiable {
     var displayName: String {
         switch self {
         case .openRouter: return "OpenRouter"
+        case .anthropic:  return "Anthropic (Claude)"
+        case .openai:     return "OpenAI"
         case .groq:       return "Groq (free tier)"
         case .gemini:     return "Google Gemini (free tier)"
         case .cerebras:   return "Cerebras (free tier)"
@@ -29,6 +33,9 @@ enum QuickAddProvider: String, CaseIterable, Identifiable {
     var baseURL: String? {
         switch self {
         case .openRouter: return QuickAddConfig.defaultBaseURL
+        // Anthropic's OpenAI-compatible endpoint — /chat/completions with Bearer auth.
+        case .anthropic:  return "https://api.anthropic.com/v1"
+        case .openai:     return "https://api.openai.com/v1"
         case .groq:       return "https://api.groq.com/openai/v1"
         case .gemini:     return "https://generativelanguage.googleapis.com/v1beta/openai"
         case .cerebras:   return "https://api.cerebras.ai/v1"
@@ -40,6 +47,8 @@ enum QuickAddProvider: String, CaseIterable, Identifiable {
     var suggestedModel: String {
         switch self {
         case .openRouter: return "anthropic/claude-haiku-4.5"
+        case .anthropic:  return "claude-haiku-4-5"
+        case .openai:     return "gpt-4o-mini"
         case .groq:       return "llama-3.3-70b-versatile"
         case .gemini:     return "gemini-2.0-flash-lite"
         case .cerebras:   return "llama-3.3-70b"
@@ -51,6 +60,8 @@ enum QuickAddProvider: String, CaseIterable, Identifiable {
     var keyPlaceholder: String {
         switch self {
         case .openRouter: return "sk-or-…"
+        case .anthropic:  return "sk-ant-…"
+        case .openai:     return "sk-…"
         case .groq:       return "gsk_…"
         case .gemini:     return "AIza…"
         case .cerebras:   return "csk-…"
@@ -61,6 +72,8 @@ enum QuickAddProvider: String, CaseIterable, Identifiable {
     var keyConsoleURL: String? {
         switch self {
         case .openRouter: return "https://openrouter.ai/keys"
+        case .anthropic:  return "https://console.anthropic.com/settings/keys"
+        case .openai:     return "https://platform.openai.com/api-keys"
         case .groq:       return "https://console.groq.com/keys"
         case .gemini:     return "https://aistudio.google.com/apikey"
         case .cerebras:   return "https://cloud.cerebras.ai"

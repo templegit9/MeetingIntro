@@ -65,6 +65,7 @@ struct SettingsView: View {
     @ObservedObject var quickAddConfig: QuickAddConfig
     @ObservedObject var taskConfig: TaskConfig
     @ObservedObject var taskManager: TaskManager
+    @ObservedObject var assistantConfig: AssistantConfig
     @ObservedObject var notesConfig: MeetingNotesConfig
     @ObservedObject var diagnosticLog: DiagnosticLog
     @ObservedObject var mirrorConfig: MirrorConfigManager
@@ -103,6 +104,7 @@ struct SettingsView: View {
     @State private var subscribeError: String?
     @State private var editingTemplate: QuickAddTemplate?
     @State private var editingRule: NotificationRule?
+    @AppStorage("assistantEnabled") private var assistantEnabled: Bool = false
 
     @AppStorage("upcomingDaysAhead") private var upcomingDaysAhead: Int = 7
     @AppStorage(MenuBarPresentation.storageKey) private var menuBarPresentationRaw: String = MenuBarPresentation.popover.rawValue
@@ -163,6 +165,7 @@ struct SettingsView: View {
                 case .audio:     audioTab
                 case .handoff:   handoffTab
                 case .tasks:     tasksTab
+                case .plugins:   pluginsTab
                 case .recording: recordingTab
                 case .whatsNew:  whatsNewTab
                 case .diagnostics: diagnosticsTab
@@ -1280,6 +1283,35 @@ struct SettingsView: View {
         .padding()
     }
 
+    // MARK: - Plugins Tab (Issue #17)
+
+    private var pluginsTab: some View {
+        Form {
+            Section {
+                HStack(spacing: 12) {
+                    Image(systemName: "sparkles").font(.title2).foregroundStyle(.purple)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Executive Assistant").font(.headline)
+                        Text("AI file organizer — sorts a chosen folder into tidy subfolders (move + rename) with a preview + undo. Uses its own model, set inside its window.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Toggle("", isOn: $assistantEnabled).labelsHidden()
+                }
+                if assistantEnabled {
+                    Button {
+                        openWindow(id: "assistant")
+                        NSApp.activate(ignoringOtherApps: true)
+                    } label: { Label("Open Executive Assistant", systemImage: "arrow.up.forward.app") }
+                }
+            } header: {
+                SettingsSectionHeader("Plugins", info: "Optional add-ons, off by default. Enabling one reveals its own window/config — it doesn't touch your reminders or meetings.")
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+    }
+
     // MARK: - Recording Tab
 
     private var recordingTab: some View {
@@ -2383,6 +2415,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
     case audio
     case handoff
     case recording
+    case plugins
     case whatsNew
     case diagnostics
     case guide
@@ -2402,6 +2435,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
         case .handoff:   return "Handoff"
         case .tasks:     return "Tasks"
         case .recording: return "Recording"
+        case .plugins:   return "Plugins"
         case .whatsNew:  return "What's New"
         case .diagnostics: return "Diagnostics"
         case .guide:     return "Guide"
@@ -2423,6 +2457,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
         case .handoff:   return "arrow.left.arrow.right.circle"
         case .tasks:     return "checklist"
         case .recording: return "record.circle"
+        case .plugins:   return "puzzlepiece.extension"
         case .whatsNew:  return "sparkles"
         case .diagnostics: return "stethoscope"
         case .guide:     return "book"
@@ -2435,7 +2470,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
         case .calendar, .quickAdd, .calendarSync:        return .sources
         case .countdown, .menuBar, .smart, .voice, .sounds, .tasks: return .reminders
         case .audio, .handoff, .recording:               return .inMeeting
-        case .whatsNew, .diagnostics, .guide, .about:    return .help
+        case .plugins, .whatsNew, .diagnostics, .guide, .about: return .help
         }
     }
 }

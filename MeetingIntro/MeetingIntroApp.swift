@@ -95,6 +95,8 @@ struct MeetingIntroApp: App {
     @StateObject private var taskConfig: TaskConfig
     @StateObject private var taskManager: TaskManager
     @StateObject private var taskReminderCoordinator = TaskReminderCoordinator()
+    @StateObject private var assistantConfig = AssistantConfig()
+    @StateObject private var fileOrganizer = FileOrganizer()
     @StateObject private var notesConfig: MeetingNotesConfig
     @StateObject private var notesPipeline: MeetingNotesPipeline
     @StateObject private var diagnosticLog = DiagnosticLog()
@@ -150,6 +152,8 @@ struct MeetingIntroApp: App {
             quickAddService: quickAddService,
             taskManager: taskManager,
             taskReminderCoordinator: taskReminderCoordinator,
+            assistantConfig: assistantConfig,
+            fileOrganizer: fileOrganizer,
             notesPipeline: notesPipeline,
             diagnosticLog: diagnosticLog,
             mirrorConfig: mirrorConfig,
@@ -256,6 +260,7 @@ struct MeetingIntroApp: App {
                 quickAddConfig: quickAddConfig,
                 taskConfig: taskConfig,
                 taskManager: taskManager,
+                assistantConfig: assistantConfig,
                 notesConfig: notesConfig,
                 diagnosticLog: diagnosticLog,
                 mirrorConfig: mirrorConfig,
@@ -273,6 +278,12 @@ struct MeetingIntroApp: App {
             )
         }
         .defaultSize(width: 920, height: 620)
+
+        // Executive Assistant plugin (Issue #17) — opt-in file organizer.
+        Window("Executive Assistant", id: "assistant") {
+            AssistantWindow(config: assistantConfig, organizer: fileOrganizer)
+        }
+        .defaultSize(width: 640, height: 560)
     }
 }
 
@@ -330,6 +341,8 @@ final class AppLifecycleManager: ObservableObject {
         quickAddService: QuickAddService,
         taskManager: TaskManager,
         taskReminderCoordinator: TaskReminderCoordinator,
+        assistantConfig: AssistantConfig,
+        fileOrganizer: FileOrganizer,
         notesPipeline: MeetingNotesPipeline,
         diagnosticLog: DiagnosticLog,
         mirrorConfig: MirrorConfigManager,
@@ -364,6 +377,9 @@ final class AppLifecycleManager: ObservableObject {
         // fires task deadline reminders on its own 30s timer.
         overlayController.taskManager = taskManager
         overlayController.taskReminderCoordinator = taskReminderCoordinator
+        // Executive Assistant (Issue #17): wire the organizer to its config + log.
+        fileOrganizer.attach(config: assistantConfig)
+        fileOrganizer.diagnosticLog = diagnosticLog
         taskReminderCoordinator.attach(taskManager: taskManager,
                                        notificationManager: notificationManager,
                                        voiceReminder: voiceReminder,
