@@ -63,6 +63,8 @@ struct SettingsView: View {
     @ObservedObject var recordingCoordinator: MeetingRecordingCoordinator
     @ObservedObject var overlayController: OverlayWindowController
     @ObservedObject var quickAddConfig: QuickAddConfig
+    @ObservedObject var taskConfig: TaskConfig
+    @ObservedObject var taskManager: TaskManager
     @ObservedObject var notesConfig: MeetingNotesConfig
     @ObservedObject var diagnosticLog: DiagnosticLog
     @ObservedObject var mirrorConfig: MirrorConfigManager
@@ -160,6 +162,7 @@ struct SettingsView: View {
                 case .sounds:    soundsTab
                 case .audio:     audioTab
                 case .handoff:   handoffTab
+                case .tasks:     tasksTab
                 case .recording: recordingTab
                 case .whatsNew:  whatsNewTab
                 case .diagnostics: diagnosticsTab
@@ -1241,6 +1244,40 @@ struct SettingsView: View {
             Label("Focus permission needed to verify (grant in the Smart tab)", systemImage: "lock.fill")
                 .foregroundStyle(.orange).font(.caption)
         }
+    }
+
+    // MARK: - Tasks Tab (Issue #19)
+
+    private var tasksTab: some View {
+        Form {
+            Section {
+                Picker("Store tasks in", selection: $taskConfig.storageMode) {
+                    Text(TaskStorageMode.inApp.label).tag(TaskStorageMode.inApp)
+                    Text(TaskStorageMode.appleReminders.label + " (soon)").tag(TaskStorageMode.appleReminders)
+                }
+                if taskConfig.storageMode == .appleReminders {
+                    Text("Apple Reminders sync is coming in a later update. Tasks are stored in-app for now.")
+                        .font(.caption).foregroundStyle(.orange)
+                }
+            } header: {
+                SettingsSectionHeader("Storage", info: "Create a task by typing a deadline phrase in New Event — e.g. \"Submit report by Fri 5pm\". Tasks show in the menu-bar dropdown's Tasks tab. Apple Reminders sync is planned.")
+            }
+
+            Section {
+                Stepper(value: $taskConfig.defaultRemindLeadMinutes, in: 0...1440, step: 5) {
+                    Text(taskConfig.defaultRemindLeadMinutes == 0
+                         ? "Remind me at the due time"
+                         : "Remind me \(taskConfig.defaultRemindLeadMinutes) min before due")
+                }
+                Toggle("Overlay", isOn: $taskConfig.defaultShowOverlay)
+                Toggle("System notification", isOn: $taskConfig.defaultSendNotification)
+                Toggle("Voice", isOn: $taskConfig.defaultPlayVoice)
+            } header: {
+                SettingsSectionHeader("New task defaults", info: "Applied to newly created tasks. The gentle default is a system notification only; overlay and voice are off.")
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
     }
 
     // MARK: - Recording Tab
@@ -2342,6 +2379,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
     case smart
     case voice
     case sounds
+    case tasks
     case audio
     case handoff
     case recording
@@ -2362,6 +2400,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
         case .sounds:    return "Sounds"
         case .audio:     return "Audio"
         case .handoff:   return "Handoff"
+        case .tasks:     return "Tasks"
         case .recording: return "Recording"
         case .whatsNew:  return "What's New"
         case .diagnostics: return "Diagnostics"
@@ -2382,6 +2421,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
         case .sounds:    return "speaker.wave.2"
         case .audio:     return "music.note"
         case .handoff:   return "arrow.left.arrow.right.circle"
+        case .tasks:     return "checklist"
         case .recording: return "record.circle"
         case .whatsNew:  return "sparkles"
         case .diagnostics: return "stethoscope"
@@ -2393,7 +2433,7 @@ enum SettingsSection: String, CaseIterable, Hashable {
     var group: SettingsGroup {
         switch self {
         case .calendar, .quickAdd, .calendarSync:        return .sources
-        case .countdown, .menuBar, .smart, .voice, .sounds: return .reminders
+        case .countdown, .menuBar, .smart, .voice, .sounds, .tasks: return .reminders
         case .audio, .handoff, .recording:               return .inMeeting
         case .whatsNew, .diagnostics, .guide, .about:    return .help
         }

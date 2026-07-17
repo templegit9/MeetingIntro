@@ -16,6 +16,7 @@ struct CompactMenuView: View {
     @ObservedObject var contextMonitor: MeetingContextMonitor
     @ObservedObject var quickAddService: QuickAddService
     @ObservedObject var quickAddConfig: QuickAddConfig
+    @ObservedObject var taskManager: TaskManager
 
     /// #13 focus spike: an inline compact New Event form embedded in the dropdown.
     @State private var showingNewEvent = false
@@ -46,23 +47,30 @@ struct CompactMenuView: View {
                     Image(systemName: "chevron.left")
                 }
                 .buttonStyle(.borderless)
-                Text("New Event").font(.headline)
+                Text(quickAddService.draft?.kind == .task ? "New Task" : "New Event").font(.headline)
                 Spacer()
             }
-            TextField("Lunch with Sam tomorrow 1pm", text: $quickAddService.inputText)
+            TextField("Lunch with Sam tomorrow 1pm  ·  Submit report by Fri 5pm", text: $quickAddService.inputText)
                 .textFieldStyle(.roundedBorder)
                 .focused($newEventFocused)
                 .onSubmit { create() }
             if let draft = quickAddService.draft {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Picker("", selection: Binding(get: { draft.kind }, set: { quickAddService.kindOverride = $0 })) {
+                        Text("Event").tag(DraftKind.event)
+                        Text("Task").tag(DraftKind.task)
+                    }
+                    .pickerStyle(.segmented).labelsHidden()
                     Text(draft.title).font(.callout.weight(.semibold)).lineLimit(1)
-                    Text(draft.startDate.formatted(date: .abbreviated, time: .shortened))
+                    Text((draft.kind == .task ? "Due " : "") + draft.startDate.formatted(date: .abbreviated, time: .shortened))
                         .font(.caption).foregroundStyle(.secondary)
-                    newEventLinkControl(draft)
-                    if !quickAddService.conflicts.isEmpty {
-                        Label("Overlaps “\(quickAddService.conflicts[0])”" + (quickAddService.conflicts.count > 1 ? " + \(quickAddService.conflicts.count - 1) more" : ""),
-                              systemImage: "calendar.badge.exclamationmark")
-                            .font(.caption).foregroundStyle(.orange).lineLimit(1)
+                    if draft.kind == .event {
+                        newEventLinkControl(draft)
+                        if !quickAddService.conflicts.isEmpty {
+                            Label("Overlaps “\(quickAddService.conflicts[0])”" + (quickAddService.conflicts.count > 1 ? " + \(quickAddService.conflicts.count - 1) more" : ""),
+                                  systemImage: "calendar.badge.exclamationmark")
+                                .font(.caption).foregroundStyle(.orange).lineLimit(1)
+                        }
                     }
                 }
             } else if !quickAddService.inputText.isEmpty {
@@ -86,7 +94,11 @@ struct CompactMenuView: View {
         guard let draft = quickAddService.draft, !creatingEvent else { return }
         creatingEvent = true
         Task {
-            try? await calendarManager.createEvent(from: draft, calendarID: quickAddConfig.defaultCalendarID)
+            if draft.kind == .task {
+                taskManager.add(taskManager.makeTask(title: draft.title, dueDate: draft.startDate, notes: draft.notes))
+            } else {
+                try? await calendarManager.createEvent(from: draft, calendarID: quickAddConfig.defaultCalendarID)
+            }
             creatingEvent = false
             showingNewEvent = false
             quickAddService.reset()
@@ -174,6 +186,18 @@ struct CompactMenuView: View {
                 ForEach(calendarManager.armedAutoJoinMeetings) { m in
                     glyphRow(icon: "clock.badge.checkmark", tint: accent, time: m.formattedStartTime, title: m.title) {
                         calendarManager.disarmAutoJoin(m.id)
+                    }
+                }
+                Divider()
+            }
+
+            // Tasks due soon (Issue #19)
+            let dueSoon = taskManager.dueSoon()
+            if !dueSoon.isEmpty {
+                sectionHeader("Tasks due soon — click to complete", color: .orange)
+                ForEach(dueSoon) { task in
+                    glyphRow(icon: "circle", tint: .orange, time: task.dueLabel, title: task.title) {
+                        taskManager.complete(task.id)
                     }
                 }
                 Divider()

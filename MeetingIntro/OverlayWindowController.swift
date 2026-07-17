@@ -15,8 +15,14 @@ final class OverlayWindowController: ObservableObject {
     /// Separate slot for the auto-join heads-up (gentle pre-start overlay).
     private var autoJoinImminentWindow: NSPanel?
     private var autoJoinImminentID: String?
+    /// Separate slot for a task deadline reminder (Issue #19).
+    private var taskDeadlineWindow: NSPanel?
     private var calendarManager: CalendarManager?
     private var audioManager: AudioManager?
+    /// Injected so the task overlay's "Mark done" can complete the task.
+    weak var taskManager: TaskManager?
+    /// Injected so the task overlay's "Snooze" can re-arm the reminder.
+    weak var taskReminderCoordinator: TaskReminderCoordinator?
 
     /// Diagnostic log — injected in AppLifecycleManager.observe.
     var diagnosticLog: DiagnosticLog?
@@ -238,5 +244,49 @@ final class OverlayWindowController: ObservableObject {
         autoJoinImminentWindow?.close()
         autoJoinImminentWindow = nil
         autoJoinImminentID = nil
+    }
+
+    /// Show a task deadline overlay (a small corner card with Mark done / Dismiss).
+    func showTaskDeadline(for task: TaskItem) {
+        taskDeadlineWindow?.close()
+        let view = TaskDeadlineOverlayView(
+            task: task,
+            onDone: { [weak self] in
+                self?.taskManager?.complete(task.id)
+                self?.dismissTaskDeadline()
+            },
+            onSnooze: { [weak self] in
+                self?.taskReminderCoordinator?.snooze(taskID: task.id, minutes: 10)
+            },
+            onDismiss: { [weak self] in self?.dismissTaskDeadline() }
+        )
+        let hostingView = NSHostingView(rootView: view)
+        let width: CGFloat = 380, height: CGFloat = 120
+        let panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: width, height: height),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        panel.contentView = hostingView
+        panel.isFloatingPanel = true
+        panel.level = .floating
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.isOpaque = false
+        panel.backgroundColor = NSColor.black.withAlphaComponent(0.85)
+        panel.hasShadow = true
+        panel.appearance = NSAppearance(named: .darkAqua)
+        if let screen = NSScreen.main {
+            let frame = screen.visibleFrame
+            panel.setFrameOrigin(NSPoint(x: frame.maxX - width - 20, y: frame.maxY - height - 20))
+        }
+        panel.orderFrontRegardless()
+        taskDeadlineWindow = panel
+        diagnosticLog?.info(.overlay, "Showing task deadline overlay — \(task.title)")
+    }
+
+    func dismissTaskDeadline() {
+        taskDeadlineWindow?.close()
+        taskDeadlineWindow = nil
     }
 }

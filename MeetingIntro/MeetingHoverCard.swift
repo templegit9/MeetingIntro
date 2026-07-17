@@ -287,3 +287,41 @@ struct MeetingHoverCard: View {
         }
     }
 }
+
+// MARK: - TaskHoverCard
+
+/// Hover card for a task row — shows the full (untruncated) title, due date, and notes
+/// (Issue #19). Light-styled, sized like `MeetingHoverCard`.
+struct TaskHoverCard: View {
+    let task: TaskItem
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(task.isCompleted ? .green : .secondary)
+                    .padding(.top, 1)
+                Text(task.title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if !task.dueLabel.isEmpty {
+                Label(task.dueLabel + (task.isOverdue ? " · overdue" : ""), systemImage: "checkmark.circle")
+                    .font(.caption)
+                    .foregroundStyle(task.isOverdue ? .red : .secondary)
+            }
+            if let notes = task.notes, !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Divider()
+                Text(notes)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(14)
+        .frame(width: 280, alignment: .leading)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+}

@@ -11,6 +11,8 @@ import UserNotifications
 final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
     weak var recordingCoordinator: MeetingRecordingCoordinator?
     weak var diagnosticLog: DiagnosticLog?
+    weak var taskManager: TaskManager?
+    weak var taskReminderCoordinator: TaskReminderCoordinator?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // CRITICAL: without a delegate, macOS silently drops notifications posted
@@ -30,6 +32,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             diagnosticLog?.info(.notification, "Foreground present: \(notification.request.content.title) — \(notification.request.content.subtitle)")
         }
         completionHandler([.banner, .list, .sound])
+    }
+
+    /// Handle the task-due action buttons (Mark done / Snooze) — Issue #19.
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let action = response.actionIdentifier
+        let taskID = response.notification.request.content.userInfo["taskID"] as? String
+        Task { @MainActor in
+            if let taskID {
+                switch action {
+                case NotificationManager.taskDoneAction:
+                    self.taskManager?.complete(taskID)
+                case NotificationManager.taskSnoozeAction:
+                    self.taskReminderCoordinator?.snooze(taskID: taskID, minutes: 10)
+                default: break
+                }
+            }
+            completionHandler()
+        }
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
@@ -68,6 +92,9 @@ struct MeetingIntroApp: App {
     @StateObject private var recordingCoordinator: MeetingRecordingCoordinator
     @StateObject private var quickAddConfig: QuickAddConfig
     @StateObject private var quickAddService: QuickAddService
+    @StateObject private var taskConfig: TaskConfig
+    @StateObject private var taskManager: TaskManager
+    @StateObject private var taskReminderCoordinator = TaskReminderCoordinator()
     @StateObject private var notesConfig: MeetingNotesConfig
     @StateObject private var notesPipeline: MeetingNotesPipeline
     @StateObject private var diagnosticLog = DiagnosticLog()
@@ -96,6 +123,10 @@ struct MeetingIntroApp: App {
         _quickAddConfig = StateObject(wrappedValue: qaConfig)
         _quickAddService = StateObject(wrappedValue: qaService)
 
+        let tConfig = TaskConfig()
+        _taskConfig = StateObject(wrappedValue: tConfig)
+        _taskManager = StateObject(wrappedValue: TaskManager(config: tConfig))
+
         let nConfig = MeetingNotesConfig()
         _notesConfig = StateObject(wrappedValue: nConfig)
         _notesPipeline = StateObject(wrappedValue: MeetingNotesPipeline(notesConfig: nConfig, quickAddConfig: qaConfig))
@@ -117,6 +148,8 @@ struct MeetingIntroApp: App {
             handoffCoordinator: handoffCoordinator,
             recordingCoordinator: recordingCoordinator,
             quickAddService: quickAddService,
+            taskManager: taskManager,
+            taskReminderCoordinator: taskReminderCoordinator,
             notesPipeline: notesPipeline,
             diagnosticLog: diagnosticLog,
             mirrorConfig: mirrorConfig,
@@ -175,7 +208,8 @@ struct MeetingIntroApp: App {
                 smartConfig: smartConfig,
                 contextMonitor: contextMonitor,
                 quickAddService: quickAddService,
-                quickAddConfig: quickAddConfig
+                quickAddConfig: quickAddConfig,
+                taskManager: taskManager
             )
         } else {
             CompactMenuView(
@@ -186,7 +220,8 @@ struct MeetingIntroApp: App {
                 smartConfig: smartConfig,
                 contextMonitor: contextMonitor,
                 quickAddService: quickAddService,
-                quickAddConfig: quickAddConfig
+                quickAddConfig: quickAddConfig,
+                taskManager: taskManager
             )
         }
     }
@@ -219,6 +254,8 @@ struct MeetingIntroApp: App {
                 recordingCoordinator: recordingCoordinator,
                 overlayController: overlayController,
                 quickAddConfig: quickAddConfig,
+                taskConfig: taskConfig,
+                taskManager: taskManager,
                 notesConfig: notesConfig,
                 diagnosticLog: diagnosticLog,
                 mirrorConfig: mirrorConfig,
@@ -291,6 +328,8 @@ final class AppLifecycleManager: ObservableObject {
         handoffCoordinator: MeetingHandoffCoordinator,
         recordingCoordinator: MeetingRecordingCoordinator,
         quickAddService: QuickAddService,
+        taskManager: TaskManager,
+        taskReminderCoordinator: TaskReminderCoordinator,
         notesPipeline: MeetingNotesPipeline,
         diagnosticLog: DiagnosticLog,
         mirrorConfig: MirrorConfigManager,
@@ -321,12 +360,23 @@ final class AppLifecycleManager: ObservableObject {
         quickAddService.conflictProvider = { [weak calendarManager] start, end in
             calendarManager?.conflicts(start: start, end: end).map(\.title) ?? []
         }
+        // Tasks (Issue #19): the overlay's "Mark done" needs the manager; the coordinator
+        // fires task deadline reminders on its own 30s timer.
+        overlayController.taskManager = taskManager
+        overlayController.taskReminderCoordinator = taskReminderCoordinator
+        taskReminderCoordinator.attach(taskManager: taskManager,
+                                       notificationManager: notificationManager,
+                                       voiceReminder: voiceReminder,
+                                       overlayController: overlayController,
+                                       diagnosticLog: diagnosticLog)
         notesPipeline.notificationManager = notificationManager
         mirrorEngine.diagnosticLog = diagnosticLog
         mirrorEngine.attach(config: mirrorConfig, calendarManager: calendarManager)
         if let delegate = NSApplication.shared.delegate as? AppDelegate {
             delegate.recordingCoordinator = recordingCoordinator
             delegate.diagnosticLog = diagnosticLog
+            delegate.taskManager = taskManager
+            delegate.taskReminderCoordinator = taskReminderCoordinator
         }
 
         // Triage header — the first thing to read when something's wrong.

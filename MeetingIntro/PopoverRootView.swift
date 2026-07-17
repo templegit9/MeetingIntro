@@ -15,6 +15,7 @@ struct PopoverRootView: View {
     @ObservedObject var contextMonitor: MeetingContextMonitor
     @ObservedObject var quickAddService: QuickAddService
     @ObservedObject var quickAddConfig: QuickAddConfig
+    @ObservedObject var taskManager: TaskManager
 
     /// #13: inline compact New Event form embedded in the rich popover.
     @State private var showingNewEvent = false
@@ -28,8 +29,10 @@ struct PopoverRootView: View {
     /// Hover-to-detail (Issue #16) — see CompactMenuView for the delay rationale.
     @State private var hoveredID: String?
     @State private var pendingHoverID: String?
+    /// Task being edited/created (Issue #19).
+    @State private var editingTask: TaskItem?
 
-    private enum Tab { case today, upcoming }
+    private enum Tab { case today, upcoming, tasks }
     @State private var tab: Tab = .today
     @State private var dayOffset = 1   // upcoming starts at tomorrow
 
@@ -72,11 +75,33 @@ struct PopoverRootView: View {
                 if showSectionDivider { Divider() }
             }
             if tab == .upcoming { dayPager; Divider() }
-            eventsList
+            if tab == .tasks {
+                tasksList
+            } else {
+                eventsList
+            }
             Divider()
             footer
         }
         .frame(width: 340)
+        .sheet(item: $editingTask) { task in
+            TaskEditSheet(
+                task: task,
+                onSave: { saved in
+                    if taskManager.tasks.contains(where: { $0.id == saved.id }) {
+                        taskManager.update(saved)
+                    } else {
+                        taskManager.add(saved)
+                    }
+                    editingTask = nil
+                },
+                onDelete: taskManager.tasks.contains(where: { $0.id == task.id }) ? {
+                    taskManager.delete(task.id)
+                    editingTask = nil
+                } : nil,
+                onCancel: { editingTask = nil }
+            )
+        }
         .onAppear {
             let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
             let screenH = Int(NSScreen.main?.visibleFrame.height ?? 0)
@@ -114,28 +139,36 @@ struct PopoverRootView: View {
                     Image(systemName: "chevron.left").font(.system(size: 13, weight: .semibold))
                 }
                 .buttonStyle(.borderless).foregroundStyle(accent)
-                Text("New Event").font(.system(size: 15, weight: .semibold))
+                Text(quickAddService.draft?.kind == .task ? "New Task" : "New Event").font(.system(size: 15, weight: .semibold))
                 Spacer()
             }
-            TextField("Lunch with Sam tomorrow 1pm", text: $quickAddService.inputText)
+            TextField("Lunch with Sam tomorrow 1pm  ·  Submit report by Fri 5pm", text: $quickAddService.inputText)
                 .textFieldStyle(.roundedBorder)
                 .focused($newEventFocused)
                 .onSubmit { create() }
 
             if let draft = quickAddService.draft {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(draft.title).font(.system(.callout, weight: .semibold)).lineLimit(1)
-                    Label(draft.startDate.formatted(date: .abbreviated, time: .shortened),
-                          systemImage: "clock")
-                        .font(.caption).foregroundStyle(.secondary)
-                    if let loc = draft.location, !loc.isEmpty {
-                        Label(loc, systemImage: "location").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                VStack(alignment: .leading, spacing: 5) {
+                    Picker("", selection: Binding(get: { draft.kind }, set: { quickAddService.kindOverride = $0 })) {
+                        Text("Event").tag(DraftKind.event)
+                        Text("Task").tag(DraftKind.task)
                     }
-                    newEventLinkControl(draft)
+                    .pickerStyle(.segmented).labelsHidden()
+
+                    Text(draft.title).font(.system(.callout, weight: .semibold)).lineLimit(1)
+                    Label((draft.kind == .task ? "Due " : "") + draft.startDate.formatted(date: .abbreviated, time: .shortened),
+                          systemImage: draft.kind == .task ? "checkmark.circle" : "clock")
+                        .font(.caption).foregroundStyle(.secondary)
+                    if draft.kind == .event {
+                        if let loc = draft.location, !loc.isEmpty {
+                            Label(loc, systemImage: "location").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                        newEventLinkControl(draft)
+                    }
                     ForEach(draft.assumptions, id: \.self) { a in
                         Label(a, systemImage: "exclamationmark.triangle.fill").font(.caption2).foregroundStyle(.orange)
                     }
-                    if !quickAddService.conflicts.isEmpty {
+                    if draft.kind == .event, !quickAddService.conflicts.isEmpty {
                         Label("Overlaps “\(quickAddService.conflicts[0])”" + (quickAddService.conflicts.count > 1 ? " + \(quickAddService.conflicts.count - 1) more" : ""),
                               systemImage: "calendar.badge.exclamationmark")
                             .font(.caption2).foregroundStyle(.orange).lineLimit(1)
@@ -167,7 +200,11 @@ struct PopoverRootView: View {
         guard let draft = quickAddService.draft, !creatingEvent else { return }
         creatingEvent = true
         Task {
-            try? await calendarManager.createEvent(from: draft, calendarID: quickAddConfig.defaultCalendarID)
+            if draft.kind == .task {
+                taskManager.add(taskManager.makeTask(title: draft.title, dueDate: draft.startDate, notes: draft.notes))
+            } else {
+                try? await calendarManager.createEvent(from: draft, calendarID: quickAddConfig.defaultCalendarID)
+            }
             creatingEvent = false
             showingNewEvent = false
             quickAddService.reset()
@@ -208,6 +245,7 @@ struct PopoverRootView: View {
         HStack(spacing: 0) {
             segment("Today", isOn: tab == .today) { tab = .today }
             segment("Upcoming", isOn: tab == .upcoming) { tab = .upcoming }
+            segment("Tasks", isOn: tab == .tasks) { tab = .tasks }
             Spacer()
             Text(syncedText)
                 .font(.system(size: 10)).foregroundStyle(.tertiary)
@@ -390,6 +428,87 @@ struct PopoverRootView: View {
         }
     }
 
+    // MARK: - Tasks (Issue #19)
+
+    private var tasksList: some View {
+        VStack(spacing: 0) {
+            if taskManager.tasks.isEmpty {
+                VStack(spacing: 6) {
+                    Image(systemName: "checklist").font(.system(size: 26, weight: .thin)).foregroundStyle(.tertiary)
+                    Text("No tasks").font(.callout).foregroundStyle(.secondary)
+                    Text("Add one below, or type “Submit report by Fri 5pm” in New Event")
+                        .font(.caption2).foregroundStyle(.tertiary).multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity).padding(.vertical, 18)
+            } else {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        ForEach(taskManager.sorted) { taskRow($0) }
+                    }
+                    .padding(.vertical, 2)
+                }
+                .frame(minHeight: 120, maxHeight: 300)
+                .scrollBounceBehavior(.basedOnSize)
+            }
+            HStack {
+                Button { editingTask = taskManager.makeTask(title: "", dueDate: nil) } label: {
+                    Label("New task", systemImage: "plus")
+                }
+                .buttonStyle(.plain).foregroundStyle(accent)
+                Spacer()
+                if taskManager.hasCompleted {
+                    Button("Clear completed") { taskManager.deleteCompleted() }
+                        .buttonStyle(.plain).font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .font(.callout)
+            .padding(.horizontal, 14).padding(.vertical, 6)
+        }
+    }
+
+    private func taskRow(_ task: TaskItem) -> some View {
+        HStack(spacing: 8) {
+            Button { taskManager.toggleComplete(task.id) } label: {
+                Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(task.isCompleted ? Color.green : .secondary)
+                    .font(.system(size: 14))
+            }
+            .buttonStyle(.plain)
+            Button { editingTask = task } label: {
+                Text(task.title)
+                    .font(.body)
+                    .strikethrough(task.isCompleted)
+                    .foregroundStyle(task.isCompleted ? .secondary : .primary)
+                    .lineLimit(1)
+            }
+            .buttonStyle(.plain)
+            Spacer(minLength: 4)
+            if !task.dueLabel.isEmpty {
+                Text(task.dueLabel)
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(task.isOverdue ? .red : .secondary)
+                    .lineLimit(1)
+            }
+            Menu {
+                Button("Edit…") { editingTask = task }
+                Button(task.isCompleted ? "Mark not done" : "Mark done") { taskManager.toggleComplete(task.id) }
+                Button("Delete", role: .destructive) { taskManager.delete(task.id) }
+            } label: {
+                Image(systemName: "ellipsis.circle").foregroundStyle(.secondary)
+            }
+            .menuStyle(.borderlessButton).fixedSize()
+        }
+        .padding(.horizontal, 14).padding(.vertical, 6)
+        .contentShape(Rectangle())
+        .onHover { inside in handleHover(inside, task.id) }
+        .popover(isPresented: Binding(
+            get: { hoveredID == task.id },
+            set: { if !$0 { hoveredID = nil } }
+        ), arrowEdge: .trailing) {
+            TaskHoverCard(task: task)
+        }
+    }
+
     private func eventRow(_ meeting: MeetingEvent) -> some View {
         let isNext = meeting.id == calendarManager.nextMeeting?.id
         let inProgress = meeting.startDate <= Date() && Date() < meeting.endDate
@@ -465,6 +584,9 @@ struct PopoverRootView: View {
             footerRow("New Event…", "plus", "⌘N") {
                 quickAddService.reset()
                 showingNewEvent = true
+            }
+            footerRow("New Task…", "checkmark.circle", "⌘T") {
+                editingTask = taskManager.makeTask(title: "", dueDate: nil)
             }
             footerRow("Meeting Notes…", "note.text", "⌘M") { openWindow(id: "meetingNotes"); NSApp.activate(ignoringOtherApps: true) }
             SettingsLink { footerLabel("Settings…", "gearshape", "⌘,") }.buttonStyle(.plain)

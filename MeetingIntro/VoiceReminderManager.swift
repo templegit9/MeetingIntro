@@ -76,6 +76,12 @@ final class VoiceReminderManager: NSObject, ObservableObject {
         speak(testPhrase)
     }
 
+    /// Speak an arbitrary phrase (e.g. a task deadline). Respects the enable toggle.
+    func speak(phrase: String) {
+        guard isEnabled else { return }
+        speak(phrase)
+    }
+
     /// Stop any current speech.
     func stopSpeaking() {
         synthesizer.stopSpeaking(at: .immediate)

@@ -206,6 +206,12 @@ final class QuickAddService: ObservableObject {
         didSet { if oldValue != linkChoice { reapplyLink() } }
     }
 
+    /// User override for event-vs-task (Issue #19). nil = auto-detect from the text.
+    /// Reset per new input so a per-entry override doesn't bleed.
+    @Published var kindOverride: DraftKind? = nil {
+        didSet { if oldValue != kindOverride { reapplyLink() } }
+    }
+
     private let config: QuickAddConfig
     private var parseTask: Task<Void, Never>?
     /// The template matched on the current input, if any — its chosen link is the
@@ -240,9 +246,10 @@ final class QuickAddService: ObservableObject {
             isParsing = false
             return
         }
-        // A fresh input resets the link choice to auto so the per-event override
-        // doesn't bleed across different events typed into the same panel.
+        // A fresh input resets the link + kind overrides so a per-entry choice doesn't
+        // bleed across different things typed into the same panel.
         linkChoice = .auto
+        kindOverride = nil
         parseTask = Task { @MainActor [weak self] in
             guard let self else { return }
             // Debounce: wait for a typing pause before parsing (and before any network call).
@@ -320,6 +327,8 @@ final class QuickAddService: ObservableObject {
     ///   in the text is preserved and never overwritten.
     private func applyingLink(_ draft: EventDraft) -> EventDraft {
         var d = draft
+        // Event vs task: user override, else auto-detect from the raw text (Issue #19).
+        d.kind = kindOverride ?? (TaskIntentHeuristic.isTask(inputText) ? .task : .event)
         // Don't clobber a join URL the parser pulled out of the text itself.
         let parserFoundURL = d.url != nil && d.attachedLinkName == nil
         if parserFoundURL { return d }

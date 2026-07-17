@@ -16,6 +16,9 @@ struct EventDraft: Equatable {
         }
     }
 
+    /// Whether this draft creates a calendar event or a task (Issue #19). Auto-detected
+    /// from the text (`TaskIntentHeuristic`), overridable in the preview.
+    var kind: DraftKind = .event
     var title: String
     var startDate: Date
     var endDate: Date

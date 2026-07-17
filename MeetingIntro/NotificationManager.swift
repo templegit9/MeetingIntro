@@ -66,7 +66,21 @@ final class NotificationManager: ObservableObject {
     /// Request notification permission and capture the result. Also refreshes the
     /// stored status (so a permission revoked in System Settings is reflected on
     /// next launch).
+    /// Notification category + action identifiers for task-due reminders (Issue #19).
+    static let taskDueCategory = "TASK_DUE"
+    static let taskDoneAction = "TASK_DONE"
+    static let taskSnoozeAction = "TASK_SNOOZE"
+
+    /// Register the task-due action buttons ("Mark done" / "Snooze"). Called once at launch.
+    func registerTaskCategory() {
+        let done = UNNotificationAction(identifier: Self.taskDoneAction, title: "Mark done", options: [])
+        let snooze = UNNotificationAction(identifier: Self.taskSnoozeAction, title: "Snooze 10 min", options: [])
+        let category = UNNotificationCategory(identifier: Self.taskDueCategory, actions: [done, snooze], intentIdentifiers: [], options: [])
+        UNUserNotificationCenter.current().setNotificationCategories([category])
+    }
+
     func requestPermission() {
+        registerTaskCategory()
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { [weak self] granted, error in
             Task { @MainActor [weak self] in
                 guard let self else { return }
@@ -358,5 +372,31 @@ final class NotificationManager: ObservableObject {
 
         let request = UNNotificationRequest(identifier: key, content: content, trigger: nil)
         deliver(request, describing: "meeting started — \(meeting.title)")
+    }
+
+    /// A task's deadline reminder (Issue #19). Dedup is enforced upstream by
+    /// `TaskReminderCoordinator`; the `isEnabled` gate + delivery mirror the meeting path.
+    func sendTaskDueNotification(for task: TaskItem) {
+        guard isEnabled else {
+            diagnosticLog?.info(.notification, "Task-due notification suppressed (notifications disabled) — \(task.title)")
+            return
+        }
+        if !notificationsAuthorized {
+            diagnosticLog?.warn(.notification, "Task-due notification will likely not appear — system authorization is \(Self.describe(authorizationStatus)) — \(task.title)")
+        }
+        let content = UNMutableNotificationContent()
+        let dueSuffix = task.dueLabel.isEmpty ? "" : " — due \(task.dueLabel)"
+        content.title = "Task due"
+        content.subtitle = task.title
+        content.body = task.remindLeadMinutes > 0 ? "Coming up\(dueSuffix)" : "It's time\(dueSuffix)"
+        content.sound = .default
+        // "Mark done" / "Snooze 10 min" action buttons (handled in AppDelegate).
+        content.categoryIdentifier = Self.taskDueCategory
+        content.userInfo = ["taskID": task.id]
+
+        let key = "task_\(task.id)_\(Int((task.dueDate ?? Date()).timeIntervalSince1970))"
+        let request = UNNotificationRequest(identifier: key, content: content, trigger: nil)
+        deliver(request, describing: "task due — \(task.title)")
+        playSelectedSound()
     }
 }
