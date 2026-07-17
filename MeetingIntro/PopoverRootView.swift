@@ -30,8 +30,11 @@ struct PopoverRootView: View {
     /// Hover-to-detail (Issue #16) — see CompactMenuView for the delay rationale.
     @State private var hoveredID: String?
     @State private var pendingHoverID: String?
-    /// Task being edited/created (Issue #19).
+    /// Task being created/edited inline in the popover (Issue #19). Non-nil → the task
+    /// composer replaces the dropdown content (a `.sheet` won't present from the popover).
     @State private var editingTask: TaskItem?
+    /// Working task for the New Event form's task branch (seeded from the parsed draft).
+    @State private var newEventTask = TaskItem(title: "")
 
     private enum Tab { case today, upcoming, tasks }
     @State private var tab: Tab = .today
@@ -53,9 +56,51 @@ struct PopoverRootView: View {
     var body: some View {
         if showingNewEvent {
             newEventForm
+        } else if editingTask != nil {
+            taskComposer
         } else {
             popoverBody
         }
+    }
+
+    // MARK: - Task composer (Issue #19) — inline create/edit, replaces the dropdown content.
+
+    private var taskComposer: some View {
+        let editing = editingTask.map { t in taskManager.tasks.contains { $0.id == t.id } } ?? false
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Button { editingTask = nil } label: {
+                    Image(systemName: "chevron.left").font(.system(size: 13, weight: .semibold))
+                }
+                .buttonStyle(.borderless).foregroundStyle(accent)
+                Text(editing ? "Edit Task" : "New Task").font(.system(size: 15, weight: .semibold))
+                Spacer()
+            }
+            TaskFieldsForm(task: Binding(get: { editingTask ?? TaskItem(title: "") }, set: { editingTask = $0 }))
+            HStack {
+                if editing {
+                    Button("Delete", role: .destructive) {
+                        if let t = editingTask { taskManager.delete(t.id) }
+                        editingTask = nil
+                    }
+                }
+                Spacer()
+                Button("Save") { saveComposedTask() }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled((editingTask?.title ?? "").trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+        .padding(14)
+        .frame(width: 340, alignment: .leading)
+        .onExitCommand { editingTask = nil }
+    }
+
+    private func saveComposedTask() {
+        guard var t = editingTask else { return }
+        t.title = t.title.trimmingCharacters(in: .whitespaces)
+        guard !t.title.isEmpty else { return }
+        if taskManager.tasks.contains(where: { $0.id == t.id }) { taskManager.update(t) } else { taskManager.add(t) }
+        editingTask = nil
     }
 
     private var popoverBody: some View {
@@ -85,24 +130,6 @@ struct PopoverRootView: View {
             footer
         }
         .frame(width: 340)
-        .sheet(item: $editingTask) { task in
-            TaskEditSheet(
-                task: task,
-                onSave: { saved in
-                    if taskManager.tasks.contains(where: { $0.id == saved.id }) {
-                        taskManager.update(saved)
-                    } else {
-                        taskManager.add(saved)
-                    }
-                    editingTask = nil
-                },
-                onDelete: taskManager.tasks.contains(where: { $0.id == task.id }) ? {
-                    taskManager.delete(task.id)
-                    editingTask = nil
-                } : nil,
-                onCancel: { editingTask = nil }
-            )
-        }
         .onAppear {
             let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
             let screenH = Int(NSScreen.main?.visibleFrame.height ?? 0)
@@ -160,6 +187,24 @@ struct PopoverRootView: View {
                     Label((draft.kind == .task ? "Due " : "") + draft.startDate.formatted(date: .abbreviated, time: .shortened),
                           systemImage: draft.kind == .task ? "checkmark.circle" : "clock")
                         .font(.caption).foregroundStyle(.secondary)
+                    if draft.kind == .task {
+                        // Task detected — extra fields (notes + reminder) inline. Title + due
+                        // come from the parsed text above; these are editable and persist.
+                        TextField("Notes (optional)", text: Binding(
+                            get: { newEventTask.notes ?? "" },
+                            set: { newEventTask.notes = $0.isEmpty ? nil : $0 }), axis: .vertical)
+                            .lineLimit(1...3).textFieldStyle(.roundedBorder).font(.caption)
+                        Stepper(value: $newEventTask.remindLeadMinutes, in: 0...1440, step: 5) {
+                            Text(newEventTask.remindLeadMinutes == 0 ? "Remind at due time" : "Remind \(newEventTask.remindLeadMinutes) min before")
+                                .font(.caption)
+                        }
+                        HStack(spacing: 12) {
+                            Toggle("Overlay", isOn: $newEventTask.showOverlay)
+                            Toggle("Notify", isOn: $newEventTask.sendNotification)
+                            Toggle("Voice", isOn: $newEventTask.playVoice)
+                        }
+                        .toggleStyle(.checkbox).font(.caption)
+                    }
                     if draft.kind == .event {
                         if let loc = draft.location, !loc.isEmpty {
                             Label(loc, systemImage: "location").font(.caption).foregroundStyle(.secondary).lineLimit(1)
@@ -193,7 +238,7 @@ struct PopoverRootView: View {
         }
         .padding(14)
         .frame(width: 340, alignment: .leading)
-        .onAppear { newEventFocused = true }
+        .onAppear { newEventFocused = true; newEventTask = TaskItem(title: "") }
         .onExitCommand { showingNewEvent = false; quickAddService.reset() }
     }
 
@@ -202,7 +247,11 @@ struct PopoverRootView: View {
         creatingEvent = true
         Task {
             if draft.kind == .task {
-                taskManager.add(taskManager.makeTask(title: draft.title, dueDate: draft.startDate, notes: draft.notes))
+                var t = newEventTask
+                t.title = draft.title
+                t.dueDate = draft.startDate
+                if t.notes == nil { t.notes = draft.notes }
+                taskManager.add(t)
             } else {
                 try? await calendarManager.createEvent(from: draft, calendarID: quickAddConfig.defaultCalendarID)
             }
@@ -585,9 +634,6 @@ struct PopoverRootView: View {
             footerRow("New Event…", "plus", "⌘N") {
                 quickAddService.reset()
                 showingNewEvent = true
-            }
-            footerRow("New Task…", "checkmark.circle", "⌘T") {
-                editingTask = taskManager.makeTask(title: "", dueDate: nil)
             }
             footerRow("Meeting Notes…", "note.text", "⌘M") { openWindow(id: "meetingNotes"); NSApp.activate(ignoringOtherApps: true) }
             if assistantEnabled {

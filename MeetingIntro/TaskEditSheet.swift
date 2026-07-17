@@ -1,101 +1,49 @@
 import SwiftUI
 
-/// Create or edit a task (Issue #19): title, optional due date/time, notes, reminder
-/// lead, and per-task channels. Modeled on `TemplateEditSheet`/`RuleEditSheet`.
-struct TaskEditSheet: View {
-    let task: TaskItem
-    let onSave: (TaskItem) -> Void
-    let onDelete: (() -> Void)?
-    let onCancel: () -> Void
-
-    @State private var title = ""
-    @State private var hasDueDate = false
-    @State private var dueDate = Date()
-    @State private var notes = ""
-    @State private var remindLeadMinutes = 0
-    @State private var showOverlay = false
-    @State private var sendNotification = true
-    @State private var playVoice = false
+/// Reusable inline task fields (Issue #19), bound directly to a `TaskItem`. Used by the
+/// popover's task composer (create/edit in the Tasks tab) and by the New Event form's task
+/// branch (so a detected task gets notes/reminder fields inline). `showTitle` is off when the
+/// title comes from another control (the New Event text field).
+struct TaskFieldsForm: View {
+    @Binding var task: TaskItem
+    var showTitle: Bool = true
 
     var body: some View {
-        VStack(spacing: 0) {
-            Text(onDelete == nil ? "New Task" : "Edit Task")
-                .font(.headline).padding(.top, 16)
-
-            Form {
-                Section {
-                    TextField("What needs doing?", text: $title)
-                        .textFieldStyle(.roundedBorder)
-                    Toggle("Has a due date", isOn: $hasDueDate)
-                    if hasDueDate {
-                        DatePicker("Due", selection: $dueDate)
-                            .datePickerStyle(.compact)
-                    }
-                    TextField("Notes (optional)", text: $notes, axis: .vertical)
-                        .lineLimit(2...4)
-                        .textFieldStyle(.roundedBorder)
-                }
-
-                if hasDueDate {
-                    Section {
-                        Stepper(value: $remindLeadMinutes, in: 0...1440, step: 5) {
-                            Text(remindLeadMinutes == 0
-                                 ? "Remind me at the due time"
-                                 : "Remind me \(remindLeadMinutes) min before")
-                        }
-                        Toggle("Overlay", isOn: $showOverlay)
-                        Toggle("System notification", isOn: $sendNotification)
-                        Toggle("Voice", isOn: $playVoice)
-                    } header: {
-                        Text("Reminder")
-                    }
-                }
+        VStack(alignment: .leading, spacing: 8) {
+            if showTitle {
+                TextField("What needs doing?", text: $task.title).textFieldStyle(.roundedBorder)
             }
-            .formStyle(.grouped)
-
-            HStack {
-                if let onDelete {
-                    Button("Delete", role: .destructive) { onDelete() }
-                }
-                Spacer()
-                Button("Cancel") { onCancel() }
-                Button("Save") { save() }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
+            Toggle("Has a due date", isOn: Binding(
+                get: { task.dueDate != nil },
+                set: { on in task.dueDate = on ? (task.dueDate ?? Self.defaultDue()) : nil }))
+            if task.dueDate != nil {
+                DatePicker("Due", selection: Binding(get: { task.dueDate ?? Date() }, set: { task.dueDate = $0 }))
+                    .datePickerStyle(.compact)
             }
-            .padding(16)
+            TextField("Notes (optional)", text: Binding(
+                get: { task.notes ?? "" },
+                set: { task.notes = $0.isEmpty ? nil : $0 }), axis: .vertical)
+                .lineLimit(2...4).textFieldStyle(.roundedBorder)
+
+            if task.dueDate != nil {
+                Divider().padding(.vertical, 2)
+                Stepper(value: $task.remindLeadMinutes, in: 0...1440, step: 5) {
+                    Text(task.remindLeadMinutes == 0 ? "Remind at the due time" : "Remind \(task.remindLeadMinutes) min before")
+                        .font(.callout)
+                }
+                HStack(spacing: 14) {
+                    Toggle("Overlay", isOn: $task.showOverlay)
+                    Toggle("Notify", isOn: $task.sendNotification)
+                    Toggle("Voice", isOn: $task.playVoice)
+                }
+                .toggleStyle(.checkbox).font(.caption)
+            }
         }
-        .frame(width: 420, height: 460)
-        .onAppear(perform: load)
     }
 
-    private func load() {
-        title = task.title
-        hasDueDate = task.dueDate != nil
-        dueDate = task.dueDate ?? defaultDue()
-        notes = task.notes ?? ""
-        remindLeadMinutes = task.remindLeadMinutes
-        showOverlay = task.showOverlay
-        sendNotification = task.sendNotification
-        playVoice = task.playVoice
-    }
-
-    /// Next round hour, a sensible default for a new dated task.
-    private func defaultDue() -> Date {
-        let cal = Calendar.current
-        return cal.nextDate(after: Date(), matching: DateComponents(minute: 0), matchingPolicy: .nextTime) ?? Date().addingTimeInterval(3600)
-    }
-
-    private func save() {
-        var updated = task
-        updated.title = title.trimmingCharacters(in: .whitespaces)
-        updated.dueDate = hasDueDate ? dueDate : nil
-        let trimmedNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
-        updated.notes = trimmedNotes.isEmpty ? nil : trimmedNotes
-        updated.remindLeadMinutes = remindLeadMinutes
-        updated.showOverlay = showOverlay
-        updated.sendNotification = sendNotification
-        updated.playVoice = playVoice
-        onSave(updated)
+    /// Next round hour — a sensible default when a task first gets a due date.
+    static func defaultDue() -> Date {
+        Calendar.current.nextDate(after: Date(), matching: DateComponents(minute: 0), matchingPolicy: .nextTime)
+            ?? Date().addingTimeInterval(3600)
     }
 }
