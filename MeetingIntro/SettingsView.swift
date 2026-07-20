@@ -1242,7 +1242,7 @@ struct SettingsView: View {
                     Text(assistantTest).font(.caption2).foregroundStyle(assistantTest.hasPrefix("✓") ? .green : .red).lineLimit(2)
                 }
             } header: {
-                SettingsSectionHeader("Executive Assistant", info: "The AI model the Executive Assistant plugin uses to organize files. Local providers (Ollama) need no key and keep everything on-device.")
+                SettingsSectionHeader("File Organizer", info: "The AI model the File Organizer plugin uses to organize files. Local providers (Ollama) need no key and keep everything on-device.")
             }
 
             Section {
@@ -1332,10 +1332,10 @@ struct SettingsView: View {
         Form {
             Section {
                 HStack(spacing: 12) {
-                    Image(systemName: "sparkles").font(.title2).foregroundStyle(.purple)
+                    Image(systemName: "folder.badge.gearshape").font(.title2).foregroundStyle(.purple)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Executive Assistant").font(.headline)
-                        Text("AI file organizer — sorts a chosen folder into tidy subfolders (move + rename) with a preview + undo. Uses its own model, set inside its window.")
+                        Text("File Organizer").font(.headline)
+                        Text("AI file organizer — sorts a chosen folder into tidy subfolders (move + rename) with a preview + undo. Uses its own model, set in Settings → AI Models.")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
@@ -1345,7 +1345,7 @@ struct SettingsView: View {
                     Button {
                         openWindow(id: "assistant")
                         NSApp.activate(ignoringOtherApps: true)
-                    } label: { Label("Open Executive Assistant", systemImage: "arrow.up.forward.app") }
+                    } label: { Label("Open File Organizer", systemImage: "arrow.up.forward.app") }
                 }
             } header: {
                 SettingsSectionHeader("Plugins", info: "Optional add-ons, off by default. Enabling one reveals its own window/config — it doesn't touch your reminders or meetings.")

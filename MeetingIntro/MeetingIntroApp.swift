@@ -15,6 +15,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     weak var taskReminderCoordinator: TaskReminderCoordinator?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        #if DEBUG
+        // Headless File Organizer self-test: `MEETINGINTRO_SELFTEST=1 <app-binary>`.
+        if ProcessInfo.processInfo.environment["MEETINGINTRO_SELFTEST"] == "1" {
+            let result = MainActor.assumeIsolated { FileOrganizer().runSelfTest() }
+            print(result.log)
+            exit(result.pass ? 0 : 1)
+        }
+        #endif
         // CRITICAL: without a delegate, macOS silently drops notifications posted
         // while the app is foreground/active — and a menu-bar app the user clicks
         // into is "active" constantly, so reminders + cancellation notices never
@@ -289,7 +297,7 @@ struct MeetingIntroApp: App {
         .defaultSize(width: 920, height: 620)
 
         // Executive Assistant plugin (Issue #17) — opt-in file organizer.
-        Window("Executive Assistant", id: "assistant") {
+        Window("File Organizer", id: "assistant") {
             AssistantWindow(config: assistantConfig, organizer: fileOrganizer, coordinator: fileOrganizerCoordinator)
         }
         .defaultSize(width: 640, height: 560)

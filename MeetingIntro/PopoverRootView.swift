@@ -637,7 +637,7 @@ struct PopoverRootView: View {
             }
             footerRow("Meeting Notes…", "note.text", "⌘M") { openWindow(id: "meetingNotes"); NSApp.activate(ignoringOtherApps: true) }
             if assistantEnabled {
-                footerRow("Executive Assistant…", "sparkles", "⌥⌘A") { openWindow(id: "assistant"); NSApp.activate(ignoringOtherApps: true) }
+                footerRow("File Organizer…", "folder.badge.gearshape", "⌥⌘A") { openWindow(id: "assistant"); NSApp.activate(ignoringOtherApps: true) }
             }
             SettingsLink { footerLabel("Settings…", "gearshape", "⌘,") }.buttonStyle(.plain)
             footerRow("Quit MeetingIntro", "power", "⌘Q") { NSApplication.shared.terminate(nil) }

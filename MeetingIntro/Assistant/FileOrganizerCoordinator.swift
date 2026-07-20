@@ -62,10 +62,17 @@ final class FileOrganizerCoordinator: ObservableObject {
     private func tick() {
         guard let config else { return }
         let now = Date()
+        let cal = Calendar.current
         for job in config.jobs where job.scheduleEnabled {
-            let interval = TimeInterval(max(1, job.scheduleIntervalHours) * 3600)
-            let due = (job.lastRunAt ?? .distantPast).addingTimeInterval(interval)
-            if now >= due { runJob(job, reason: "scheduled") }
+            switch job.scheduleKind ?? .interval {
+            case .interval:
+                let interval = TimeInterval(max(1, job.scheduleIntervalHours) * 3600)
+                if now >= (job.lastRunAt ?? .distantPast).addingTimeInterval(interval) { runJob(job, reason: "scheduled") }
+            case .dailyAt:
+                let fire = cal.date(bySettingHour: job.scheduleHour ?? 9, minute: job.scheduleMinute ?? 0, second: 0, of: now) ?? now
+                // Fire once past today's time, if we haven't already run since it.
+                if now >= fire, (job.lastRunAt ?? .distantPast) < fire { runJob(job, reason: "daily") }
+            }
         }
     }
 
@@ -97,18 +104,28 @@ final class FileOrganizerCoordinator: ObservableObject {
         guard !running.contains(job.id), let organizer else { return }
         running.insert(job.id)
         config?.markRun(job.id)   // stamp now so a scheduled job doesn't re-fire while it runs
+        // Watch runs may catch a file mid-download — skip anything modified in the last 15s.
+        let settle: TimeInterval = reason == "new files" ? 15 : 0
+        let cap = config?.autoApplyMaxFiles ?? 50
         Task {
             defer { running.remove(job.id) }
-            let proposals = await organizer.plan(job)
+            let proposals = await organizer.plan(job, mode: .organize, ignoreNewerThan: settle)
             guard !proposals.isEmpty else {
                 diagnosticLog?.info(.assistant, "Auto-run \"\(job.name)\" (\(reason)): nothing to organize")
                 return
             }
-            if job.autoApply {
+            // Circuit-breaker: auto-apply only for small, move-only runs. Anything larger, or
+            // any Trash, routes to review so a big/destructive change is never unattended.
+            let hasTrash = proposals.contains { $0.action == .trash }
+            let overCap = proposals.count > cap
+            if job.autoApply && !hasTrash && !overCap {
                 let n = organizer.apply(proposals, job: job)?.moves.count ?? 0
                 if n > 0 { notificationManager?.sendAssistantOrganizedNotification(folder: displayName(job), count: n) }
                 diagnosticLog?.info(.assistant, "Auto-organized \"\(job.name)\" (\(reason)): \(n) files")
             } else {
+                if job.autoApply {
+                    diagnosticLog?.warn(.assistant, "Auto-apply held for \"\(job.name)\" — \(proposals.count) files\(hasTrash ? ", includes Trash" : "") (cap \(cap)); routing to review")
+                }
                 pendingReview = PendingReview(jobID: job.id, jobName: job.name, proposals: proposals)
                 notificationManager?.sendAssistantReviewNotification(folder: displayName(job), count: proposals.count)
                 diagnosticLog?.info(.assistant, "Auto-run \"\(job.name)\" (\(reason)): \(proposals.count) files ready to review")

@@ -10,7 +10,12 @@ struct AssistantWindow: View {
 
     @State private var proposals: [FileProposal] = []
     @State private var activeJob: OrganizeJob?
+    @State private var activeMode: OrganizeMode = .organize
     @State private var editingJob: OrganizeJob?
+    @State private var editingRule: OrganizeRule?
+    /// Pending folder-group renames (oldName → typed text), applied on submit / Apply so
+    /// typing doesn't re-bucket the list on every keystroke.
+    @State private var groupNameEdits: [String: String] = [:]
 
     var body: some View {
         ScrollView {
@@ -19,6 +24,8 @@ struct AssistantWindow: View {
                 modelStatus
                 if proposals.isEmpty {
                     foldersSection
+                    instructionsSection
+                    rulesSection
                     if !config.undoBatches.isEmpty { undoSection }
                 } else {
                     previewSection
@@ -26,7 +33,7 @@ struct AssistantWindow: View {
             }
             .padding(20)
         }
-        .frame(minWidth: 580, minHeight: 500)
+        .frame(minWidth: 580, minHeight: 520)
         .onAppear { loadPendingReview() }
         .onReceive(coordinator.$pendingReview.compactMap { $0 }) { _ in loadPendingReview() }
         .sheet(item: $editingJob) { job in
@@ -36,6 +43,16 @@ struct AssistantWindow: View {
                 onRepick: { repickFolder(for: job) },
                 onCancel: { editingJob = nil })
         }
+        .sheet(item: $editingRule) { rule in
+            AssistantRuleEditSheet(
+                rule: rule,
+                onSave: { saved in
+                    if config.rules.contains(where: { $0.id == saved.id }) { config.updateRule(saved) } else { config.addRule(saved) }
+                    editingRule = nil
+                },
+                onDelete: config.rules.contains(where: { $0.id == rule.id }) ? { config.removeRule(rule.id); editingRule = nil } : nil,
+                onCancel: { editingRule = nil })
+        }
     }
 
     /// A scheduled/watch run published a review — load its proposals into the preview.
@@ -43,13 +60,14 @@ struct AssistantWindow: View {
         guard let pr = coordinator.pendingReview,
               let job = config.jobs.first(where: { $0.id == pr.jobID }) else { return }
         activeJob = job
+        activeMode = .organize
         proposals = pr.proposals
         coordinator.pendingReview = nil
     }
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Label("Executive Assistant", systemImage: "sparkles").font(.title2.weight(.semibold))
+            Label("File Organizer", systemImage: "folder.badge.gearshape").font(.title2.weight(.semibold))
             Text("AI file organizer — proposes a tidy structure; nothing moves until you approve.")
                 .font(.caption).foregroundStyle(.secondary)
         }
@@ -95,7 +113,16 @@ struct AssistantWindow: View {
                             }
                         }
                         Spacer()
-                        Button("Organize now") { organize(job) }.disabled(organizer.isPlanning || !config.llmReady)
+                        Menu {
+                            Button("Organize (top-level)") { organize(job, mode: .organize) }
+                            Button("Re-organize (all nested files)") { organize(job, mode: .reorganize) }
+                            Divider()
+                            Button("Find duplicates") { scanDuplicates(job) }
+                        } label: {
+                            Text("Organize")
+                        }
+                        .menuStyle(.borderlessButton).fixedSize()
+                        .disabled(organizer.isPlanning)
                         Button { editingJob = job } label: { Image(systemName: "slider.horizontal.3") }
                             .buttonStyle(.borderless).help("Rename, schedule, watch…")
                         Button(role: .destructive) { config.removeJob(job.id) } label: { Image(systemName: "trash") }
@@ -119,47 +146,165 @@ struct AssistantWindow: View {
         }
     }
 
+    // MARK: - Preferences (instructions + auto-apply cap)
+
+    private var instructionsSection: some View {
+        GroupBox("Preferences") {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Tell the AI how you like things filed — applied to every run.")
+                    .font(.caption).foregroundStyle(.secondary)
+                TextField("e.g. invoices → Finance; keep code projects together; screenshots by month",
+                          text: $config.instructions, axis: .vertical)
+                    .lineLimit(2...5).textFieldStyle(.roundedBorder)
+                Divider().padding(.vertical, 2)
+                Stepper(value: $config.autoApplyMaxFiles, in: 5...1000, step: 5) {
+                    Text("Auto-apply safety limit: \(config.autoApplyMaxFiles) files")
+                }
+                Text("Automated runs bigger than this — or any that would Trash files — pause for review instead of applying.")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+            .padding(6)
+        }
+    }
+
+    // MARK: - Rules
+
+    private var rulesSection: some View {
+        GroupBox("Rules") {
+            VStack(alignment: .leading, spacing: 6) {
+                if config.rules.isEmpty {
+                    Text("Rules run before the AI (predictable + cheaper) — e.g. “*.dmg → Trash”, “name contains screenshot → Skip”, “*.pdf → Documents”.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                ForEach(config.rules) { rule in
+                    HStack(spacing: 8) {
+                        Image(systemName: "checklist").foregroundStyle(rule.enabled ? Color.accentColor : .secondary)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(rule.name.isEmpty ? rule.summary : rule.name).font(.callout).lineLimit(1)
+                                .foregroundStyle(rule.enabled ? .primary : .secondary)
+                            Text(rule.summary).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                        Spacer()
+                        Button("Edit") { editingRule = rule }.buttonStyle(.borderless)
+                        Button(role: .destructive) { config.removeRule(rule.id) } label: { Image(systemName: "trash") }
+                            .buttonStyle(.borderless).foregroundStyle(.red)
+                    }
+                }
+                HStack {
+                    Button { editingRule = OrganizeRule() } label: { Label("Add rule", systemImage: "plus") }
+                    Spacer()
+                }
+            }
+            .padding(6)
+        }
+    }
+
     // MARK: - Preview
 
     private var previewSection: some View {
         GroupBox("Proposed changes — \(includedCount) of \(proposals.count) selected") {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Button("Select all") { setAll(true) }
                     Button("None") { setAll(false) }
                     Spacer()
-                    Text("Nothing moves until you Apply.").font(.caption2).foregroundStyle(.secondary)
+                    Text(activeMode == .reorganize
+                         ? "Re-organize — pulls files out of subfolders; empty folders get removed. Nothing changes until Apply."
+                         : "Nothing moves until you Apply.")
+                        .font(.caption2).foregroundStyle(.secondary).lineLimit(2)
                 }
-                ForEach($proposals) { $p in
-                    HStack(alignment: .top, spacing: 8) {
-                        Toggle("", isOn: $p.include).labelsHidden().toggleStyle(.checkbox)
-                        VStack(alignment: .leading, spacing: 2) {
-                            HStack(spacing: 6) {
-                                Text(p.originalURL.lastPathComponent).font(.callout).lineLimit(1)
-                                Image(systemName: "arrow.right").font(.caption2).foregroundStyle(.tertiary)
-                                Text((p.proposedFolder.isEmpty ? "" : p.proposedFolder + "/") + (p.willRename ? p.proposedName : p.originalURL.lastPathComponent))
-                                    .font(.callout.weight(.medium)).foregroundStyle(.primary).lineLimit(1)
-                            }
-                            if !p.observedReason.isEmpty {
-                                Label(p.observedReason, systemImage: "text.magnifyingglass").font(.caption2).foregroundStyle(.secondary)
-                            }
-                            if p.willRename, !p.renameReason.isEmpty {
-                                Label(p.renameReason, systemImage: "pencil").font(.caption2).foregroundStyle(.secondary)
-                            }
-                        }
-                        Spacer()
+                Text(privacyCaption).font(.caption2).foregroundStyle(.tertiary).lineLimit(2)
+
+                if !trashProposals.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Label("Move to Trash", systemImage: "trash").font(.callout.weight(.semibold)).foregroundStyle(.orange)
+                        ForEach(trashProposals) { proposalRow($0) }
                     }
                     Divider()
                 }
+
+                ForEach(proposalGroups, id: \.self) { folder in
+                    let inGroup = proposals.filter { $0.action == .move && $0.proposedFolder == folder }
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "folder").foregroundStyle(.secondary)
+                            TextField("Folder", text: Binding(
+                                get: { groupNameEdits[folder] ?? folder },
+                                set: { groupNameEdits[folder] = $0 }))
+                                .textFieldStyle(.roundedBorder).font(.callout.weight(.medium)).frame(maxWidth: 220)
+                                .onSubmit { commitGroupRename(folder) }
+                            Text("\(inGroup.count)").font(.caption2).foregroundStyle(.secondary)
+                        }
+                        ForEach(inGroup) { proposalRow($0) }
+                    }
+                    Divider()
+                }
+
                 HStack {
-                    Button("Cancel") { proposals = []; activeJob = nil }
+                    Button("Cancel") { proposals = []; activeJob = nil; groupNameEdits = [:] }
                     Spacer()
-                    Button("Apply \(includedCount)") { apply() }
+                    Button(applyLabel) { apply() }
                         .keyboardShortcut(.defaultAction).disabled(includedCount == 0)
                 }
             }
             .padding(6)
         }
+    }
+
+    private var applyLabel: String {
+        let t = trashProposals.filter(\.include).count
+        return t > 0 ? "Apply \(includedCount) (incl. \(t) → Trash)" : "Apply \(includedCount)"
+    }
+
+    /// Where the analysis happened + what left the Mac.
+    private var privacyCaption: String {
+        let usedAI = proposals.contains { $0.ruleName == nil }   // any model-produced proposal
+        if !usedAI { return "No AI used — this ran entirely on your Mac." }
+        let p = config.provider
+        if p == .ollama || !p.needsKey {
+            return "Analyzed with \(p.displayName) — everything stayed on this Mac."
+        }
+        return "Analyzed with \(p.displayName) · \(config.modelID) — file names + short content previews were sent to \(p.displayName)."
+    }
+
+    /// One preview row — editable file name (for moves) + reasons + Save-as-rule.
+    private func proposalRow(_ p: FileProposal) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Toggle("", isOn: bindingInclude(p.id)).labelsHidden().toggleStyle(.checkbox)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(p.originalURL.lastPathComponent).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    if p.action == .move {
+                        Image(systemName: "arrow.right").font(.caption2).foregroundStyle(.tertiary)
+                        TextField("name", text: bindingName(p.id))
+                            .textFieldStyle(.roundedBorder).font(.caption).frame(maxWidth: 200)
+                    }
+                }
+                if !p.observedReason.isEmpty {
+                    Label(p.observedReason, systemImage: p.ruleName != nil ? "checklist" : "text.magnifyingglass")
+                        .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                }
+                if p.action == .move, p.willRename, !p.renameReason.isEmpty {
+                    Label(p.renameReason, systemImage: "pencil").font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                }
+            }
+            Spacer()
+            if p.action == .move, p.ruleName == nil {
+                Button("Save as rule") { saveAsRule(p) }.font(.caption2).buttonStyle(.link)
+            }
+        }
+    }
+
+    private func commitGroupRename(_ folder: String) {
+        guard let new = groupNameEdits[folder]?.trimmingCharacters(in: .whitespaces), !new.isEmpty, new != folder else {
+            groupNameEdits[folder] = nil; return
+        }
+        renameGroup(folder, to: new)
+        groupNameEdits[folder] = nil
+    }
+
+    private func flushGroupEdits() {
+        for (old, _) in groupNameEdits { commitGroupRename(old) }
     }
 
     // MARK: - Undo
@@ -170,7 +315,7 @@ struct AssistantWindow: View {
                 ForEach(config.undoBatches.reversed()) { batch in
                     HStack {
                         VStack(alignment: .leading, spacing: 1) {
-                            Text("\(batch.jobName) — \(batch.moves.count) file\(batch.moves.count == 1 ? "" : "s")").font(.callout)
+                            Text("\(batch.jobName) — \(batch.totalActions) file\(batch.totalActions == 1 ? "" : "s")").font(.callout)
                             Text(batch.timestamp.formatted(date: .abbreviated, time: .shortened)).font(.caption2).foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -191,7 +336,13 @@ struct AssistantWindow: View {
     private func automationSummary(_ job: OrganizeJob) -> String? {
         var parts: [String] = []
         if job.renameEnabled { parts.append("Rename") }
-        if job.scheduleEnabled { parts.append("Every \(job.scheduleIntervalHours)h") }
+        if job.scheduleEnabled {
+            if (job.scheduleKind ?? .interval) == .dailyAt {
+                parts.append(String(format: "Daily %02d:%02d", job.scheduleHour ?? 9, job.scheduleMinute ?? 0))
+            } else {
+                parts.append("Every \(job.scheduleIntervalHours)h")
+            }
+        }
         if job.watchEnabled { parts.append("Watch new files") }
         if job.autoApply { parts.append("Auto-apply") }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
@@ -232,16 +383,68 @@ struct AssistantWindow: View {
         config.addJob(job)
     }
 
-    private func organize(_ job: OrganizeJob) {
+    private func organize(_ job: OrganizeJob, mode: OrganizeMode) {
         activeJob = job
-        Task { proposals = await organizer.plan(job) }
+        activeMode = mode
+        Task { proposals = await organizer.plan(job, mode: mode) }
+    }
+
+    private func scanDuplicates(_ job: OrganizeJob) {
+        activeJob = job
+        activeMode = .organize   // duplicates only Trash; no folder pruning needed
+        proposals = organizer.findDuplicates(job)
     }
 
     private func apply() {
         guard let job = activeJob else { return }
-        _ = organizer.apply(proposals, job: job)
+        flushGroupEdits()   // apply any typed-but-not-submitted folder renames
+        _ = organizer.apply(proposals, job: job, mode: activeMode)
         proposals = []
         activeJob = nil
+        groupNameEdits = [:]
+    }
+
+    // MARK: - Proposal editing helpers (grouped preview)
+
+    /// Distinct target folders in the current proposals, in first-seen order (move actions).
+    private var proposalGroups: [String] {
+        var seen = Set<String>(), order: [String] = []
+        for p in proposals where p.action == .move {
+            if seen.insert(p.proposedFolder).inserted { order.append(p.proposedFolder) }
+        }
+        return order
+    }
+
+    private var trashProposals: [FileProposal] { proposals.filter { $0.action == .trash } }
+
+    /// Rename a whole group's target folder (re-files every file in it).
+    private func renameGroup(_ oldName: String, to newName: String) {
+        for i in proposals.indices where proposals[i].action == .move && proposals[i].proposedFolder == oldName {
+            proposals[i].proposedFolder = newName
+        }
+    }
+
+    private func bindingName(_ id: UUID) -> Binding<String> {
+        Binding(
+            get: { proposals.first(where: { $0.id == id })?.proposedName ?? "" },
+            set: { v in if let i = proposals.firstIndex(where: { $0.id == id }) { proposals[i].proposedName = v } })
+    }
+
+    private func bindingInclude(_ id: UUID) -> Binding<Bool> {
+        Binding(
+            get: { proposals.first(where: { $0.id == id })?.include ?? false },
+            set: { v in if let i = proposals.firstIndex(where: { $0.id == id }) { proposals[i].include = v } })
+    }
+
+    /// Turn a corrected proposal into a rule (`.ext` of this file → its folder).
+    private func saveAsRule(_ p: FileProposal) {
+        let ext = p.originalURL.pathExtension
+        guard !ext.isEmpty, !p.proposedFolder.isEmpty else { return }
+        var rule = OrganizeRule()
+        rule.name = "\(ext) → \(p.proposedFolder)"
+        rule.match = RuleMatch(kind: .ext, pattern: ext)
+        rule.action = .folder(p.proposedFolder)
+        config.addRule(rule)
     }
 }
 
@@ -256,7 +459,9 @@ struct AssistantJobEditSheet: View {
     @State private var renameEnabled = true
     @State private var autoApply = false
     @State private var scheduleEnabled = false
+    @State private var scheduleKind: ScheduleKind = .interval
     @State private var scheduleIntervalHours = 24
+    @State private var scheduleTime = Date()
     @State private var watchEnabled = false
 
     var body: some View {
@@ -276,8 +481,16 @@ struct AssistantJobEditSheet: View {
                 Section {
                     Toggle("Run on a schedule", isOn: $scheduleEnabled)
                     if scheduleEnabled {
-                        Stepper("Every \(scheduleIntervalHours) hour\(scheduleIntervalHours == 1 ? "" : "s")",
-                                value: $scheduleIntervalHours, in: 1...168)
+                        Picker("Schedule", selection: $scheduleKind) {
+                            Text("Every N hours").tag(ScheduleKind.interval)
+                            Text("Daily at").tag(ScheduleKind.dailyAt)
+                        }
+                        if scheduleKind == .interval {
+                            Stepper("Every \(scheduleIntervalHours) hour\(scheduleIntervalHours == 1 ? "" : "s")",
+                                    value: $scheduleIntervalHours, in: 1...168)
+                        } else {
+                            DatePicker("Time", selection: $scheduleTime, displayedComponents: .hourAndMinute)
+                        }
                     }
                     Toggle("Watch for new files", isOn: $watchEnabled)
                 } header: {
@@ -312,7 +525,9 @@ struct AssistantJobEditSheet: View {
         renameEnabled = job.renameEnabled
         autoApply = job.autoApply
         scheduleEnabled = job.scheduleEnabled
+        scheduleKind = job.scheduleKind ?? .interval
         scheduleIntervalHours = job.scheduleIntervalHours
+        scheduleTime = Calendar.current.date(bySettingHour: job.scheduleHour ?? 9, minute: job.scheduleMinute ?? 0, second: 0, of: Date()) ?? Date()
         watchEnabled = job.watchEnabled
     }
 
@@ -321,8 +536,111 @@ struct AssistantJobEditSheet: View {
         j.renameEnabled = renameEnabled
         j.autoApply = autoApply
         j.scheduleEnabled = scheduleEnabled
+        j.scheduleKind = scheduleKind
         j.scheduleIntervalHours = scheduleIntervalHours
+        let comps = Calendar.current.dateComponents([.hour, .minute], from: scheduleTime)
+        j.scheduleHour = comps.hour
+        j.scheduleMinute = comps.minute
         j.watchEnabled = watchEnabled
         onSave(j)
+    }
+}
+
+/// Create/edit an organize rule (v2.14.0) — match by extension / name-contains / regex →
+/// file into a folder, skip, or Trash. Runs before the AI.
+struct AssistantRuleEditSheet: View {
+    let rule: OrganizeRule
+    let onSave: (OrganizeRule) -> Void
+    let onDelete: (() -> Void)?
+    let onCancel: () -> Void
+
+    @State private var name = ""
+    @State private var enabled = true
+    @State private var matchKind: RuleMatch.Kind = .ext
+    @State private var pattern = ""
+    @State private var actionKind = 0   // 0 = folder, 1 = skip, 2 = trash
+    @State private var folder = ""
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text(onDelete == nil ? "New Rule" : "Edit Rule").font(.headline).padding(.top, 16)
+            Form {
+                Section {
+                    TextField("Rule name (optional)", text: $name).textFieldStyle(.roundedBorder)
+                    Toggle("Enabled", isOn: $enabled)
+                }
+                Section("Match files where") {
+                    Picker("Match by", selection: $matchKind) {
+                        Text("Extension").tag(RuleMatch.Kind.ext)
+                        Text("Name contains").tag(RuleMatch.Kind.nameContains)
+                        Text("Name matches regex").tag(RuleMatch.Kind.regex)
+                        Text("The file is… (AI)").tag(RuleMatch.Kind.ai)
+                    }
+                    TextField(placeholder, text: $pattern).textFieldStyle(.roundedBorder)
+                    if matchKind == .ai {
+                        Text("Described in plain language and judged by the AI from the file's content — e.g. “a tax document”, “a screenshot of a receipt”.")
+                            .font(.caption2).foregroundStyle(.secondary)
+                    }
+                }
+                Section("Then") {
+                    Picker("Action", selection: $actionKind) {
+                        Text("File into folder").tag(0)
+                        Text("Skip").tag(1)
+                        Text("Trash").tag(2)
+                    }.pickerStyle(.segmented)
+                    if actionKind == 0 {
+                        TextField("Folder name", text: $folder).textFieldStyle(.roundedBorder)
+                    } else if actionKind == 2 {
+                        Text("Matching files move to the macOS Trash (undoable).").font(.caption).foregroundStyle(.orange)
+                    }
+                }
+            }
+            .formStyle(.grouped)
+            HStack {
+                if let onDelete { Button("Delete", role: .destructive) { onDelete() } }
+                Spacer()
+                Button("Cancel") { onCancel() }
+                Button("Save") { save() }.keyboardShortcut(.defaultAction)
+                    .disabled(pattern.trimmingCharacters(in: .whitespaces).isEmpty
+                              || (actionKind == 0 && folder.trimmingCharacters(in: .whitespaces).isEmpty))
+            }
+            .padding(16)
+        }
+        .frame(width: 460, height: 480)
+        .onAppear(perform: load)
+    }
+
+    private var placeholder: String {
+        switch matchKind {
+        case .ext: return "e.g. pdf"
+        case .nameContains: return "e.g. invoice"
+        case .regex: return #"e.g. ^IMG_\d+"#
+        case .ai: return "e.g. a resume or CV"
+        }
+    }
+
+    private func load() {
+        name = rule.name
+        enabled = rule.enabled
+        matchKind = rule.match.kind
+        pattern = rule.match.pattern
+        switch rule.action {
+        case .folder(let f): actionKind = 0; folder = f
+        case .skip: actionKind = 1
+        case .trash: actionKind = 2
+        }
+    }
+
+    private func save() {
+        var r = rule
+        r.name = name.trimmingCharacters(in: .whitespaces)
+        r.enabled = enabled
+        r.match = RuleMatch(kind: matchKind, pattern: pattern.trimmingCharacters(in: .whitespaces))
+        switch actionKind {
+        case 1: r.action = .skip
+        case 2: r.action = .trash
+        default: r.action = .folder(folder.trimmingCharacters(in: .whitespaces))
+        }
+        onSave(r)
     }
 }
