@@ -296,11 +296,17 @@ struct MeetingIntroApp: App {
         }
         .defaultSize(width: 920, height: 620)
 
-        // Executive Assistant plugin (Issue #17) — opt-in file organizer.
+        // File Organizer plugin (Issue #17) — opt-in AI file organizer.
         Window("File Organizer", id: "assistant") {
             AssistantWindow(config: assistantConfig, organizer: fileOrganizer, coordinator: fileOrganizerCoordinator)
         }
         .defaultSize(width: 640, height: 560)
+
+        // Dictionary plugin — opt-in word lookup (meaning, synonyms, pronunciation).
+        Window("Dictionary", id: "dictionary") {
+            DictionaryWindow()
+        }
+        .defaultSize(width: 480, height: 560)
     }
 }
 

@@ -26,6 +26,7 @@ struct PopoverRootView: View {
     @AppStorage("cancellationShowInTodayView") private var showCancelled: Bool = true
     @AppStorage("nextMeetingHighlightHex") private var nextMeetingHighlightHex: String = defaultNextMeetingHighlightHex
     @AppStorage("assistantEnabled") private var assistantEnabled: Bool = false
+    @AppStorage("dictionaryEnabled") private var dictionaryEnabled: Bool = false
 
     /// Hover-to-detail (Issue #16) — see CompactMenuView for the delay rationale.
     @State private var hoveredID: String?
@@ -638,6 +639,9 @@ struct PopoverRootView: View {
             footerRow("Meeting Notes…", "note.text", "⌘M") { openWindow(id: "meetingNotes"); NSApp.activate(ignoringOtherApps: true) }
             if assistantEnabled {
                 footerRow("File Organizer…", "folder.badge.gearshape", "⌥⌘A") { openWindow(id: "assistant"); NSApp.activate(ignoringOtherApps: true) }
+            }
+            if dictionaryEnabled {
+                footerRow("Dictionary…", "character.book.closed", "⌥⌘D") { openWindow(id: "dictionary"); NSApp.activate(ignoringOtherApps: true) }
             }
             SettingsLink { footerLabel("Settings…", "gearshape", "⌘,") }.buttonStyle(.plain)
             footerRow("Quit MeetingIntro", "power", "⌘Q") { NSApplication.shared.terminate(nil) }

@@ -105,6 +105,7 @@ struct SettingsView: View {
     @State private var editingTemplate: QuickAddTemplate?
     @State private var editingRule: NotificationRule?
     @AppStorage("assistantEnabled") private var assistantEnabled: Bool = false
+    @AppStorage("dictionaryEnabled") private var dictionaryEnabled: Bool = false
     @State private var assistantTest: String?
     @State private var assistantTesting = false
     @State private var transcriptionTest: String?
@@ -1349,6 +1350,25 @@ struct SettingsView: View {
                 }
             } header: {
                 SettingsSectionHeader("Plugins", info: "Optional add-ons, off by default. Enabling one reveals its own window/config — it doesn't touch your reminders or meetings.")
+            }
+
+            Section {
+                HStack(spacing: 12) {
+                    Image(systemName: "character.book.closed").font(.title2).foregroundStyle(.blue)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Dictionary").font(.headline)
+                        Text("Look up any word — meaning, part of speech, examples, synonyms & antonyms, and pronunciation. Free, no key; works offline via the macOS dictionary.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Toggle("", isOn: $dictionaryEnabled).labelsHidden()
+                }
+                if dictionaryEnabled {
+                    Button {
+                        openWindow(id: "dictionary")
+                        NSApp.activate(ignoringOtherApps: true)
+                    } label: { Label("Open Dictionary", systemImage: "arrow.up.forward.app") }
+                }
             }
         }
         .formStyle(.grouped)
