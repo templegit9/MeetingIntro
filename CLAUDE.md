@@ -253,6 +253,13 @@ The first **opt-in plugin** — an AI file organizer, **disabled by default**, t
 - **Cost/privacy caption** in the preview: names the provider or says "everything stayed on this Mac" (Ollama/rules-only).
 - **E2E self-test** (`FileOrganizer.runSelfTest`, `#if DEBUG`; run headless via `MEETINGINTRO_SELFTEST=1 <app-binary>` — hooked in `AppDelegate`): builds a temp tree and asserts gather/temp-ignore/packages/recursion, findDuplicates, apply move+trash+collision, reorganize prune, and undo — the automated gate for the filesystem logic (config = nil, never touches real data).
 
+### Dictionary — word-lookup plugin (`Dictionary/`, v2.15.0)
+
+Second **opt-in plugin** (same pattern as File Organizer): type a word → meaning, part of speech, examples, synonyms/antonyms (tappable chips → look up), and pronunciation audio. **No API key, no model** — self-contained, doesn't touch the meeting/reminder core.
+- **Data** (`DictionaryService.swift`): the free **dictionaryapi.dev** JSON API (`/api/v2/entries/en/<word>`, no key), parsed into `WordEntry`/`WordMeaning`/`WordDefinition` (`DictionaryModels.swift`). **Offline / not-found fallback** to the on-device macOS dictionaries via `DCSCopyTextDefinition` (CoreServices) — shown with a "macOS dictionary (offline)" note.
+- **Typo handling**: on a not-found, `NSSpellChecker.guesses` supplies corrections — the window **auto-retries the best correction** (a "Showing results for X — you searched Y" banner) and offers the rest as **"Did you mean:"** chips.
+- **UI** (`DictionaryWindow.swift`): a search field + results with a small **`FlowLayout: Layout`** (macOS 14) for wrapping synonym/antonym chips; pronunciation via `AVPlayer`; recent lookups. Opened from a dedicated `Window("Dictionary", id: "dictionary")`, the **Plugins** tab card (`@AppStorage("dictionaryEnabled")`), or the dropdown footer **"Dictionary…"** (⌥⌘D).
+
 ### What's New tab (`ReleaseNotesManager.swift`, v2.3.0)
 
 Settings → Help → What's New fetches release notes live from the public GitHub Releases API (unauthenticated, 60 req/hr is plenty), strips the "## Install" boilerplate, caches the last good response in UserDefaults (1h TTL) so it renders offline. Changelogs stay current without app updates because the release script auto-generates the notes.
