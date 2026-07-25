@@ -632,25 +632,71 @@ struct PopoverRootView: View {
 
     private var footer: some View {
         VStack(spacing: 0) {
-            footerRow("New Event…", "plus", "⌘N") {
+            footerRow("New Event", "plus", "⌘N") {
                 quickAddService.reset()
                 showingNewEvent = true
             }
-            footerRow("Meeting Notes…", "note.text", "⌘M") { openWindow(id: "meetingNotes"); NSApp.activate(ignoringOtherApps: true) }
-            if assistantEnabled {
-                footerRow("File Organizer…", "folder.badge.gearshape", "⌥⌘A") { openWindow(id: "assistant"); NSApp.activate(ignoringOtherApps: true) }
+            footerDivider
+            footerRow("Meeting Notes", "note.text", "⌘M") { openWindow(id: "meetingNotes"); NSApp.activate(ignoringOtherApps: true) }
+            footerDivider
+            if assistantEnabled || dictionaryEnabled {
+                pluginFooter
+                footerDivider
             }
-            if dictionaryEnabled {
-                footerRow("Dictionary…", "character.book.closed", "⌥⌘D") { openWindow(id: "dictionary"); NSApp.activate(ignoringOtherApps: true) }
-            }
-            SettingsLink { footerLabel("Settings…", "gearshape", "⌘,") }.buttonStyle(.plain)
+            SettingsLink { footerLabel("Settings", "gearshape", "⌘,") }.buttonStyle(.plain)
+            footerDivider
             footerRow("Quit MeetingIntro", "power", "⌘Q") { NSApplication.shared.terminate(nil) }
         }
         .padding(.vertical, 4)
     }
 
+    /// Thin, low-contrast separator between footer rows (inset from the popover edges).
+    private var footerDivider: some View {
+        Rectangle().fill(Color.primary.opacity(0.07)).frame(height: 1).padding(.horizontal, 10)
+    }
+
     private func footerRow(_ label: String, _ symbol: String, _ shortcut: String, _ action: @escaping () -> Void) -> some View {
         Button(action: action) { footerLabel(label, symbol, shortcut) }.buttonStyle(.plain)
+    }
+
+    /// The plugin footer entries. When both plugins are enabled they share one row, split by
+    /// label length ("File Organizer…" wider than "Dictionary…"); a single one is a full row.
+    @ViewBuilder private var pluginFooter: some View {
+        let items: [(label: String, symbol: String, id: String, sc: String)] = {
+            var a: [(String, String, String, String)] = []
+            if assistantEnabled { a.append(("File Organizer", "folder.badge.gearshape", "assistant", "⌥⌘A")) }
+            if dictionaryEnabled { a.append(("Dictionary", "character.book.closed", "dictionary", "⌥⌘D")) }
+            return a.map { ($0.0, $0.1, $0.2, $0.3) }
+        }()
+        if items.count == 1 {
+            footerRow(items[0].label, items[0].symbol, items[0].sc) { openWindow(id: items[0].id); NSApp.activate(ignoringOtherApps: true) }
+        } else if items.count == 2 {
+            GeometryReader { geo in
+                let half = (geo.size.width - 1) / 2   // equal halves, minus the 1px divider
+                HStack(spacing: 0) {
+                    pluginCell(items[0], width: half)
+                    Rectangle().fill(Color.primary.opacity(0.12)).frame(width: 1, height: 16)   // short centered hairline
+                    pluginCell(items[1], width: half)
+                }
+            }
+            .frame(height: 26)
+        }
+    }
+
+    private func pluginCell(_ item: (label: String, symbol: String, id: String, sc: String), width: CGFloat) -> some View {
+        Button {
+            openWindow(id: item.id); NSApp.activate(ignoringOtherApps: true)
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: item.symbol).frame(width: 16).foregroundStyle(.secondary)
+                Text(item.label).lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .contentShape(Rectangle())
+            .padding(.horizontal, 14).padding(.vertical, 5)
+        }
+        .buttonStyle(.plain)
+        .frame(width: width, alignment: .leading)
     }
 
     private func footerLabel(_ label: String, _ symbol: String, _ shortcut: String) -> some View {

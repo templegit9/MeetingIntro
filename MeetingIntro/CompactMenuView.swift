@@ -254,17 +254,17 @@ struct CompactMenuView: View {
             }
 
             Divider()
-            actionRow(icon: "plus", tint: .primary, label: "New Event…", trailing: "⌘N") {
+            actionRow(icon: "plus", tint: .primary, label: "New Event", trailing: "⌘N") {
                 quickAddService.reset()
                 showingNewEvent = true
             }
-            actionRow(icon: "note.text", tint: .primary, label: "Meeting Notes…", trailing: "⌘M") {
+            actionRow(icon: "note.text", tint: .primary, label: "Meeting Notes", trailing: "⌘M") {
                 openWindow(id: "meetingNotes"); NSApp.activate(ignoringOtherApps: true)
             }
             actionRow(icon: "arrow.clockwise", tint: .primary, label: "Refresh", trailing: "⌘R") {
                 Task { await calendarManager.refreshEvents() }
             }
-            SettingsLink { actionLabel(icon: "gearshape", tint: .primary, label: "Settings…", trailing: "⌘,") }
+            SettingsLink { actionLabel(icon: "gearshape", tint: .primary, label: "Settings", trailing: "⌘,") }
                 .buttonStyle(.plain)
             actionRow(icon: "power", tint: .primary, label: "Quit MeetingIntro", trailing: "⌘Q") {
                 NSApplication.shared.terminate(nil)
