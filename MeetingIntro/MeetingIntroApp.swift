@@ -175,31 +175,24 @@ struct MeetingIntroApp: App {
 
     /// The always-present status-bar label. observe() (the single wiring point) runs on
     /// its onAppear so it fires in both menu and popover styles. Red while recording.
-    /// Reminders are being muted right now because the "suppress when in a call" rule is on
-    /// and the mic is in use elsewhere. Drives the menu-bar icon + dropdown indicator so the
-    /// mute is a visible state, not a silent "it stopped working."
-    private var remindersMutedByCall: Bool {
-        smartConfig.suppressWhenInCall && contextMonitor.snapshot.isInActiveCall
-    }
-
     private var isUpdateAvailable: Bool {
         if case .available = updater.state { return true }
         return false
     }
 
     @ViewBuilder private var menuBarLabel: some View {
+        // The menu-bar icon is a steady clock — it does NOT change for recording or
+        // reminders-paused (those surface in the dropdown + notifications). The ONE
+        // allowed change is a green checkmark badge when an app update is ready, so
+        // the icon stays visually stable and easy to find (user request, 2026-07-27).
         Group {
-            if recordingController.isRecording {
-                Label("Recording", systemImage: "record.circle.fill")
-            } else if remindersMutedByCall {
-                Label("Reminders paused", systemImage: "bell.slash.fill")
-            } else if isUpdateAvailable {
+            if isUpdateAvailable {
                 // Green checkmark badge = an app update is ready to install.
                 Label("Update available", systemImage: "clock.badge.checkmark")
                     .symbolRenderingMode(.palette)
                     .foregroundStyle(.primary, .green)
             } else {
-                Label("MeetingIntro", systemImage: "clock.badge.checkmark")
+                Label("MeetingIntro", systemImage: "clock")
             }
         }
         .onAppear {

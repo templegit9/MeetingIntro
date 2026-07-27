@@ -103,7 +103,15 @@ final class OverlayWindowController: ObservableObject {
 
     /// Dismiss the overlay and stop music.
     func dismiss() {
-        overlayWindow?.close()
+        diagnosticLog?.info(.overlay, "Countdown overlay dismissed")
+        if let window = overlayWindow {
+            // Order out + drop the hosting view so its SwiftUI `onDisappear` fires and
+            // invalidates the countdown Timer (a leaked/stalled timer was part of the
+            // "overlay won't close or respond" report), then close.
+            window.orderOut(nil)
+            window.contentView = nil
+            window.close()
+        }
         overlayWindow = nil
         isShowing = false
 

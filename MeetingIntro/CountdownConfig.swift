@@ -62,6 +62,16 @@ final class CountdownConfigManager: ObservableObject {
         didSet { UserDefaults.standard.set(autoJoinAudibleCountdownEnabled, forKey: "autoJoinAudibleCountdownEnabled") }
     }
 
+    /// Safety cap (minutes) on how long the countdown overlay may stay up in the
+    /// post-start "MEETING IN PROGRESS" state before auto-dismissing — independent of
+    /// the meeting's end time. Without this, a long meeting (or one with a far-off end)
+    /// pins the overlay for its full duration; a real report had one stranded ~12h and
+    /// go unresponsive. `0` = no cap (dismiss only at the meeting's end, legacy v2.3.3
+    /// behavior). Default 15: enough to come back a few minutes late and still Join.
+    @Published var inProgressOverlayMaxMinutes: Int {
+        didSet { UserDefaults.standard.set(inProgressOverlayMaxMinutes, forKey: "inProgressOverlayMaxMinutes") }
+    }
+
     static let availableMinutes = [1, 2, 3, 5, 10, 15]
 
     init() {
@@ -89,6 +99,7 @@ final class CountdownConfigManager: ObservableObject {
         self.autoJoinImminentOverlayEnabled = UserDefaults.standard.object(forKey: "autoJoinImminentOverlayEnabled") as? Bool ?? true
         self.autoJoinOverlayLeadSeconds = UserDefaults.standard.object(forKey: "autoJoinOverlayLeadSeconds") as? Int ?? 60
         self.autoJoinAudibleCountdownEnabled = UserDefaults.standard.object(forKey: "autoJoinAudibleCountdownEnabled") as? Bool ?? true
+        self.inProgressOverlayMaxMinutes = UserDefaults.standard.object(forKey: "inProgressOverlayMaxMinutes") as? Int ?? 15
     }
 
     /// Get all enabled minutes (for CalendarManager compatibility).

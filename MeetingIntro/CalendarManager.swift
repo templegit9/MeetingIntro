@@ -413,6 +413,26 @@ final class CalendarManager: ObservableObject {
 
     /// Check if any meeting is within any of the countdown thresholds.
     private func evaluateCountdownTrigger() {
+        // Auto-dismiss the in-progress overlay FIRST, every poll, before the trigger
+        // loop below can early-return. Close it once the meeting has ENDED, OR once it
+        // has been in progress past the configured cap (a long meeting must not pin the
+        // overlay for its whole duration — a real report had one stranded ~12h and go
+        // unresponsive). Running this ahead of the loop also frees the single overlay
+        // slot so a later meeting's reminder isn't silently swallowed. (v2.3.3 kept this
+        // at the end of the function, after a `return` — so on a busy/long meeting it
+        // never ran; that was the latent bug.)
+        if let current = countdownMeeting {
+            let capMinutes = countdownConfigs?.inProgressOverlayMaxMinutes ?? 15
+            let secondsSinceStart = -current.startDate.timeIntervalSinceNow // > 0 after start
+            let ended = current.endDate.timeIntervalSinceNow <= 0
+            let cappedInProgress = capMinutes > 0 && secondsSinceStart >= TimeInterval(capMinutes * 60)
+            if ended || cappedInProgress {
+                diagnosticLog?.info(.overlay, "Auto-dismissed countdown overlay — \"\(current.title)\" (\(ended ? "meeting ended" : "in progress > \(capMinutes)m cap"))")
+                shouldShowCountdown = false
+                countdownMeeting = nil
+            }
+        }
+
         // Diagnostic: for any meeting now inside the largest reminder window, log ONCE
         // why it will NOT fire a reminder (the overlay/notification gates are otherwise
         // silent — this is the "why didn't my overlay show?" trail).
@@ -482,14 +502,8 @@ final class CalendarManager: ObservableObject {
 
         // Update nextMeeting to the soonest future meeting
         nextMeeting = upcomingMeetings.first { $0.timeUntilStart > 0 }
-
-        // Once the countdown meeting has ENDED, force-close the overlay — joining
-        // is moot. While the meeting is merely in progress, the overlay stays up
-        // with a negative countdown until the user joins or dismisses (v2.3.3).
-        if let current = countdownMeeting, current.endDate.timeIntervalSinceNow <= 0 {
-            shouldShowCountdown = false
-            countdownMeeting = nil
-        }
+        // (The in-progress/ended overlay auto-dismiss now runs at the TOP of this
+        // function so an early `return` in the trigger loop can't skip it.)
     }
 
     // MARK: - Cancellation helpers

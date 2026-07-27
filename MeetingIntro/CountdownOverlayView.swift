@@ -296,18 +296,29 @@ struct CountdownOverlayView: View {
     // MARK: - Timer
 
     private func startTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+        let t = Timer(timeInterval: 1, repeats: true) { _ in
             Task { @MainActor in
                 // Goes negative once the meeting starts — the overlay stays up,
                 // counting time since start, until the user joins or dismisses.
                 timeRemaining = meeting.startDate.timeIntervalSinceNow
-                // Safety net: once the meeting has ENDED, joining is moot — close.
-                if Date() >= meeting.endDate {
+                // Safety net: close once the meeting has ENDED, OR once it's been in
+                // progress past the configured cap — so a long meeting (or a far-off
+                // end) can't pin the overlay indefinitely (a real report had one up
+                // ~12h). Mirrors CalendarManager's poll-side cap.
+                let capMin = UserDefaults.standard.object(forKey: "inProgressOverlayMaxMinutes") as? Int ?? 15
+                let secondsSinceStart = -meeting.startDate.timeIntervalSinceNow
+                let cappedInProgress = capMin > 0 && secondsSinceStart >= TimeInterval(capMin * 60)
+                if Date() >= meeting.endDate || cappedInProgress {
                     timer?.invalidate()
                     onDismiss()
                 }
             }
         }
+        // Schedule in `.common` so the countdown keeps firing during menu / event
+        // tracking and doesn't stall — a stalled timer left the overlay frozen and
+        // unresponsive after a long stretch (the "won't respond to input" symptom).
+        RunLoop.main.add(t, forMode: .common)
+        timer = t
     }
 
     // MARK: - Details panel gating

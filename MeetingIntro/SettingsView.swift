@@ -857,6 +857,18 @@ struct SettingsView: View {
             }
 
             Section {
+                Stepper(value: $countdownConfig.inProgressOverlayMaxMinutes, in: 0...240, step: 5) {
+                    if countdownConfig.inProgressOverlayMaxMinutes == 0 {
+                        Text("Keep overlay up until the meeting ends")
+                    } else {
+                        Text("Auto-close the overlay \(countdownConfig.inProgressOverlayMaxMinutes) min after the meeting starts")
+                    }
+                }
+            } header: {
+                SettingsSectionHeader("Overlay Auto-Close", info: "After a meeting starts, the overlay stays up counting time since start (so you can come back a little late and still Join). This caps how long it lingers before closing itself — independent of the meeting's end time — so a long meeting can't leave the overlay on screen for hours. Set to 0 to keep it up until the meeting's scheduled end.")
+            }
+
+            Section {
                 Toggle("Notify me immediately when a meeting is cancelled",
                        isOn: $notificationManager.cancellationNotifyEnabled)
                 Toggle("Play sound with cancellation notifications",
