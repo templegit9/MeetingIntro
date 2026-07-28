@@ -85,6 +85,10 @@ final class EventKitProvider: CalendarProvider {
                     organizerName: event.organizer?.name,
                     isCancelled: cancelled,
                     isRecurring: event.hasRecurrenceRules,
+                    // occurrenceDate is only set for recurring occurrences; it's the
+                    // original slot and stays fixed even when the occurrence is moved,
+                    // so time-change detection can spot a rescheduled occurrence.
+                    occurrenceDate: event.hasRecurrenceRules ? event.occurrenceDate : nil,
                     myResponse: myResponse,
                     responseCounts: counts
                 )

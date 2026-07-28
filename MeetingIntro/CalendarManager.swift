@@ -590,18 +590,32 @@ final class CalendarManager: ObservableObject {
     private func detectTimeChanges(in events: [MeetingEvent]) {
         let now = Date()
         var dirty = false
-        for event in events where !event.isCancelled && !event.isAllDay && !event.isRecurring && event.startDate > now {
-            if let prior = knownStartTimes[event.id],
+        for event in events where !event.isCancelled && !event.isAllDay && event.startDate > now {
+            // Baseline key. Non-recurring: the event id. Recurring: id + occurrenceDate —
+            // every occurrence of a series shares ONE id, so an id-keyed baseline would
+            // false-fire as occurrences roll over. occurrenceDate is the occurrence's
+            // ORIGINAL slot and stays fixed even when it's moved, giving each occurrence
+            // a stable key AND letting a moved occurrence be detected (its startDate
+            // diverges from the baseline). A recurring event with no occurrenceDate
+            // (e.g. the Graph provider, which doesn't expose it) stays skipped.
+            let baselineKey: String
+            if event.isRecurring {
+                guard let occ = event.occurrenceDate else { continue }
+                baselineKey = "\(event.id)\u{1F}\(Int(occ.timeIntervalSince1970))"
+            } else {
+                baselineKey = event.id
+            }
+            if let prior = knownStartTimes[baselineKey],
                abs(prior.timeIntervalSince(event.startDate)) >= Self.timeChangeMinDelta {
-                let key = "\(event.id)_\(Int(event.startDate.timeIntervalSince1970))"
+                let key = "\(baselineKey)_\(Int(event.startDate.timeIntervalSince1970))"
                 if notifiedTimeChanges.insert(key).inserted {
                     diagnosticLog?.info(.calendar, "Meeting moved — \"\(event.title)\": \(prior.formatted(date: .abbreviated, time: .shortened)) → \(event.startDate.formatted(date: .abbreviated, time: .shortened))")
                     onMeetingTimeChanged?(event, prior)
                     dirty = true
                 }
             }
-            if knownStartTimes[event.id] != event.startDate {
-                knownStartTimes[event.id] = event.startDate
+            if knownStartTimes[baselineKey] != event.startDate {
+                knownStartTimes[baselineKey] = event.startDate
                 dirty = true
             }
         }
@@ -615,10 +629,15 @@ final class CalendarManager: ObservableObject {
     private func pruneTimeChangeState(against events: [MeetingEvent]) -> Bool {
         let liveIDs = Set(events.map(\.id))
         var changed = false
-        let prunedKnown = knownStartTimes.filter { liveIDs.contains($0.key) }
+        // Keys are either a bare event id (non-recurring) or "id\u{1F}occurrenceEpoch"
+        // (recurring). Keep a key if its id part is still live.
+        let prunedKnown = knownStartTimes.filter { entry in
+            liveIDs.contains(entry.key) || liveIDs.contains { entry.key.hasPrefix("\($0)\u{1F}") }
+        }
         if prunedKnown.count != knownStartTimes.count { knownStartTimes = prunedKnown; changed = true }
+        // Notified keys are "id_newStart" (non-recurring) or "id\u{1F}occ_newStart" (recurring).
         let prunedNotified = notifiedTimeChanges.filter { key in
-            liveIDs.contains { key.hasPrefix("\($0)_") }
+            liveIDs.contains { key.hasPrefix("\($0)_") || key.hasPrefix("\($0)\u{1F}") }
         }
         if prunedNotified.count != notifiedTimeChanges.count { notifiedTimeChanges = prunedNotified; changed = true }
         return changed

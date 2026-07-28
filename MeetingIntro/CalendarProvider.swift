@@ -44,11 +44,17 @@ struct MeetingEvent: Identifiable, Equatable {
     let attendeeCount: Int
     let organizerName: String?
     let isCancelled: Bool
-    /// Whether this event is part of a recurring series. Time-change detection skips
-    /// these: EventKit gives every occurrence the SAME id, so an id-keyed baseline can't
-    /// tell a real reschedule from the series simply advancing to the next occurrence.
-    /// Defaults false so existing construction stays valid.
+    /// Whether this event is part of a recurring series. EventKit gives every occurrence
+    /// the SAME id, so an id-keyed baseline can't tell a real reschedule from the series
+    /// advancing to the next occurrence — time-change detection therefore keys recurring
+    /// events by `occurrenceDate` instead. Defaults false so existing construction stays valid.
     var isRecurring: Bool = false
+    /// For a recurring occurrence, the date it was ORIGINALLY scheduled to occur
+    /// (EventKit `EKEvent.occurrenceDate`). Stays fixed even when the occurrence is
+    /// moved, so `startDate != occurrenceDate` means the occurrence was rescheduled.
+    /// This is the stable per-occurrence identity time-change detection needs; nil for
+    /// non-recurring events and providers that don't expose it. Defaults nil.
+    var occurrenceDate: Date? = nil
     /// The current user's RSVP. Defaults to `.unknown` so events without invitee
     /// data are never accidentally suppressed.
     var myResponse: ResponseStatus = .unknown
