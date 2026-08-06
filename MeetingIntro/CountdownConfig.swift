@@ -72,6 +72,15 @@ final class CountdownConfigManager: ObservableObject {
         didSet { UserDefaults.standard.set(inProgressOverlayMaxMinutes, forKey: "inProgressOverlayMaxMinutes") }
     }
 
+    /// Force the compact countdown-overlay layout (smaller ring/type, tighter spacing)
+    /// regardless of screen size. The overlay already compacts itself automatically when
+    /// the roomy layout wouldn't fit the visible screen — this is the "I just don't want
+    /// a big overlay" escape hatch for users with plenty of room. Default off.
+    /// See `OverlayWindowController.show(for:)`.
+    @Published var overlayCompactLayout: Bool {
+        didSet { UserDefaults.standard.set(overlayCompactLayout, forKey: "overlayCompactLayout") }
+    }
+
     static let availableMinutes = [1, 2, 3, 5, 10, 15]
 
     init() {
@@ -100,6 +109,7 @@ final class CountdownConfigManager: ObservableObject {
         self.autoJoinOverlayLeadSeconds = UserDefaults.standard.object(forKey: "autoJoinOverlayLeadSeconds") as? Int ?? 60
         self.autoJoinAudibleCountdownEnabled = UserDefaults.standard.object(forKey: "autoJoinAudibleCountdownEnabled") as? Bool ?? true
         self.inProgressOverlayMaxMinutes = UserDefaults.standard.object(forKey: "inProgressOverlayMaxMinutes") as? Int ?? 15
+        self.overlayCompactLayout = UserDefaults.standard.object(forKey: "overlayCompactLayout") as? Bool ?? false
     }
 
     /// Get all enabled minutes (for CalendarManager compatibility).

@@ -8,6 +8,21 @@ final class OverlayWindowController: ObservableObject {
 
     @Published var isShowing: Bool = false
 
+    /// Largest share of the screen's visible frame the countdown overlay may occupy.
+    /// A reminder should read as a card on top of your work, not take the screen over —
+    /// the pre-v2.15.4 fixed 560/720pt panel did exactly that on a 1080p display.
+    private static let maxScreenFraction: CGFloat = 0.72
+
+    /// Below this much vertical room (points, visible frame) the overlay switches to the
+    /// compact layout outright — not just when the roomy one literally wouldn't fit.
+    /// A 1080p display has ~1000pt of usable height, where the roomy panel reads as
+    /// "it fills my screen" (the reported complaint) even though it technically fits.
+    private static let compactBelowScreenHeight: CGFloat = 1100
+
+    /// Floor for the content-derived panel height, so a bare meeting (no link, no
+    /// details) still reads as a deliberate card rather than a thin strip.
+    private static let minPanelHeight: CGFloat = 360
+
     private var overlayWindow: NSPanel?
     /// Separate slot for the cancellation notice so it never collides with an
     /// active countdown overlay — both can be on screen at once.
@@ -40,8 +55,24 @@ final class OverlayWindowController: ObservableObject {
         }
         diagnosticLog?.info(.overlay, "Showing countdown overlay — \(meeting.title)")
 
+        // Panel size is derived from the content, then clamped to the screen. The old
+        // fixed 560/720pt panel was wrong in both directions: it swallowed a 1080p (or
+        // scaled) display, yet on a busy meeting the lower buttons still didn't fit
+        // inside it. Now: pick the compact layout on short screens (or by preference),
+        // ask the view how tall its content actually is, and cap that at
+        // `maxScreenFraction` of the visible frame. The view gets the same `compact`
+        // flag, so its metrics and the panel always agree.
+        let visibleFrame = (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame
+        let maxHeight = (visibleFrame?.height ?? 900) * Self.maxScreenFraction
+        let maxWidth = (visibleFrame?.width ?? 1200) * Self.maxScreenFraction
+
+        let forcedCompact = UserDefaults.standard.object(forKey: "overlayCompactLayout") as? Bool ?? false
+        let compact = forcedCompact || (visibleFrame.map { $0.height < Self.compactBelowScreenHeight } ?? false)
+        let panelWidth = min(compact ? 380 : 420, maxWidth)
+
         let overlayView = CountdownOverlayView(
             meeting: meeting,
+            compact: compact,
             onDismiss: { [weak self] in self?.dismiss() },
             onArmAutoJoin: { [weak self] in
                 // Arm the auto-join, then close the overlay. The link opens
@@ -55,16 +86,15 @@ final class OverlayWindowController: ObservableObject {
             }
         )
 
-        let hostingView = NSHostingView(rootView: overlayView)
+        // Fit the panel to the content (never taller than the screen allows). The view
+        // keeps a ScrollView safety net for the rare case the clamp bites.
+        let panelHeight = min(max(overlayView.contentFittingHeight(width: panelWidth), Self.minPanelHeight), maxHeight)
 
-        // Panel size depends on whether the details panel will render — taller to
-        // accommodate notes/attendees/secondary join link without scrolling the ring.
-        let threshold = UserDefaults.standard.object(forKey: "contextPanelMinThreshold") as? Int ?? 0
-        let panelHeight: CGFloat = CountdownOverlayView.shouldShowDetailsPanel(for: meeting, threshold: threshold) ? 720 : 560
+        let hostingView = NSHostingView(rootView: overlayView)
 
         // Create a floating panel
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: panelHeight),
+            contentRect: NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -85,12 +115,12 @@ final class OverlayWindowController: ObservableObject {
         panel.appearance = NSAppearance(named: .darkAqua)
 
         // Center on screen
-        if let screen = NSScreen.main {
-            let screenFrame = screen.visibleFrame
-            let x = screenFrame.midX - 210
+        if let screenFrame = visibleFrame {
+            let x = screenFrame.midX - panelWidth / 2
             let y = screenFrame.midY - panelHeight / 2
             panel.setFrameOrigin(NSPoint(x: x, y: y))
         }
+        diagnosticLog?.debug(.overlay, "Overlay panel \(Int(panelWidth))×\(Int(panelHeight))\(compact ? " (compact)" : "") — screen \(visibleFrame.map { "\(Int($0.width))×\(Int($0.height))" } ?? "unknown")")
 
         panel.makeKeyAndOrderFront(nil)
         panel.orderFrontRegardless()

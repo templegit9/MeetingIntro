@@ -7,6 +7,9 @@ import SwiftUI
 struct MeetingDetailsPanel: View {
 
     let meeting: MeetingEvent
+    /// Tighter layout, mirroring `CountdownOverlayView.compact` — the panel has to fit
+    /// in a shorter overlay on smaller screens.
+    var compact: Bool = false
 
     @AppStorage("contextPanelShowNotes") private var showNotes: Bool = true
     @AppStorage("contextPanelShowAttendees") private var showAttendees: Bool = true
@@ -26,12 +29,12 @@ struct MeetingDetailsPanel: View {
     var hasContent: Bool { hasNotes || hasAttendees || hasJoinURL }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: compact ? 10 : 14) {
             if hasNotes { notesSection }
             if hasAttendees { attendeesSection }
             if hasJoinURL { joinURLSection }
         }
-        .padding(.horizontal, 32)
+        .padding(.horizontal, compact ? 22 : 32)
     }
 
     // MARK: - Sections
@@ -47,7 +50,7 @@ struct MeetingDetailsPanel: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.trailing, 4)
             }
-            .frame(maxHeight: notesExpanded ? 180 : 110)
+            .frame(maxHeight: notesExpanded ? (compact ? 130 : 180) : (compact ? 72 : 110))
 
             if (meeting.notes ?? "").count > 280 {
                 Button(notesExpanded ? "Show less" : "Show more") {

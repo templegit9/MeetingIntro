@@ -857,6 +857,7 @@ struct SettingsView: View {
             }
 
             Section {
+                Toggle("Always use the compact overlay", isOn: $countdownConfig.overlayCompactLayout)
                 Stepper(value: $countdownConfig.inProgressOverlayMaxMinutes, in: 0...240, step: 5) {
                     if countdownConfig.inProgressOverlayMaxMinutes == 0 {
                         Text("Keep overlay up until the meeting ends")
@@ -865,7 +866,7 @@ struct SettingsView: View {
                     }
                 }
             } header: {
-                SettingsSectionHeader("Overlay Auto-Close", info: "After a meeting starts, the overlay stays up counting time since start (so you can come back a little late and still Join). This caps how long it lingers before closing itself — independent of the meeting's end time — so a long meeting can't leave the overlay on screen for hours. Set to 0 to keep it up until the meeting's scheduled end.")
+                SettingsSectionHeader("Overlay Size & Auto-Close", info: "The countdown overlay sizes itself to your screen — on smaller or 1080p displays it uses a compact layout (smaller ring and type) so it never takes over the screen. Turn on \"Always use the compact overlay\" to get that smaller card on every display.\n\nAfter a meeting starts, the overlay stays up counting time since start (so you can come back a little late and still Join). The stepper caps how long it lingers before closing itself — independent of the meeting's end time — so a long meeting can't leave the overlay on screen for hours. Set to 0 to keep it up until the meeting's scheduled end.")
             }
 
             Section {
@@ -2218,16 +2219,6 @@ struct SettingsView: View {
                     aboutLink("Feedback", "exclamationmark.bubble", "https://forms.gle/9ueTH3vZq71TpDD86")
                 }
                 .padding(.top, 2)
-            }
-
-            Divider()
-                .padding(.horizontal, 60)
-
-            VStack(spacing: 4) {
-                Text("Special thanks")
-                    .font(.caption).fontWeight(.semibold).foregroundStyle(.secondary)
-                Text("Jon Lind, for suggesting smarter cancellation handling (v2.2.0)")
-                    .font(.caption2).foregroundStyle(.secondary)
             }
 
             Spacer()
