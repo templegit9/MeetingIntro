@@ -124,6 +124,7 @@ struct SettingsView: View {
     @ObservedObject var updater: AppUpdater
 
     @State private var showRecordingDisclaimer = false
+    @State private var showTickerSettings = false
     @State private var recordingStats: (count: Int, sizeBytes: Int64) = (0, 0)
     /// Bumped when the app reactivates so the recording permission rows re-read TCC
     /// state after the user grants access in System Settings.
@@ -1390,6 +1391,9 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
+        .sheet(isPresented: $showTickerSettings) {
+            TickerSettingsSheet(config: tickerConfig) { showTickerSettings = false }
+        }
     }
 
     // MARK: - Ticker plugin
@@ -1421,59 +1425,17 @@ struct SettingsView: View {
                     }
                 }
 
-                if tickerConfig.hasNoSources {
-                    Label("Pick at least one source below, or the ticker has nothing to show.",
-                          systemImage: "exclamationmark.triangle.fill")
-                        .font(.caption).foregroundStyle(.orange)
+                // Configuration lives behind this button, not inline — the Plugins tab
+                // lists what's available, it isn't the place to configure one add-on at
+                // length (three inline sections pushed the other plugins off screen).
+                HStack {
+                    Button("Ticker Settings…") { showTickerSettings = true }
+                    Button("Preview the Ticker") { tickerCoordinator.showPreview() }
+                        .help("Show a sample crawl for a few seconds — your real feed is often empty")
                 }
-
-                Button("Preview the Ticker") { tickerCoordinator.showPreview() }
-                    .help("Show a sample crawl for a few seconds — your real feed is often empty")
             }
         } header: {
-            SettingsSectionHeader("Ticker", info: "A thin strip that crawls across the empty middle of the menu bar — the spot that lines up with your webcam — cycling whatever you pick below. It ignores the mouse entirely, so clicks pass through to whatever's underneath. On a Mac with a notch it drops just below the menu bar so the camera housing doesn't cut it in half.")
-        }
-
-        if tickerConfig.isEnabled {
-            Section {
-                Toggle("Meetings — today's remaining meetings and their countdown", isOn: $tickerConfig.showMeetings)
-                Toggle("Tasks — overdue and due soon", isOn: $tickerConfig.showTasks)
-                Stepper(value: $tickerConfig.taskLookaheadHours, in: 1...168) {
-                    Text("Include tasks due within \(tickerConfig.taskLookaheadHours)h")
-                }
-                .disabled(!tickerConfig.showTasks)
-                Toggle("Cancellations — meetings cancelled but not yet acknowledged", isOn: $tickerConfig.showCancellations)
-                Toggle("Status — recording in progress, auto-join armed", isOn: $tickerConfig.showStatus)
-            } header: {
-                SettingsSectionHeader("What rides in the ticker", info: "Only what you tick here ever appears. When nothing qualifies, the strip disappears completely — so its presence on screen is itself a signal that something needs you.")
-            }
-
-            Section {
-                HStack {
-                    Text("Speed")
-                    Slider(value: $tickerConfig.scrollSpeed, in: TickerConfig.speedRange)
-                    Text("\(Int(tickerConfig.scrollSpeed)) pt/s")
-                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                        .frame(width: 60, alignment: .trailing)
-                }
-                HStack {
-                    Text("Width")
-                    Slider(value: $tickerConfig.width, in: TickerConfig.widthRange)
-                    Text("\(Int(tickerConfig.width)) pt")
-                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                        .frame(width: 60, alignment: .trailing)
-                }
-            } header: {
-                SettingsSectionHeader("Appearance", info: "Speed is how fast the text crawls; 40 pt/s is about the pace of a TV news ticker. Width keeps the strip inside the empty middle of the menu bar — widen it and it starts to reach your app menus on the left and status icons on the right.")
-            }
-
-            Section {
-                Toggle("Hide while screen sharing", isOn: $tickerConfig.hideWhileScreenSharing)
-                Toggle("Hide while I'm on a call", isOn: $tickerConfig.hideWhileInCall)
-                Toggle("Hide while Focus is on", isOn: $tickerConfig.hideWhileFocus)
-            } header: {
-                SettingsSectionHeader("Auto-hide", info: "Screen sharing is on by default for a reason: a crawl of your task titles across a shared screen is a real leak. These use the same live signals as the reminder policy, and the strip comes back on its own once the condition clears.")
-            }
+            SettingsSectionHeader("Ticker", info: "A thin strip that crawls across the empty middle of the menu bar — the spot that lines up with your webcam — cycling whatever you pick in Ticker Settings. It ignores the mouse entirely, so clicks pass through to whatever's underneath. On a Mac with a notch it drops just below the menu bar so the camera housing doesn't cut it in half.")
         }
     }
 

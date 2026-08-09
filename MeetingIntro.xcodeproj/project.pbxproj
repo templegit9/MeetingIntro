@@ -83,6 +83,7 @@
 		F1B7D6B70B1B92A47F0AEC34 /* TickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8EBA59B9A8286ABC8113431 /* TickerView.swift */; };
 		F1BA48E095AD45D6DCA7066D /* RecordingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF8C273D97F1B3730C901661 /* RecordingController.swift */; };
 		F2EB739753C3E4FA4B2245E1 /* TaskStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E6F06EB55EDCEAF3FA1D40B /* TaskStore.swift */; };
+		F792D11C57A1CAEAE83CF65D /* TickerSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5247E977C9C28BF96B334C /* TickerSettingsSheet.swift */; };
 		FAC89668E4EA7DFCDB5A4B06 /* QuickAddConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7269D692B89FD6576E4784D0 /* QuickAddConfig.swift */; };
 		FB90F3CE2CDDCA8630875C67 /* QuickAddParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 209F277C225C24CB3A0B517C /* QuickAddParser.swift */; };
 		FCE9B7AB56FB291DB7BEDD1F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4291882B0E4FE689BCFF6CA7 /* SettingsView.swift */; };
@@ -95,6 +96,7 @@
 		021E3CACD81AFC8B3CDCB8FC /* TranscriptModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptModels.swift; sourceTree = "<group>"; };
 		032FDEB0D30107ADCC02AD92 /* MeetingIntro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MeetingIntro.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		06B89F3A47268C68A4AF32C6 /* AudioRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRouter.swift; sourceTree = "<group>"; };
+		0A5247E977C9C28BF96B334C /* TickerSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TickerSettingsSheet.swift; sourceTree = "<group>"; };
 		0DD250C84523C24862974C5D /* CalendarProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarProvider.swift; sourceTree = "<group>"; };
 		14B4D39A7A32C15CF3C1E9B7 /* Mirror.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mirror.swift; sourceTree = "<group>"; };
 		18EB6DCA64E48B0F98D0A9F4 /* TickerCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TickerCoordinator.swift; sourceTree = "<group>"; };
@@ -275,6 +277,7 @@
 				69F7F2B7C42D4C60A4716417 /* TickerConfig.swift */,
 				18EB6DCA64E48B0F98D0A9F4 /* TickerCoordinator.swift */,
 				A2C735A96B380C97241A3455 /* TickerFeed.swift */,
+				0A5247E977C9C28BF96B334C /* TickerSettingsSheet.swift */,
 				A8EBA59B9A8286ABC8113431 /* TickerView.swift */,
 				37955A2360A91988DC7CA1BC /* TickerWindowController.swift */,
 			);
@@ -521,6 +524,7 @@
 				2649B2641C264DCD2843158F /* TickerConfig.swift in Sources */,
 				C689B7972F1CE125BB7A6C3B /* TickerCoordinator.swift in Sources */,
 				765165B7A75A0785336DB96D /* TickerFeed.swift in Sources */,
+				F792D11C57A1CAEAE83CF65D /* TickerSettingsSheet.swift in Sources */,
 				F1B7D6B70B1B92A47F0AEC34 /* TickerView.swift in Sources */,
 				35BF26B527A5A21AC72F528A /* TickerWindowController.swift in Sources */,
 				DF34F6437529E629568391AC /* TranscriptModels.swift in Sources */,
