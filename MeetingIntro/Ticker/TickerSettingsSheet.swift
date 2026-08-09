@@ -48,8 +48,13 @@ struct TickerSettingsSheet: View {
                     Toggle("Bob as it travels", isOn: $config.leaderBounce)
                         .disabled(config.leader.isNone)
                     Toggle("Show status icons on each item", isOn: $config.showItemIcons)
+                        .disabled(!config.leader.isNone)
+                    if !config.leader.isNone {
+                        Text("Your character stands in for the status icons while it's picked.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
                 } header: {
-                    SettingsSectionHeader("Leader", info: "The character at the head of the crawl. It travels with the text rather than sitting in one place, so it reads as hauling the whole line along behind it.\n\nTurning off the per-item status icons leaves the leader as the only glyph, for a cleaner all-text crawl. Hit Preview on the Plugins tab to see your pick in motion.")
+                    SettingsSectionHeader("Leader", info: "The character that fronts each message and pulls it along — it replaces that line's status icon, so every item in the crawl gets its own.\n\nPick None to go back to the plain coloured status glyphs. Hit Preview on the Plugins tab to see your pick in motion.")
                 }
 
                 Section {

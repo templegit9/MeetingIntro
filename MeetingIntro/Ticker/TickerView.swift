@@ -58,15 +58,18 @@ struct TickerView: View {
         .onDisappear { animating = false }
     }
 
-    /// One pass of every item, led by the chosen character. Rendered twice by `body`.
+    /// One pass of every item. Rendered twice by `body`.
+    ///
+    /// The chosen character leads **each message**, not the strip as a whole — it takes
+    /// the place of that item's status glyph, so every line is hauled along by its own
+    /// character rather than one mascot towing the entire feed.
     private var strip: some View {
         HStack(spacing: Self.itemSpacing) {
-            if !style.leader.isNone {
-                leaderView
-            }
             ForEach(items) { item in
                 HStack(spacing: 5) {
-                    if style.showItemIcons {
+                    if !style.leader.isNone {
+                        leaderView
+                    } else if style.showItemIcons {
                         Image(systemName: item.symbol)
                             .font(.system(size: 10, weight: .semibold))
                     }
@@ -89,8 +92,9 @@ struct TickerView: View {
         )
     }
 
-    /// The character at the head of the strip. It scrolls WITH the items (rather than
-    /// being pinned to an edge), which is what sells the "pulling the text along" read.
+    /// The character in front of a message, pulling that line along. Symbol leaders
+    /// inherit the item's tint (like the status glyph they replace); emoji are colour
+    /// glyphs and ignore it.
     @ViewBuilder private var leaderView: some View {
         Group {
             if let emoji = style.leader.emoji {
@@ -100,7 +104,6 @@ struct TickerView: View {
             } else if let symbol = style.leader.symbol {
                 Image(systemName: symbol)
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.9))
             }
         }
         .offset(y: bobbing ? -1.5 : 1.5)
