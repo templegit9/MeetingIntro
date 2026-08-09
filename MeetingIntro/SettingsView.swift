@@ -66,6 +66,8 @@ struct SettingsView: View {
     @ObservedObject var taskConfig: TaskConfig
     @ObservedObject var taskManager: TaskManager
     @ObservedObject var assistantConfig: AssistantConfig
+    @ObservedObject var tickerConfig: TickerConfig
+    @ObservedObject var tickerCoordinator: TickerCoordinator
     @ObservedObject var notesConfig: MeetingNotesConfig
     @ObservedObject var diagnosticLog: DiagnosticLog
     @ObservedObject var mirrorConfig: MirrorConfigManager
@@ -1383,9 +1385,96 @@ struct SettingsView: View {
                     } label: { Label("Open Dictionary", systemImage: "arrow.up.forward.app") }
                 }
             }
+
+            tickerSection
         }
         .formStyle(.grouped)
         .padding()
+    }
+
+    // MARK: - Ticker plugin
+
+    @ViewBuilder private var tickerSection: some View {
+        Section {
+            HStack(spacing: 12) {
+                Image(systemName: "text.line.first.and.arrowtriangle.forward").font(.title2).foregroundStyle(.orange)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Ticker").font(.headline)
+                    Text("A news-style crawl across the top of your screen — next meetings, tasks due, cancellations. Click-through, so it never steals a click from the menu bar.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Toggle("", isOn: $tickerConfig.isEnabled).labelsHidden()
+            }
+
+            if tickerConfig.isEnabled {
+                // Live status — this is the answer to "why can't I see it?".
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(tickerCoordinator.hiddenReason == nil ? Color.green : Color.orange)
+                        .frame(width: 8, height: 8)
+                    if let reason = tickerCoordinator.hiddenReason {
+                        Text("Hidden — \(reason)").font(.caption).foregroundStyle(.secondary)
+                    } else {
+                        Text("Showing \(tickerCoordinator.items.count) item\(tickerCoordinator.items.count == 1 ? "" : "s")")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+
+                if tickerConfig.hasNoSources {
+                    Label("Pick at least one source below, or the ticker has nothing to show.",
+                          systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption).foregroundStyle(.orange)
+                }
+
+                Button("Preview the Ticker") { tickerCoordinator.showPreview() }
+                    .help("Show a sample crawl for a few seconds — your real feed is often empty")
+            }
+        } header: {
+            SettingsSectionHeader("Ticker", info: "A thin strip that crawls across the empty middle of the menu bar — the spot that lines up with your webcam — cycling whatever you pick below. It ignores the mouse entirely, so clicks pass through to whatever's underneath. On a Mac with a notch it drops just below the menu bar so the camera housing doesn't cut it in half.")
+        }
+
+        if tickerConfig.isEnabled {
+            Section {
+                Toggle("Meetings — today's remaining meetings and their countdown", isOn: $tickerConfig.showMeetings)
+                Toggle("Tasks — overdue and due soon", isOn: $tickerConfig.showTasks)
+                Stepper(value: $tickerConfig.taskLookaheadHours, in: 1...168) {
+                    Text("Include tasks due within \(tickerConfig.taskLookaheadHours)h")
+                }
+                .disabled(!tickerConfig.showTasks)
+                Toggle("Cancellations — meetings cancelled but not yet acknowledged", isOn: $tickerConfig.showCancellations)
+                Toggle("Status — recording in progress, auto-join armed", isOn: $tickerConfig.showStatus)
+            } header: {
+                SettingsSectionHeader("What rides in the ticker", info: "Only what you tick here ever appears. When nothing qualifies, the strip disappears completely — so its presence on screen is itself a signal that something needs you.")
+            }
+
+            Section {
+                HStack {
+                    Text("Speed")
+                    Slider(value: $tickerConfig.scrollSpeed, in: TickerConfig.speedRange)
+                    Text("\(Int(tickerConfig.scrollSpeed)) pt/s")
+                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                        .frame(width: 60, alignment: .trailing)
+                }
+                HStack {
+                    Text("Width")
+                    Slider(value: $tickerConfig.width, in: TickerConfig.widthRange)
+                    Text("\(Int(tickerConfig.width)) pt")
+                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                        .frame(width: 60, alignment: .trailing)
+                }
+            } header: {
+                SettingsSectionHeader("Appearance", info: "Speed is how fast the text crawls; 40 pt/s is about the pace of a TV news ticker. Width keeps the strip inside the empty middle of the menu bar — widen it and it starts to reach your app menus on the left and status icons on the right.")
+            }
+
+            Section {
+                Toggle("Hide while screen sharing", isOn: $tickerConfig.hideWhileScreenSharing)
+                Toggle("Hide while I'm on a call", isOn: $tickerConfig.hideWhileInCall)
+                Toggle("Hide while Focus is on", isOn: $tickerConfig.hideWhileFocus)
+            } header: {
+                SettingsSectionHeader("Auto-hide", info: "Screen sharing is on by default for a reason: a crawl of your task titles across a shared screen is a real leak. These use the same live signals as the reminder policy, and the strip comes back on its own once the condition clears.")
+            }
+        }
     }
 
     // MARK: - Recording Tab

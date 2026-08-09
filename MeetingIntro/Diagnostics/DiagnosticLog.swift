@@ -31,6 +31,7 @@ final class DiagnosticLog: ObservableObject {
         case lifecycle, notification, reminder, cancellation, overlay
         case recording, transcription, notes, quickAdd, calendar, handoff
         case assistant
+        case ticker
     }
 
     struct Entry: Identifiable {

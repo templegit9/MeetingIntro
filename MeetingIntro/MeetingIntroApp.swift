@@ -104,6 +104,8 @@ struct MeetingIntroApp: App {
     @StateObject private var taskConfig: TaskConfig
     @StateObject private var taskManager: TaskManager
     @StateObject private var taskReminderCoordinator = TaskReminderCoordinator()
+    @StateObject private var tickerConfig = TickerConfig()
+    @StateObject private var tickerCoordinator = TickerCoordinator()
     @StateObject private var assistantConfig = AssistantConfig()
     @StateObject private var fileOrganizer = FileOrganizer()
     @StateObject private var fileOrganizerCoordinator = FileOrganizerCoordinator()
@@ -165,6 +167,9 @@ struct MeetingIntroApp: App {
             assistantConfig: assistantConfig,
             fileOrganizer: fileOrganizer,
             fileOrganizerCoordinator: fileOrganizerCoordinator,
+            tickerConfig: tickerConfig,
+            tickerCoordinator: tickerCoordinator,
+            recordingController: recordingController,
             notesPipeline: notesPipeline,
             diagnosticLog: diagnosticLog,
             mirrorConfig: mirrorConfig,
@@ -271,6 +276,8 @@ struct MeetingIntroApp: App {
                 taskConfig: taskConfig,
                 taskManager: taskManager,
                 assistantConfig: assistantConfig,
+                tickerConfig: tickerConfig,
+                tickerCoordinator: tickerCoordinator,
                 notesConfig: notesConfig,
                 diagnosticLog: diagnosticLog,
                 mirrorConfig: mirrorConfig,
@@ -360,6 +367,9 @@ final class AppLifecycleManager: ObservableObject {
         assistantConfig: AssistantConfig,
         fileOrganizer: FileOrganizer,
         fileOrganizerCoordinator: FileOrganizerCoordinator,
+        tickerConfig: TickerConfig,
+        tickerCoordinator: TickerCoordinator,
+        recordingController: RecordingController,
         notesPipeline: MeetingNotesPipeline,
         diagnosticLog: DiagnosticLog,
         mirrorConfig: MirrorConfigManager,
@@ -399,6 +409,14 @@ final class AppLifecycleManager: ObservableObject {
         fileOrganizer.diagnosticLog = diagnosticLog
         fileOrganizerCoordinator.attach(config: assistantConfig, organizer: fileOrganizer,
                                         notificationManager: notificationManager, diagnosticLog: diagnosticLog)
+        // Ticker (opt-in plugin): read-only over existing published state — it can't
+        // affect reminders, and it no-ops entirely while `tickerConfig.isEnabled` is off.
+        tickerCoordinator.attach(config: tickerConfig,
+                                 calendarManager: calendarManager,
+                                 taskManager: taskManager,
+                                 contextMonitor: contextMonitor,
+                                 recordingController: recordingController,
+                                 diagnosticLog: diagnosticLog)
         taskReminderCoordinator.attach(taskManager: taskManager,
                                        notificationManager: notificationManager,
                                        voiceReminder: voiceReminder,
