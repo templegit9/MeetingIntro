@@ -34,6 +34,25 @@ struct TickerSettingsSheet: View {
                 }
 
                 Section {
+                    Picker("Leader", selection: $config.leader) {
+                        ForEach(TickerLeader.allCases) { leader in
+                            if let emoji = leader.emoji {
+                                Text("\(emoji)  \(leader.displayName)").tag(leader)
+                            } else if let symbol = leader.symbol {
+                                Label(leader.displayName, systemImage: symbol).tag(leader)
+                            } else {
+                                Text(leader.displayName).tag(leader)
+                            }
+                        }
+                    }
+                    Toggle("Bob as it travels", isOn: $config.leaderBounce)
+                        .disabled(config.leader.isNone)
+                    Toggle("Show status icons on each item", isOn: $config.showItemIcons)
+                } header: {
+                    SettingsSectionHeader("Leader", info: "The character at the head of the crawl. It travels with the text rather than sitting in one place, so it reads as hauling the whole line along behind it.\n\nTurning off the per-item status icons leaves the leader as the only glyph, for a cleaner all-text crawl. Hit Preview on the Plugins tab to see your pick in motion.")
+                }
+
+                Section {
                     HStack {
                         Text("Speed")
                         Slider(value: $config.scrollSpeed, in: TickerConfig.speedRange)

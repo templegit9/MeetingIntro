@@ -95,7 +95,7 @@ final class TickerCoordinator: ObservableObject {
         // A preview in flight owns the strip until it expires (but the plugin being
         // switched off still wins — see below).
         if let previewUntil, previewUntil > Date(), config.isEnabled {
-            window.show(items: items, speed: config.scrollSpeed, width: config.width)
+            window.show(items: items, style: config.style, width: config.width)
             return
         }
         previewUntil = nil
@@ -134,7 +134,7 @@ final class TickerCoordinator: ObservableObject {
             window.hide()
         } else {
             hiddenReason = nil
-            window.show(items: feed, speed: config.scrollSpeed, width: config.width)
+            window.show(items: feed, style: config.style, width: config.width)
         }
     }
 
@@ -153,7 +153,7 @@ final class TickerCoordinator: ObservableObject {
         previewUntil = Date().addingTimeInterval(Self.previewDuration)
         items = sample
         hiddenReason = nil
-        window.show(items: sample, speed: config.scrollSpeed, width: config.width)
+        window.show(items: sample, style: config.style, width: config.width)
         diagnosticLog?.info(.ticker, "Ticker preview shown")
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.previewDuration + 0.1) { [weak self] in
             self?.refresh()

@@ -46,6 +46,23 @@ final class TickerConfig: ObservableObject {
         didSet { UserDefaults.standard.set(scrollSpeed, forKey: "tickerScrollSpeed") }
     }
 
+    /// The character that rides at the head of the crawl and hauls the text along.
+    /// `.none` keeps the plain status-icon look this shipped with.
+    @Published var leader: TickerLeader {
+        didSet { UserDefaults.standard.set(leader.rawValue, forKey: "tickerLeader") }
+    }
+
+    /// Keep the coloured per-item status glyphs. Off leaves the leader as the only
+    /// glyph, for an all-text crawl.
+    @Published var showItemIcons: Bool {
+        didSet { UserDefaults.standard.set(showItemIcons, forKey: "tickerShowItemIcons") }
+    }
+
+    /// Gentle bob on the leader so a walking/running character looks alive.
+    @Published var leaderBounce: Bool {
+        didSet { UserDefaults.standard.set(leaderBounce, forKey: "tickerLeaderBounce") }
+    }
+
     /// Width of the strip in points. Kept narrow by default so it lives in the empty
     /// middle of the menu bar without reaching either app menus or status icons.
     @Published var width: Double {
@@ -83,9 +100,17 @@ final class TickerConfig: ObservableObject {
         self.taskLookaheadHours = d.object(forKey: "tickerTaskLookaheadHours") as? Int ?? 24
         self.scrollSpeed = d.object(forKey: "tickerScrollSpeed") as? Double ?? 40
         self.width = d.object(forKey: "tickerWidth") as? Double ?? 460
+        self.leader = TickerLeader(rawValue: d.string(forKey: "tickerLeader") ?? "") ?? .none
+        self.showItemIcons = d.object(forKey: "tickerShowItemIcons") as? Bool ?? true
+        self.leaderBounce = d.object(forKey: "tickerLeaderBounce") as? Bool ?? true
         self.hideWhileScreenSharing = d.object(forKey: "tickerHideWhileScreenSharing") as? Bool ?? true
         self.hideWhileInCall = d.object(forKey: "tickerHideWhileInCall") as? Bool ?? true
         self.hideWhileFocus = d.object(forKey: "tickerHideWhileFocus") as? Bool ?? true
+    }
+
+    /// The presentation bundle handed to the window/view.
+    var style: TickerStyle {
+        TickerStyle(leader: leader, showItemIcons: showItemIcons, bounce: leaderBounce, speed: scrollSpeed)
     }
 
     /// True when no source is selected — the feed can't produce anything, so the

@@ -62,6 +62,7 @@
 		B7EA1C818EBD405895A0EB6F /* FocusModeDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B8186D8004986233B28EE7F /* FocusModeDetector.swift */; };
 		BC3209D8C8CC3570A12EA998 /* MeetingHoverCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F613B171FEEAEE9AF448698 /* MeetingHoverCard.swift */; };
 		C02348FCACD90D6B40D0A6EA /* PopoverRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B13DD9777C3BA467B874853 /* PopoverRootView.swift */; };
+		C1E8129140CC40187BF1FB15 /* TickerLeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC444235069286A1DD2FEA6 /* TickerLeader.swift */; };
 		C689B7972F1CE125BB7A6C3B /* TickerCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18EB6DCA64E48B0F98D0A9F4 /* TickerCoordinator.swift */; };
 		C7D67F889CA6E39386F2B34D /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79AB0D1338EB2A471C1C13FD /* AudioManager.swift */; };
 		C8676CAB632124F3AFBD267B /* GraphCalendarProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 711DFD4598AE2E83744CCFBD /* GraphCalendarProvider.swift */; };
@@ -161,6 +162,7 @@
 		C8E61F0E3FE2659AEA9B917D /* TaskDeadlineOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDeadlineOverlayView.swift; sourceTree = "<group>"; };
 		CB0286A0A45265AE24EABC58 /* TranscriptionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionEngine.swift; sourceTree = "<group>"; };
 		CC93CC9B88A798A86B40D559 /* RuleEditSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleEditSheet.swift; sourceTree = "<group>"; };
+		CCC444235069286A1DD2FEA6 /* TickerLeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TickerLeader.swift; sourceTree = "<group>"; };
 		D5C3E13EDDC199D47D5F9DFB /* FileOrganizerCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileOrganizerCoordinator.swift; sourceTree = "<group>"; };
 		D7BD2399C4FDA17D3C26D848 /* TaskReminderCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskReminderCoordinator.swift; sourceTree = "<group>"; };
 		DDA27499ED2FB32E55234F2B /* HandoffConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandoffConfig.swift; sourceTree = "<group>"; };
@@ -277,6 +279,7 @@
 				69F7F2B7C42D4C60A4716417 /* TickerConfig.swift */,
 				18EB6DCA64E48B0F98D0A9F4 /* TickerCoordinator.swift */,
 				A2C735A96B380C97241A3455 /* TickerFeed.swift */,
+				CCC444235069286A1DD2FEA6 /* TickerLeader.swift */,
 				0A5247E977C9C28BF96B334C /* TickerSettingsSheet.swift */,
 				A8EBA59B9A8286ABC8113431 /* TickerView.swift */,
 				37955A2360A91988DC7CA1BC /* TickerWindowController.swift */,
@@ -524,6 +527,7 @@
 				2649B2641C264DCD2843158F /* TickerConfig.swift in Sources */,
 				C689B7972F1CE125BB7A6C3B /* TickerCoordinator.swift in Sources */,
 				765165B7A75A0785336DB96D /* TickerFeed.swift in Sources */,
+				C1E8129140CC40187BF1FB15 /* TickerLeader.swift in Sources */,
 				F792D11C57A1CAEAE83CF65D /* TickerSettingsSheet.swift in Sources */,
 				F1B7D6B70B1B92A47F0AEC34 /* TickerView.swift in Sources */,
 				35BF26B527A5A21AC72F528A /* TickerWindowController.swift in Sources */,

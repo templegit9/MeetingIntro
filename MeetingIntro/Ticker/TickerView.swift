@@ -12,14 +12,16 @@ import SwiftUI
 struct TickerView: View {
 
     let items: [TickerItem]
-    /// Points per second.
-    let speed: Double
+    /// Leader character, per-item icons, bob, and speed.
+    let style: TickerStyle
 
     /// Width of one copy of the strip, measured at layout time. The strip is rendered
     /// twice back-to-back and offset by exactly this much, which is what makes the wrap
     /// seamless (the second copy is in the first's old position when the cycle restarts).
     @State private var stripWidth: CGFloat = 0
     @State private var animating = false
+    /// Drives the leader's vertical bob (Core Animation, same as the crawl itself).
+    @State private var bobbing = false
 
     private static let itemSpacing: CGFloat = 26
     private static let separator = "•"
@@ -52,17 +54,22 @@ struct TickerView: View {
             stripWidth = width
             restart()
         }
-        .onChange(of: speed) { _, _ in restart() }
+        .onChange(of: style.speed) { _, _ in restart() }
         .onDisappear { animating = false }
     }
 
-    /// One pass of every item. Rendered twice by `body`.
+    /// One pass of every item, led by the chosen character. Rendered twice by `body`.
     private var strip: some View {
         HStack(spacing: Self.itemSpacing) {
+            if !style.leader.isNone {
+                leaderView
+            }
             ForEach(items) { item in
                 HStack(spacing: 5) {
-                    Image(systemName: item.symbol)
-                        .font(.system(size: 10, weight: .semibold))
+                    if style.showItemIcons {
+                        Image(systemName: item.symbol)
+                            .font(.system(size: 10, weight: .semibold))
+                    }
                     Text(item.text)
                         .font(.system(size: 11.5, weight: .medium))
                         .lineLimit(1)
@@ -82,6 +89,29 @@ struct TickerView: View {
         )
     }
 
+    /// The character at the head of the strip. It scrolls WITH the items (rather than
+    /// being pinned to an edge), which is what sells the "pulling the text along" read.
+    @ViewBuilder private var leaderView: some View {
+        Group {
+            if let emoji = style.leader.emoji {
+                // Emoji carry their own internal padding, so they need a point or two
+                // more than the text to read at the same visual weight.
+                Text(emoji).font(.system(size: 14))
+            } else if let symbol = style.leader.symbol {
+                Image(systemName: symbol)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.9))
+            }
+        }
+        .offset(y: bobbing ? -1.5 : 1.5)
+        .onAppear {
+            guard style.bounce else { return }
+            withAnimation(.easeInOut(duration: 0.42).repeatForever(autoreverses: true)) {
+                bobbing = true
+            }
+        }
+    }
+
     private func color(for tint: TickerItem.TickerTint) -> Color {
         switch tint {
         case .neutral: return .white.opacity(0.88)
@@ -95,13 +125,13 @@ struct TickerView: View {
     /// Restart the crawl from the right whenever the content or speed changes. Setting
     /// `animating` false without animation snaps back, then the linear repeat begins.
     private func restart() {
-        guard stripWidth > 0, speed > 0 else { return }
+        guard stripWidth > 0, style.speed > 0 else { return }
         let distance = stripWidth + Self.itemSpacing
         var reset = Transaction()
         reset.disablesAnimations = true
         withTransaction(reset) { animating = false }
         DispatchQueue.main.async {
-            withAnimation(.linear(duration: distance / speed).repeatForever(autoreverses: false)) {
+            withAnimation(.linear(duration: distance / style.speed).repeatForever(autoreverses: false)) {
                 animating = true
             }
         }
@@ -120,10 +150,10 @@ private struct TickerStripWidthKey: PreferenceKey {
 /// menu bar underneath is light or dark.
 struct TickerBanner: View {
     let items: [TickerItem]
-    let speed: Double
+    let style: TickerStyle
 
     var body: some View {
-        TickerView(items: items, speed: speed)
+        TickerView(items: items, style: style)
             .padding(.horizontal, 10)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(

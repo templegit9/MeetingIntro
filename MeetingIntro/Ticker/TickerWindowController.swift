@@ -22,7 +22,7 @@ final class TickerWindowController: ObservableObject {
     private var hostingView: NSHostingView<TickerBanner>?
     /// Last rendered feed + speed, so `show` can be called every refresh cheaply.
     private var lastItems: [TickerItem] = []
-    private var lastSpeed: Double = 0
+    private var lastStyle: TickerStyle?
 
     var diagnosticLog: DiagnosticLog?
 
@@ -35,14 +35,14 @@ final class TickerWindowController: ObservableObject {
 
     /// Show or update the strip. Idempotent: repeated calls with the same feed only
     /// reposition, they don't rebuild the view (which would restart the crawl).
-    func show(items: [TickerItem], speed: Double, width: CGFloat) {
+    func show(items: [TickerItem], style: TickerStyle, width: CGFloat) {
         guard !items.isEmpty else { hide(); return }
 
-        let contentChanged = items != lastItems || speed != lastSpeed
+        let contentChanged = items != lastItems || style != lastStyle
         lastItems = items
-        lastSpeed = speed
+        lastStyle = style
 
-        let banner = TickerBanner(items: items, speed: speed)
+        let banner = TickerBanner(items: items, style: style)
 
         if let panel, let hostingView {
             if contentChanged { hostingView.rootView = banner }
@@ -77,7 +77,7 @@ final class TickerWindowController: ObservableObject {
 
         panel = created
         hostingView = host
-        diagnosticLog?.info(.ticker, "Ticker shown — \(items.count) item(s), \(Int(speed))pt/s")
+        diagnosticLog?.info(.ticker, "Ticker shown — \(items.count) item(s), \(Int(style.speed))pt/s, leader: \(style.leader.rawValue)")
     }
 
     func hide() {
