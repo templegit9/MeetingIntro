@@ -244,111 +244,35 @@ struct CountdownOverlayView: View {
         .padding(.bottom, stackSpacing)
     }
 
-    /// Join / Start at Time / Dismiss. Pinned outside the scroll area so the overlay
-    /// always offers an action, however little room the screen has.
+    /// Join / Start at Time / Dismiss as ONE grouped block: a full-width primary bar on
+    /// top, the secondary pair sharing the row beneath it, split by a hairline. Pinned
+    /// outside the scroll area so the overlay always offers an action, however little
+    /// room the screen has.
+    ///
+    /// The old layout was three different button *shapes* (filled capsule, two outlined
+    /// capsules, a text link) — three visual tiers for one primary action and three
+    /// secondary ones, with the two capsules reading as equals though one arms an
+    /// auto-join and the other just closes the panel. One bordered group fixes the
+    /// hierarchy: the green bar owns the eye, the shared border makes the pair visibly
+    /// one tier down.
     private var actionSection: some View {
-        VStack(spacing: compact ? 8 : 12) {
-            // Join button — the detected conference link, or a best-effort fallback
-            // link found in the notes/location when no structured link was extracted
-            // (Issue #9: an unrecognized/corporate join link left the overlay with no
-            // action at all, stranding the user after start).
-            if joinButtonEnabled, let actionURL = meeting.url ?? fallbackJoinURL {
-                Button {
-                    // Joining IS the acknowledgment — close the overlay with it.
-                    NSWorkspace.shared.open(actionURL)
-                    onDismiss()
-                } label: {
-                    Label(meeting.url != nil ? "Join Meeting" : "Open Meeting Link", systemImage: "video.fill")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 28)
-                        .padding(.vertical, 12)
-                        .frame(minHeight: 44)
-                        .background(
-                            Capsule()
-                                .fill(Color(red: 0.25, green: 0.78, blue: 0.45))
-                                .shadow(color: Color.black.opacity(0.25), radius: 6, y: 3)
-                        )
+        VStack(spacing: compact ? 8 : 10) {
+            VStack(spacing: 0) {
+                if let primary = primaryAction {
+                    primaryRow(primary)
+                    hairline
                 }
-                .buttonStyle(.plain)
-            } else if joinButtonEnabled {
-                // No link anywhere — give the user a way out instead of a dead end.
-                Button {
-                    NSWorkspace.shared.open(URL(string: "ical://")!)
-                    onDismiss()
-                } label: {
-                    Label("Open in Calendar", systemImage: "calendar")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 10)
-                        .frame(minHeight: 40)
-                        .background(
-                            Capsule()
-                                .fill(.white.opacity(0.18))
-                                .overlay(Capsule().stroke(.white.opacity(0.3), lineWidth: 1))
-                        )
-                }
-                .buttonStyle(.plain)
-                .help("No meeting link was found — open Calendar to join from there")
+                secondaryRow
             }
+            .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .stroke(.white.opacity(0.18), lineWidth: 1)
+            )
+            .padding(.horizontal, compact ? 22 : 28)
 
-            // Secondary actions share a row so the overlay stays short.
-            HStack(spacing: 10) {
-                // Start at Time — arms an auto-join. Only before start (afterward,
-                // joining is immediate via the Join button) and only when there's a
-                // link + the feature is on. Dismisses the overlay; the link opens
-                // automatically when the meeting starts.
-                if !hasStarted, meeting.url != nil, joinButtonEnabled, autoJoinEnabled,
-                   let onArmAutoJoin {
-                    Button {
-                        // Acknowledge the tap, then arm + dismiss after a beat. The
-                        // confirmation overlay covers the other buttons so a stray
-                        // Dismiss tap can't race the arm.
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            armedConfirmation = true
-                        }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
-                            onArmAutoJoin()
-                        }
-                    } label: {
-                        Label("Start at Time", systemImage: "clock.badge.checkmark")
-                            .font(.subheadline.weight(.medium))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 18)
-                            .padding(.vertical, 9)
-                            .frame(minHeight: 38)
-                            .background(
-                                Capsule()
-                                    .fill(.white.opacity(0.18))
-                                    .overlay(Capsule().stroke(.white.opacity(0.3), lineWidth: 1))
-                            )
-                    }
-                    .buttonStyle(.plain)
-                    .help("Open this meeting's link automatically when it starts")
-                }
-
-                // Dismiss button
-                Button(action: onDismiss) {
-                    Text("Dismiss")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 22)
-                        .padding(.vertical, 9)
-                        .frame(minHeight: 38)
-                        .background(
-                            Capsule()
-                                .fill(.white.opacity(0.2))
-                                .overlay(
-                                    Capsule()
-                                        .stroke(.white.opacity(0.3), lineWidth: 1)
-                                )
-                        )
-                }
-                .buttonStyle(.plain)
-            }
-
-            // Stop all future reminders for this event (Issue #15).
+            // Stop all future reminders for this event (Issue #15). Deliberately outside
+            // the block and styled as a link — it's the one destructive-ish action here.
             if let onDismissFutureReminders {
                 Button(action: onDismissFutureReminders) {
                     Label("Don't remind me again for this", systemImage: "bell.slash")
@@ -361,6 +285,98 @@ struct CountdownOverlayView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.bottom, bottomInset)
+    }
+
+    /// What the top bar does. Falls back through: detected link → any link found in the
+    /// notes/location → open Calendar (Issue #9: an unrecognized join link used to leave
+    /// the post-start overlay with no action at all).
+    private enum PrimaryAction {
+        case join(URL)
+        case openLink(URL)
+        case calendar
+    }
+
+    private var primaryAction: PrimaryAction? {
+        guard joinButtonEnabled else { return nil }
+        if let url = meeting.url { return .join(url) }
+        if let url = fallbackJoinURL { return .openLink(url) }
+        return .calendar
+    }
+
+    /// Start at Time only makes sense before the meeting starts, with a link, and with
+    /// the feature on — afterwards joining is immediate via the top bar.
+    private var showsStartAtTime: Bool {
+        !hasStarted && meeting.url != nil && joinButtonEnabled && autoJoinEnabled && onArmAutoJoin != nil
+    }
+
+    @ViewBuilder private func primaryRow(_ action: PrimaryAction) -> some View {
+        let isJoin: Bool = { if case .calendar = action { return false } else { return true } }()
+        OverlayActionCell(
+            title: {
+                switch action {
+                case .join: return "Join Meeting"
+                case .openLink: return "Open Meeting Link"
+                case .calendar: return "Open in Calendar"
+                }
+            }(),
+            systemImage: isJoin ? "video.fill" : "calendar",
+            style: isJoin ? .primary : .neutral,
+            height: compact ? 40 : 44,
+            font: .headline
+        ) {
+            switch action {
+            case .join(let url), .openLink(let url):
+                // Joining IS the acknowledgment — close the overlay with it.
+                NSWorkspace.shared.open(url)
+            case .calendar:
+                NSWorkspace.shared.open(URL(string: "ical://")!)
+            }
+            onDismiss()
+        }
+        .help(isJoin ? "" : "No meeting link was found — open Calendar to join from there")
+    }
+
+    @ViewBuilder private var secondaryRow: some View {
+        HStack(spacing: 0) {
+            if showsStartAtTime, let onArmAutoJoin {
+                OverlayActionCell(
+                    title: "Start at Time",
+                    systemImage: "clock.badge.checkmark",
+                    style: .neutral,
+                    height: compact ? 34 : 38,
+                    font: .subheadline.weight(.medium)
+                ) {
+                    // Acknowledge the tap, then arm + dismiss after a beat. The
+                    // confirmation overlay covers the other buttons so a stray
+                    // Dismiss tap can't race the arm.
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        armedConfirmation = true
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
+                        onArmAutoJoin()
+                    }
+                }
+                .help("Open this meeting's link automatically when it starts")
+
+                Rectangle()
+                    .fill(.white.opacity(0.18))
+                    .frame(width: 1)
+            }
+
+            OverlayActionCell(
+                title: "Dismiss",
+                systemImage: nil,
+                style: .neutral,
+                height: compact ? 34 : 38,
+                font: .subheadline.weight(.semibold),
+                action: onDismiss
+            )
+        }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var hairline: some View {
+        Rectangle().fill(.white.opacity(0.18)).frame(height: 1)
     }
 
     // MARK: - Timer
@@ -441,5 +457,58 @@ struct VisualEffectBlur: NSViewRepresentable {
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
         nsView.material = material
         nsView.blendingMode = blendingMode
+    }
+}
+
+/// One cell of the overlay's grouped action block — a full-bleed rectangle rather than a
+/// capsule, so cells can share edges and a divider without gaps. Hover lifts the fill so
+/// each half of the split row still feels like its own button.
+private struct OverlayActionCell: View {
+
+    enum Style {
+        /// The green primary bar.
+        case primary
+        /// A translucent secondary cell.
+        case neutral
+    }
+
+    let title: String
+    var systemImage: String?
+    let style: Style
+    let height: CGFloat
+    let font: Font
+    let action: () -> Void
+
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Group {
+                if let systemImage {
+                    Label(title, systemImage: systemImage)
+                } else {
+                    Text(title)
+                }
+            }
+            .font(font)
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: height)
+            .background(background)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+    }
+
+    private var background: Color {
+        switch style {
+        case .primary:
+            return hovering
+                ? Color(red: 0.29, green: 0.84, blue: 0.50)
+                : Color(red: 0.25, green: 0.78, blue: 0.45)
+        case .neutral:
+            return .white.opacity(hovering ? 0.20 : 0.11)
+        }
     }
 }
