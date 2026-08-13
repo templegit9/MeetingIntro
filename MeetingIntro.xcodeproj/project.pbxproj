@@ -19,6 +19,7 @@
 		27ED839518A9FCCB5DA7AB02 /* MeetingNotesPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1E98AD28DFC4BE3320297CA /* MeetingNotesPipeline.swift */; };
 		2A15E4DF2BDC03E4F3D79756 /* CalendarManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A99A9D2EE9624DA582CD8D5 /* CalendarManager.swift */; };
 		2B12A77C9BF7293F27AB6EEF /* MeetingRecordingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67C9C4B04514972B0139B4A6 /* MeetingRecordingCoordinator.swift */; };
+		2B99583ACD1D6265E7B02B6F /* ConcurrentOverlayViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C056713134AC2FEB4996F050 /* ConcurrentOverlayViews.swift */; };
 		35BF26B527A5A21AC72F528A /* TickerWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37955A2360A91988DC7CA1BC /* TickerWindowController.swift */; };
 		383CE6338C41F88BF51B7F8C /* HandoffStateSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B298FA1587E1C1B7A432A3C /* HandoffStateSnapshot.swift */; };
 		3CEA795EFAD5F9E28F297D07 /* CalendarProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DD250C84523C24862974C5D /* CalendarProvider.swift */; };
@@ -32,6 +33,7 @@
 		52E3A860EC8A1BA2804CBF85 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5673A02C0FAC799726EA0BCF /* Assets.xcassets */; };
 		58CA9A36991C9BE9D8D4541A /* TemplateEditSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 675F9C5FC04AEF4EF60B3806 /* TemplateEditSheet.swift */; };
 		619706B6677E6431D5E126C4 /* TaskReminderCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7BD2399C4FDA17D3C26D848 /* TaskReminderCoordinator.swift */; };
+		644F9014457EA29379B4EDDC /* ConcurrentOverlayStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0A3C8188CBC74A7C99597C /* ConcurrentOverlayStyle.swift */; };
 		6776C67C91580A90FAF868AB /* MeetingNotesConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7C7F0E8190A10BB8431B931 /* MeetingNotesConfig.swift */; };
 		67B654CACB98A5BBE32C5FC4 /* AppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A779B106BB03584C7E64259 /* AppUpdater.swift */; };
 		68ED75073588DF9609623340 /* WhisperKitEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72275B905671FFA1F87F986C /* WhisperKitEngine.swift */; };
@@ -148,12 +150,14 @@
 		A4FCAC00891AF0B9BD3EC21D /* AudioTrackExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioTrackExporter.swift; sourceTree = "<group>"; };
 		A8EBA59B9A8286ABC8113431 /* TickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TickerView.swift; sourceTree = "<group>"; };
 		AEDC37D08E46673E508040D3 /* FrontmostAppDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrontmostAppDetector.swift; sourceTree = "<group>"; };
+		AF0A3C8188CBC74A7C99597C /* ConcurrentOverlayStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConcurrentOverlayStyle.swift; sourceTree = "<group>"; };
 		B0884058017A627B40452B5E /* ScreenCaptureDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCaptureDetector.swift; sourceTree = "<group>"; };
 		B4D81EBB57F5E6FDD478BC43 /* CountdownOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountdownOverlayView.swift; sourceTree = "<group>"; };
 		B5991426ACB78ABB12C6278E /* DictionaryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryModels.swift; sourceTree = "<group>"; };
 		B6D5293C913670C06E2CDE2A /* AssistantConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantConfig.swift; sourceTree = "<group>"; };
 		B98699F0ED768B00F5C66E45 /* NotesGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesGenerator.swift; sourceTree = "<group>"; };
 		BF7DCEE0AA262DB746742A6A /* EventDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventDraft.swift; sourceTree = "<group>"; };
+		C056713134AC2FEB4996F050 /* ConcurrentOverlayViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConcurrentOverlayViews.swift; sourceTree = "<group>"; };
 		C24E33006373415A238AD640 /* AssistantModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantModels.swift; sourceTree = "<group>"; };
 		C252C77AB45CB10DE5063A4E /* MixkitSoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MixkitSoundManager.swift; sourceTree = "<group>"; };
 		C529555F228CD4BB1EF1E936 /* LLMClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMClient.swift; sourceTree = "<group>"; };
@@ -326,6 +330,8 @@
 				0DD250C84523C24862974C5D /* CalendarProvider.swift */,
 				F2918B368AF626877462E126 /* CancellationOverlayView.swift */,
 				65AA4DF0A8F95DD6C9C2EBE4 /* CompactMenuView.swift */,
+				AF0A3C8188CBC74A7C99597C /* ConcurrentOverlayStyle.swift */,
+				C056713134AC2FEB4996F050 /* ConcurrentOverlayViews.swift */,
 				28D229B727F2C87F6712FCC4 /* ConferenceLinkExtractor.swift */,
 				2BA29FA390A4A1D580C895A8 /* CountdownConfig.swift */,
 				B4D81EBB57F5E6FDD478BC43 /* CountdownOverlayView.swift */,
@@ -468,6 +474,8 @@
 				3CEA795EFAD5F9E28F297D07 /* CalendarProvider.swift in Sources */,
 				159AA5A9C571071C598623DA /* CancellationOverlayView.swift in Sources */,
 				CA44BA8AC38617402B107E82 /* CompactMenuView.swift in Sources */,
+				644F9014457EA29379B4EDDC /* ConcurrentOverlayStyle.swift in Sources */,
+				2B99583ACD1D6265E7B02B6F /* ConcurrentOverlayViews.swift in Sources */,
 				4FAA179DD289F0BA7A5C83E8 /* ConferenceLinkExtractor.swift in Sources */,
 				06F32CFDCF41BE6E7F8D56FE /* CountdownConfig.swift in Sources */,
 				D195FE28659E1B2C38932999 /* CountdownOverlayView.swift in Sources */,

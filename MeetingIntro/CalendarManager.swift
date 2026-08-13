@@ -45,6 +45,11 @@ final class CalendarManager: ObservableObject {
     /// The meeting currently being counted down to.
     @Published var countdownMeeting: MeetingEvent?
 
+    /// Every meeting in the current overlay group — more than one when several start at
+    /// the same time. `countdownMeeting` stays the top-ranked one so existing consumers
+    /// are unchanged.
+    @Published var countdownMeetings: [MeetingEvent] = []
+
     /// Error message if the last fetch failed.
     @Published var errorMessage: String?
 
@@ -461,6 +466,13 @@ final class CalendarManager: ObservableObject {
         // For each meeting, check each configured countdown time. Cancelled
         // meetings are skipped — their reminders fire as a one-shot system
         // notification at detection time instead (see AppLifecycleManager).
+        // Collect EVERY meeting whose threshold crosses in this pass, not just the first.
+        // Meetings that start together are a real case (back-to-back standups, a
+        // double-booking) and the old code fired the first one and `return`ed — the
+        // others were marked triggered on a later poll and then rejected by the
+        // "overlay already showing" check, so they were never shown and never retried.
+        // `ConcurrentOverlayStyle` decides how the group is presented.
+        var firingNow: [MeetingEvent] = []
         for event in upcomingMeetings where event.timeUntilStart > 0 && !event.isCancelled && !(responseGate?(event) ?? false) && !armedAutoJoinIDs.contains(event.id) && !dismissedReminderIDs.contains(event.id) {
             for minutes in countdownMinutesList {
                 let thresholdSeconds = TimeInterval(minutes * 60)
@@ -490,13 +502,23 @@ final class CalendarManager: ObservableObject {
                     } else {
                         allowed = true
                     }
-                    if allowed, !shouldShowCountdown {
-                        nextMeeting = event
-                        countdownMeeting = event
-                        shouldShowCountdown = true
-                    }
-                    return // Only trigger one at a time
+                    if allowed { firingNow.append(event) }
+                    break // this event has fired; don't also fire its other thresholds
                 }
+            }
+        }
+
+        // Show the group as one overlay event. An overlay that's already up wins — we
+        // don't yank it out from under the user mid-read (same as the previous
+        // behaviour); the thresholds are marked triggered either way.
+        if !firingNow.isEmpty, !shouldShowCountdown {
+            let group = Self.rankedForOverlay(firingNow)
+            countdownMeetings = group
+            countdownMeeting = group.first
+            nextMeeting = group.first
+            shouldShowCountdown = true
+            if group.count > 1 {
+                diagnosticLog?.info(.overlay, "\(group.count) meetings start together — showing \(group.map(\.title).joined(separator: ", "))")
             }
         }
 
@@ -780,6 +802,21 @@ final class CalendarManager: ObservableObject {
             armedAutoJoinIDs = prunedArmed
             joinedAutoJoinIDs = prunedJoined
             persistAutoJoinState()
+        }
+    }
+
+    /// Order a group of simultaneous meetings for the overlay. The first is the "hero"
+    /// in the styles that have one. Ranking: the meeting you accepted (or own) first,
+    /// then one with a join link, then the earliest start, then title for stability —
+    /// i.e. the one you're most likely to actually attend leads.
+    static func rankedForOverlay(_ meetings: [MeetingEvent]) -> [MeetingEvent] {
+        meetings.sorted { a, b in
+            let aCommitted = a.myResponse == .accepted || a.myResponse == .organizer
+            let bCommitted = b.myResponse == .accepted || b.myResponse == .organizer
+            if aCommitted != bCommitted { return aCommitted }
+            if (a.url != nil) != (b.url != nil) { return a.url != nil }
+            if a.startDate != b.startDate { return a.startDate < b.startDate }
+            return a.title < b.title
         }
     }
 

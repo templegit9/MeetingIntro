@@ -503,7 +503,11 @@ final class AppLifecycleManager: ObservableObject {
             .removeDuplicates()
             .sink { shouldShow in
                 if shouldShow, let meeting = calendarManager.countdownMeeting {
-                    overlayController.show(for: meeting)
+                    // Pass the whole group — several meetings can start together, and
+                    // the user's ConcurrentOverlayStyle decides how they're presented.
+                    let group = calendarManager.countdownMeetings.isEmpty
+                        ? [meeting] : calendarManager.countdownMeetings
+                    overlayController.show(for: group)
                 } else if !shouldShow {
                     if overlayController.isShowing {
                         overlayController.dismiss()

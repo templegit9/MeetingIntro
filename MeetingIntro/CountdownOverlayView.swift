@@ -10,6 +10,11 @@ struct CountdownOverlayView: View {
     /// `CountdownConfig.overlayCompactLayout`. Set by `OverlayWindowController`, which
     /// sizes the panel to match.
     var compact: Bool = false
+    /// Other meetings starting at the same time — rendered as an "also at this time"
+    /// strip under the details (the `heroPlusStrip` style). Empty for a lone meeting.
+    var alsoAtThisTime: [MeetingEvent] = []
+    /// Pager position for the `pager` style: (index, total). nil = no pager chrome.
+    var pagerPosition: (index: Int, total: Int)? = nil
     let onDismiss: () -> Void
     /// Arms auto-join for this meeting (opens the link automatically at start time)
     /// and dismisses the overlay. Wired by `OverlayWindowController`.
@@ -17,6 +22,12 @@ struct CountdownOverlayView: View {
     /// Stop all future reminders for this event (Issue #15) and dismiss. Wired by
     /// `OverlayWindowController`.
     var onDismissFutureReminders: (() -> Void)?
+    /// Join / arm one of the `alsoAtThisTime` meetings.
+    var onJoinOther: ((MeetingEvent) -> Void)?
+    var onArmOther: ((MeetingEvent) -> Void)?
+    /// Advance the pager (`pager` style). When set, Dismiss reads "Next" for every
+    /// meeting but the last.
+    var onNextInGroup: (() -> Void)?
 
     @State private var timeRemaining: TimeInterval = 0
     @State private var timer: Timer?
@@ -149,6 +160,13 @@ struct CountdownOverlayView: View {
 
     private var header: some View {
         HStack {
+            if let pagerPosition {
+                Text("MEETING \(pagerPosition.index + 1) OF \(pagerPosition.total)")
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(1.4)
+                    .foregroundStyle(.white.opacity(0.55))
+                    .padding(.leading, closeButtonPadding + 4)
+            }
             Spacer()
             Button(action: onDismiss) {
                 Image(systemName: "xmark.circle.fill")
@@ -239,6 +257,36 @@ struct CountdownOverlayView: View {
                  : "Starts at \(meeting.formattedStartTime)")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.5))
+
+            // "Also at this time" — the other meetings in the clash. Informational, so
+            // it lives in the scrolling area; the actions below stay pinned.
+            if !alsoAtThisTime.isEmpty {
+                VStack(spacing: 0) {
+                    HStack {
+                        Text("ALSO AT \(meeting.formattedStartTime)")
+                            .font(.system(size: 10, weight: .semibold))
+                            .tracking(1.2)
+                            .foregroundStyle(.white.opacity(0.45))
+                        Spacer()
+                    }
+                    .padding(.horizontal, compact ? 14 : 18)
+                    .padding(.bottom, 4)
+
+                    ForEach(alsoAtThisTime) { other in
+                        ConcurrentMeetingRow(
+                            meeting: other, compact: compact,
+                            onJoin: { onJoinOther?($0) },
+                            onArm: onArmOther.map { arm in { arm($0) } }
+                        )
+                    }
+                }
+                .padding(.top, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(.white.opacity(0.06))
+                )
+                .padding(.horizontal, compact ? 16 : 22)
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(.bottom, stackSpacing)
@@ -364,15 +412,22 @@ struct CountdownOverlayView: View {
             }
 
             OverlayActionCell(
-                title: "Dismiss",
+                title: isPagerAdvance ? "Next \u{203A}" : "Dismiss",
                 systemImage: nil,
                 style: .neutral,
                 height: compact ? 34 : 38,
                 font: .subheadline.weight(.semibold),
-                action: onDismiss
+                action: { isPagerAdvance ? onNextInGroup?() : onDismiss() }
             )
         }
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// In pager mode, Dismiss advances to the next meeting rather than closing —
+    /// except on the last card, where it closes.
+    private var isPagerAdvance: Bool {
+        guard let pagerPosition, onNextInGroup != nil else { return false }
+        return pagerPosition.index < pagerPosition.total - 1
     }
 
     private var hairline: some View {

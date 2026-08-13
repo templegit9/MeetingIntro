@@ -860,6 +860,20 @@ struct SettingsView: View {
             }
 
             Section {
+                Picker("When meetings start together", selection: $countdownConfig.concurrentOverlayStyle) {
+                    ForEach(ConcurrentOverlayStyle.allCases) { style in
+                        Label(style.displayName, systemImage: style.symbol).tag(style)
+                    }
+                }
+                Text(countdownConfig.concurrentOverlayStyle.summary)
+                    .font(.caption).foregroundStyle(.secondary)
+                Button("Test with 3 meetings at once") { showConcurrentOverlayPreview() }
+                    .help("Shows the style you picked, using three sample meetings")
+            } header: {
+                SettingsSectionHeader("Simultaneous Meetings", info: "Two meetings booked at the same time used to produce exactly one overlay — the others were silently dropped. Now every meeting whose reminder lands in the same poll is shown together, and this picks how.\n\nUse the test button to see each style before committing to it.")
+            }
+
+            Section {
                 Toggle("Always use the compact overlay", isOn: $countdownConfig.overlayCompactLayout)
                 Stepper(value: $countdownConfig.inProgressOverlayMaxMinutes, in: 0...240, step: 5) {
                     if countdownConfig.inProgressOverlayMaxMinutes == 0 {
@@ -2415,6 +2429,34 @@ struct SettingsView: View {
 
     private func showCountdownOverlay(for meeting: MeetingEvent) {
         calendarManager.countdownMeeting = meeting
+        calendarManager.countdownMeetings = [meeting]
+        calendarManager.shouldShowCountdown = true
+    }
+
+    /// Preview the chosen `ConcurrentOverlayStyle` with three sample meetings that all
+    /// start together — the clash is rare enough that waiting for a real one is no way
+    /// to choose a style. Goes through the same path as a live clash.
+    private func showConcurrentOverlayPreview() {
+        let minutes = countdownConfig.enabledMinutes.first ?? 2
+        let start = Date().addingTimeInterval(TimeInterval(minutes * 60))
+        func sample(_ id: String, _ title: String, _ link: String?, _ response: ResponseStatus,
+                    _ attendees: [String]) -> MeetingEvent {
+            MeetingEvent(
+                id: id, title: title, startDate: start, endDate: start.addingTimeInterval(1800),
+                calendarName: "Preview", location: nil, isAllDay: false,
+                url: link.flatMap(URL.init(string:)), notes: nil,
+                attendeeNames: attendees, attendeeCount: attendees.count,
+                organizerName: attendees.first, isCancelled: false, myResponse: response
+            )
+        }
+        calendarManager.countdownMeetings = CalendarManager.rankedForOverlay([
+            sample("preview-1", "Platform Owner Team Meeting", "https://zoom.us/j/0000000001", .accepted,
+                   ["Alice Wong", "Ben Patel"]),
+            sample("preview-2", "HOST-Platform Academy", "https://zoom.us/j/0000000002", .tentative,
+                   ["Chiamaka Eze"]),
+            sample("preview-3", "Build Agent — Takeaways", nil, .noResponse, ["Diego Ortiz"])
+        ])
+        calendarManager.countdownMeeting = calendarManager.countdownMeetings.first
         calendarManager.shouldShowCountdown = true
     }
 }

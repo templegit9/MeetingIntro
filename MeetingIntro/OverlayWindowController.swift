@@ -24,6 +24,11 @@ final class OverlayWindowController: ObservableObject {
     private static let minPanelHeight: CGFloat = 360
 
     private var overlayWindow: NSPanel?
+    /// The clash currently being paged through (`pager` style) and where we are in it.
+    private var groupForPager: [MeetingEvent] = []
+    private var pagerIndex: Int = 0
+    /// The cards still on screen in the `cardStack` style.
+    private var cardStackMeetings: [MeetingEvent] = []
     /// Separate slot for the cancellation notice so it never collides with an
     /// active countdown overlay — both can be on screen at once.
     private var cancellationWindow: NSPanel?
@@ -47,8 +52,43 @@ final class OverlayWindowController: ObservableObject {
         self.audioManager = audioManager
     }
 
+    /// Show the countdown overlay for a group of meetings that start together. One
+    /// meeting takes the normal single-meeting path; several are presented in the
+    /// user's chosen `ConcurrentOverlayStyle`.
+    func show(for meetings: [MeetingEvent]) {
+        guard let lead = meetings.first else { return }
+        guard meetings.count > 1 else { show(for: lead); return }
+
+        guard overlayWindow == nil else {
+            diagnosticLog?.debug(.overlay, "Countdown overlay show skipped (already showing) — \(lead.title) +\(meetings.count - 1)")
+            return
+        }
+
+        let style = ConcurrentOverlayStyle(
+            rawValue: UserDefaults.standard.string(forKey: "concurrentOverlayStyle") ?? ""
+        ) ?? .heroPlusStrip
+        diagnosticLog?.info(.overlay, "Showing \(style.rawValue) overlay for \(meetings.count) simultaneous meetings")
+
+        switch style {
+        case .heroPlusStrip:
+            showSingle(lead, alsoAtThisTime: Array(meetings.dropFirst()))
+        case .pager:
+            groupForPager = meetings
+            pagerIndex = 0
+            showSingle(meetings[0], pager: (0, meetings.count))
+        case .conflictPanel:
+            showConflictPanel(meetings)
+        case .cardStack:
+            showCardStack(meetings)
+        }
+    }
+
     /// Show the countdown overlay for the given meeting.
-    func show(for meeting: MeetingEvent) {
+    func show(for meeting: MeetingEvent) { showSingle(meeting) }
+
+    private func showSingle(_ meeting: MeetingEvent,
+                            alsoAtThisTime: [MeetingEvent] = [],
+                            pager: (index: Int, total: Int)? = nil) {
         guard overlayWindow == nil else {
             diagnosticLog?.debug(.overlay, "Countdown overlay show skipped (already showing) — \(meeting.title)")
             return
@@ -73,6 +113,8 @@ final class OverlayWindowController: ObservableObject {
         let overlayView = CountdownOverlayView(
             meeting: meeting,
             compact: compact,
+            alsoAtThisTime: alsoAtThisTime,
+            pagerPosition: pager,
             onDismiss: { [weak self] in self?.dismiss() },
             onArmAutoJoin: { [weak self] in
                 // Arm the auto-join, then close the overlay. The link opens
@@ -83,7 +125,10 @@ final class OverlayWindowController: ObservableObject {
             onDismissFutureReminders: { [weak self] in
                 self?.calendarManager?.dismissReminders(meeting.id)
                 self?.dismiss()
-            }
+            },
+            onJoinOther: { [weak self] other in self?.join(other) },
+            onArmOther: { [weak self] other in self?.arm(other) },
+            onNextInGroup: pager == nil ? nil : { [weak self] in self?.advancePager() }
         )
 
         // Fit the panel to the content (never taller than the screen allows). The view
@@ -129,6 +174,125 @@ final class OverlayWindowController: ObservableObject {
 
         // Start the music
         audioManager?.play()
+    }
+
+    // MARK: - Multi-meeting presentations
+
+    /// `conflictPanel` — one panel for the whole timeslot.
+    private func showConflictPanel(_ meetings: [MeetingEvent]) {
+        let (compact, panelWidth, maxHeight, visibleFrame) = panelMetrics()
+        let view = ConflictOverlayView(
+            meetings: meetings,
+            compact: compact,
+            onDismiss: { [weak self] in self?.dismiss() },
+            onJoin: { [weak self] in self?.join($0) },
+            onArm: { [weak self] in self?.arm($0) }
+        )
+        let host = NSHostingView(rootView: view)
+        host.frame = NSRect(x: 0, y: 0, width: panelWidth, height: 2000)
+        host.layoutSubtreeIfNeeded()
+        let height = min(max(host.fittingSize.height, Self.minPanelHeight), maxHeight)
+        present(host, width: panelWidth, height: height, in: visibleFrame, corner: false)
+    }
+
+    /// `cardStack` — a card per meeting, anchored top-right like the cancellation notice
+    /// (it's a stack of notices, not a modal centrepiece).
+    private func showCardStack(_ meetings: [MeetingEvent]) {
+        let (compact, _, maxHeight, visibleFrame) = panelMetrics()
+        let width: CGFloat = compact ? 294 : 324
+        let view = ConflictCardStackView(
+            meetings: meetings,
+            compact: compact,
+            onDismissOne: { [weak self] meeting in self?.dismissCard(meeting) },
+            onDismissAll: { [weak self] in self?.dismiss() },
+            onJoin: { [weak self] in self?.join($0) },
+            onArm: { [weak self] in self?.arm($0) }
+        )
+        let host = NSHostingView(rootView: view)
+        host.frame = NSRect(x: 0, y: 0, width: width, height: 2000)
+        host.layoutSubtreeIfNeeded()
+        let height = min(host.fittingSize.height, maxHeight)
+        cardStackMeetings = meetings
+        present(host, width: width, height: height, in: visibleFrame, corner: true)
+    }
+
+    /// Shared window plumbing for the multi-meeting panels.
+    private func present(_ host: NSView, width: CGFloat, height: CGFloat,
+                         in visibleFrame: NSRect?, corner: Bool) {
+        let panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: width, height: height),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered, defer: false
+        )
+        panel.contentView = host
+        panel.isFloatingPanel = true
+        panel.level = .floating
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.isOpaque = false
+        // The card stack draws its own rounded cards, so the window itself is clear;
+        // the single panel keeps the dark backing the countdown overlay uses.
+        panel.backgroundColor = corner ? .clear : NSColor.black.withAlphaComponent(0.85)
+        panel.hasShadow = true
+        panel.titlebarAppearsTransparent = true
+        panel.titleVisibility = .hidden
+        panel.appearance = NSAppearance(named: .darkAqua)
+
+        if let frame = visibleFrame {
+            let x = corner ? frame.maxX - width - 20 : frame.midX - width / 2
+            let y = corner ? frame.maxY - height - 20 : frame.midY - height / 2
+            panel.setFrameOrigin(NSPoint(x: x, y: y))
+        }
+        panel.makeKeyAndOrderFront(nil)
+        panel.orderFrontRegardless()
+        overlayWindow = panel
+        isShowing = true
+        audioManager?.play()
+    }
+
+    /// Screen-derived metrics shared by every presentation.
+    private func panelMetrics() -> (compact: Bool, width: CGFloat, maxHeight: CGFloat, frame: NSRect?) {
+        let visibleFrame = (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame
+        let maxHeight = (visibleFrame?.height ?? 900) * Self.maxScreenFraction
+        let maxWidth = (visibleFrame?.width ?? 1200) * Self.maxScreenFraction
+        let forced = UserDefaults.standard.object(forKey: "overlayCompactLayout") as? Bool ?? false
+        let compact = forced || (visibleFrame.map { $0.height < Self.compactBelowScreenHeight } ?? false)
+        return (compact, min(compact ? 380 : 420, maxWidth), maxHeight, visibleFrame)
+    }
+
+    /// Join one meeting from a group — opens its link and closes the whole overlay,
+    /// since joining IS the acknowledgment (same rule as the single-meeting overlay).
+    private func join(_ meeting: MeetingEvent) {
+        if let url = meeting.url { NSWorkspace.shared.open(url) }
+        dismiss()
+    }
+
+    /// Arm auto-join for one meeting of a group, leaving the rest of the overlay up so
+    /// the user can still deal with the others.
+    private func arm(_ meeting: MeetingEvent) {
+        calendarManager?.armAutoJoin(meeting.id)
+        diagnosticLog?.info(.overlay, "Auto-join armed from group overlay — \(meeting.title)")
+        dismissCard(meeting)
+    }
+
+    /// Drop one card from the stack; close the panel when the last one goes.
+    private func dismissCard(_ meeting: MeetingEvent) {
+        let remaining = cardStackMeetings.filter { $0.id != meeting.id }
+        guard !remaining.isEmpty else { dismiss(); return }
+        cardStackMeetings = remaining
+        let wasShowing = overlayWindow != nil
+        dismiss()
+        if wasShowing { showCardStack(remaining) }
+    }
+
+    /// Advance the `pager` style to the next meeting in the clash.
+    private func advancePager() {
+        let next = pagerIndex + 1
+        guard next < groupForPager.count else { dismiss(); return }
+        let group = groupForPager
+        dismiss()
+        groupForPager = group
+        pagerIndex = next
+        showSingle(group[next], pager: (next, group.count))
     }
 
     /// Dismiss the overlay and stop music.

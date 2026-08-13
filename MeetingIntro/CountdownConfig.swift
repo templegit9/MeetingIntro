@@ -72,6 +72,13 @@ final class CountdownConfigManager: ObservableObject {
         didSet { UserDefaults.standard.set(inProgressOverlayMaxMinutes, forKey: "inProgressOverlayMaxMinutes") }
     }
 
+    /// How the overlay presents several meetings that start at the same time.
+    /// Default `.heroPlusStrip` — the closest thing to the single-meeting overlay, so
+    /// existing users aren't surprised. See `ConcurrentOverlayStyle`.
+    @Published var concurrentOverlayStyle: ConcurrentOverlayStyle {
+        didSet { UserDefaults.standard.set(concurrentOverlayStyle.rawValue, forKey: "concurrentOverlayStyle") }
+    }
+
     /// Force the compact countdown-overlay layout (smaller ring/type, tighter spacing)
     /// regardless of screen size. The overlay already compacts itself automatically when
     /// the roomy layout wouldn't fit the visible screen — this is the "I just don't want
@@ -110,6 +117,9 @@ final class CountdownConfigManager: ObservableObject {
         self.autoJoinAudibleCountdownEnabled = UserDefaults.standard.object(forKey: "autoJoinAudibleCountdownEnabled") as? Bool ?? true
         self.inProgressOverlayMaxMinutes = UserDefaults.standard.object(forKey: "inProgressOverlayMaxMinutes") as? Int ?? 15
         self.overlayCompactLayout = UserDefaults.standard.object(forKey: "overlayCompactLayout") as? Bool ?? false
+        self.concurrentOverlayStyle = ConcurrentOverlayStyle(
+            rawValue: UserDefaults.standard.string(forKey: "concurrentOverlayStyle") ?? ""
+        ) ?? .heroPlusStrip
     }
 
     /// Get all enabled minutes (for CalendarManager compatibility).
