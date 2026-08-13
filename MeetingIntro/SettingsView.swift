@@ -878,7 +878,7 @@ struct SettingsView: View {
                        isOn: $countdownConfig.autoJoinOpensAllOnClash)
                     .disabled(!countdownConfig.autoJoinEnabled || !countdownConfig.joinButtonEnabled)
                 Button("Test with 3 meetings at once") { showConcurrentOverlayPreview() }
-                    .help("Shows the style you picked, using three sample meetings")
+                    .help("Fires all three surfaces with sample meetings: the overlay style, the notification style, and the spoken reminder")
             } header: {
                 SettingsSectionHeader("Simultaneous Meetings", info: "Two meetings booked at the same time used to produce exactly one overlay — the others were silently dropped. Now every meeting whose reminder lands in the same poll is shown together, and this picks how.\n\nNotifications and the spoken reminder collapse the same way, so a triple booking is one banner and one sentence rather than three of each.\n\nWith several armed auto-joins coming due together, only the top-ranked meeting's link opens by default (you get a notification naming the others) — three browser windows at once is not a useful way to start a meeting. Turn the toggle on to open all of them.\n\nUse the test button to see each overlay style before committing to it.")
             }
@@ -2443,31 +2443,59 @@ struct SettingsView: View {
         calendarManager.shouldShowCountdown = true
     }
 
-    /// Preview the chosen `ConcurrentOverlayStyle` with three sample meetings that all
-    /// start together — the clash is rare enough that waiting for a real one is no way
-    /// to choose a style. Goes through the same path as a live clash.
+    /// Preview a clash with three sample meetings that all start together — the overlay
+    /// in the chosen `ConcurrentOverlayStyle`, the notification in the chosen
+    /// `ConcurrentNotificationStyle`, and the spoken reminder. All three surfaces fire
+    /// through the same code a live clash uses, because the notification and voice
+    /// behaviour is exactly what can't be judged from a screenshot.
+    ///
+    /// Sample ids carry a timestamp so a second click isn't swallowed by the
+    /// notification/voice dedup sets (`sentNotificationKeys`, `spokenMeetingIDs`),
+    /// which key on meeting id.
     private func showConcurrentOverlayPreview() {
         let minutes = countdownConfig.enabledMinutes.first ?? 2
         let start = Date().addingTimeInterval(TimeInterval(minutes * 60))
+        let run = Int(Date().timeIntervalSince1970)
         func sample(_ id: String, _ title: String, _ link: String?, _ response: ResponseStatus,
                     _ attendees: [String]) -> MeetingEvent {
             MeetingEvent(
-                id: id, title: title, startDate: start, endDate: start.addingTimeInterval(1800),
+                id: "\(id)-\(run)", title: title, startDate: start, endDate: start.addingTimeInterval(1800),
                 calendarName: "Preview", location: nil, isAllDay: false,
                 url: link.flatMap(URL.init(string:)), notes: nil,
                 attendeeNames: attendees, attendeeCount: attendees.count,
                 organizerName: attendees.first, isCancelled: false, myResponse: response
             )
         }
-        calendarManager.countdownMeetings = CalendarManager.rankedForOverlay([
+        let meetings = CalendarManager.rankedForOverlay([
             sample("preview-1", "Platform Owner Team Meeting", "https://zoom.us/j/0000000001", .accepted,
                    ["Alice Wong", "Ben Patel"]),
             sample("preview-2", "HOST-Platform Academy", "https://zoom.us/j/0000000002", .tentative,
                    ["Chiamaka Eze"]),
             sample("preview-3", "Build Agent — Takeaways", nil, .noResponse, ["Diego Ortiz"])
         ])
-        calendarManager.countdownMeeting = calendarManager.countdownMeetings.first
+
+        // Overlay
+        calendarManager.countdownMeetings = meetings
+        calendarManager.countdownMeeting = meetings.first
         calendarManager.shouldShowCountdown = true
+
+        // Notification — same switch the live fan-out uses.
+        switch countdownConfig.concurrentNotificationStyle {
+        case .grouped:
+            notificationManager.sendGroupedCountdownNotification(for: meetings, minutesBefore: minutes)
+        case .threaded:
+            let thread = "clash_preview_\(run)"
+            for meeting in meetings {
+                notificationManager.sendCountdownNotification(for: meeting, minutesBefore: minutes, threadID: thread)
+            }
+        case .separate:
+            for meeting in meetings {
+                notificationManager.sendCountdownNotification(for: meeting, minutesBefore: minutes)
+            }
+        }
+
+        // Voice (no-op when voice reminders are off).
+        voiceReminder.speakGroupReminderIfNeeded(for: meetings, minutesBefore: minutes)
     }
 }
 
