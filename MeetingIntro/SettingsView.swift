@@ -867,10 +867,20 @@ struct SettingsView: View {
                 }
                 Text(countdownConfig.concurrentOverlayStyle.summary)
                     .font(.caption).foregroundStyle(.secondary)
+                Picker("Notifications for a clash", selection: $countdownConfig.concurrentNotificationStyle) {
+                    ForEach(ConcurrentNotificationStyle.allCases) { style in
+                        Text(style.displayName).tag(style)
+                    }
+                }
+                Text(countdownConfig.concurrentNotificationStyle.summary)
+                    .font(.caption).foregroundStyle(.secondary)
+                Toggle("Auto-join opens every armed meeting at once",
+                       isOn: $countdownConfig.autoJoinOpensAllOnClash)
+                    .disabled(!countdownConfig.autoJoinEnabled || !countdownConfig.joinButtonEnabled)
                 Button("Test with 3 meetings at once") { showConcurrentOverlayPreview() }
                     .help("Shows the style you picked, using three sample meetings")
             } header: {
-                SettingsSectionHeader("Simultaneous Meetings", info: "Two meetings booked at the same time used to produce exactly one overlay — the others were silently dropped. Now every meeting whose reminder lands in the same poll is shown together, and this picks how.\n\nUse the test button to see each style before committing to it.")
+                SettingsSectionHeader("Simultaneous Meetings", info: "Two meetings booked at the same time used to produce exactly one overlay — the others were silently dropped. Now every meeting whose reminder lands in the same poll is shown together, and this picks how.\n\nNotifications and the spoken reminder collapse the same way, so a triple booking is one banner and one sentence rather than three of each.\n\nWith several armed auto-joins coming due together, only the top-ranked meeting's link opens by default (you get a notification naming the others) — three browser windows at once is not a useful way to start a meeting. Turn the toggle on to open all of them.\n\nUse the test button to see each overlay style before committing to it.")
             }
 
             Section {

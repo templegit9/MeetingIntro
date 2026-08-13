@@ -79,6 +79,18 @@ final class CountdownConfigManager: ObservableObject {
         didSet { UserDefaults.standard.set(concurrentOverlayStyle.rawValue, forKey: "concurrentOverlayStyle") }
     }
 
+    /// How notifications behave for several meetings starting together.
+    @Published var concurrentNotificationStyle: ConcurrentNotificationStyle {
+        didSet { UserDefaults.standard.set(concurrentNotificationStyle.rawValue, forKey: "concurrentNotificationStyle") }
+    }
+
+    /// When several ARMED meetings come due at the same moment, open every link
+    /// (`true`) or only the top-ranked one and report the rest (`false`, default).
+    /// Three browser windows at once is not a helpful way to start a meeting.
+    @Published var autoJoinOpensAllOnClash: Bool {
+        didSet { UserDefaults.standard.set(autoJoinOpensAllOnClash, forKey: "autoJoinOpensAllOnClash") }
+    }
+
     /// Force the compact countdown-overlay layout (smaller ring/type, tighter spacing)
     /// regardless of screen size. The overlay already compacts itself automatically when
     /// the roomy layout wouldn't fit the visible screen — this is the "I just don't want
@@ -117,6 +129,10 @@ final class CountdownConfigManager: ObservableObject {
         self.autoJoinAudibleCountdownEnabled = UserDefaults.standard.object(forKey: "autoJoinAudibleCountdownEnabled") as? Bool ?? true
         self.inProgressOverlayMaxMinutes = UserDefaults.standard.object(forKey: "inProgressOverlayMaxMinutes") as? Int ?? 15
         self.overlayCompactLayout = UserDefaults.standard.object(forKey: "overlayCompactLayout") as? Bool ?? false
+        self.concurrentNotificationStyle = ConcurrentNotificationStyle(
+            rawValue: UserDefaults.standard.string(forKey: "concurrentNotificationStyle") ?? ""
+        ) ?? .grouped
+        self.autoJoinOpensAllOnClash = UserDefaults.standard.object(forKey: "autoJoinOpensAllOnClash") as? Bool ?? false
         self.concurrentOverlayStyle = ConcurrentOverlayStyle(
             rawValue: UserDefaults.standard.string(forKey: "concurrentOverlayStyle") ?? ""
         ) ?? .heroPlusStrip

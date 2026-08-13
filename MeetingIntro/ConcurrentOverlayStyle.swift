@@ -57,3 +57,38 @@ enum ConcurrentOverlayStyle: String, CaseIterable, Identifiable {
         }
     }
 }
+
+
+/// How **notifications** behave when several meetings start at the same time. The
+/// overlay style is a separate choice (`ConcurrentOverlayStyle`) because the trade-offs
+/// differ: an overlay can list meetings side by side, a notification banner can't.
+enum ConcurrentNotificationStyle: String, CaseIterable, Identifiable {
+    /// One banner for the clash: "3 meetings at 10:00 AM". Quietest.
+    case grouped
+    /// A banner per meeting, but sharing a `threadIdentifier` so macOS collapses them
+    /// into a single group in Notification Center. Each keeps its own content.
+    case threaded
+    /// One independent banner per meeting (the pre-v2.17.0 behaviour).
+    case separate
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .grouped:  return "One grouped notification"
+        case .threaded: return "One per meeting, grouped in Notification Center"
+        case .separate: return "One per meeting, separate"
+        }
+    }
+
+    var summary: String {
+        switch self {
+        case .grouped:
+            return "A single banner naming the clash — \"3 meetings at 10:00 AM\" — instead of three that arrive on top of each other."
+        case .threaded:
+            return "Every meeting still gets its own banner, but they stack into one group in Notification Center rather than three separate entries."
+        case .separate:
+            return "Each meeting notifies independently. Loudest, and what the app did before this setting existed."
+        }
+    }
+}

@@ -120,7 +120,66 @@ final class NotificationManager: ObservableObject {
     }
 
     /// Send a notification for a countdown trigger.
-    func sendCountdownNotification(for meeting: MeetingEvent, minutesBefore: Int) {
+    /// One banner for several meetings that start together, instead of N banners landing
+    /// on top of each other. Marks each meeting's own dedup key as sent, so a later poll
+    /// can't follow up with the individual notifications this replaced.
+    func sendGroupedCountdownNotification(for meetings: [MeetingEvent], minutesBefore: Int) {
+        guard let first = meetings.first else { return }
+        guard meetings.count > 1 else {
+            sendCountdownNotification(for: first, minutesBefore: minutesBefore)
+            return
+        }
+        guard isEnabled else {
+            diagnosticLog?.info(.notification, "Grouped countdown notification suppressed (notifications disabled in app) — \(meetings.count) meetings")
+            return
+        }
+
+        let ids = meetings.map(\.id).sorted().joined(separator: "|")
+        let key = "group_\(minutesBefore)_\(ids.hashValue)"
+        guard !sentNotificationKeys.contains(key) else {
+            diagnosticLog?.debug(.notification, "Grouped countdown notification suppressed (dedup \(key))")
+            return
+        }
+        sentNotificationKeys.insert(key)
+        // Claim the per-meeting keys too — otherwise the next poll would deliver the
+        // individual notifications this banner stands in for.
+        for meeting in meetings { sentNotificationKeys.insert("\(meeting.id)_\(minutesBefore)") }
+
+        let content = UNMutableNotificationContent()
+        content.title = "\(meetings.count) meetings in \(minutesBefore) minute\(minutesBefore == 1 ? "" : "s")"
+        content.subtitle = "at \(first.formattedStartTime)"
+        let names = meetings.prefix(2).map(\.title).joined(separator: ", ")
+        let extra = meetings.count - min(2, meetings.count)
+        content.body = extra > 0 ? "\(names), +\(extra) more" : names
+        content.sound = .default
+        content.categoryIdentifier = "MEETING_COUNTDOWN"
+        content.threadIdentifier = "clash_\(Int(first.startDate.timeIntervalSince1970))"
+
+        deliver(UNNotificationRequest(identifier: key, content: content, trigger: nil),
+                describing: "grouped countdown \(minutesBefore)m — \(meetings.count) meetings")
+        playSelectedSound()
+    }
+
+    /// Several armed meetings came due at once and we opened only one of them — say so,
+    /// naming what was left closed, so the choice is never silent.
+    func sendAutoJoinClashNotification(opened: MeetingEvent, skipped: [MeetingEvent]) {
+        guard isEnabled, !skipped.isEmpty else { return }
+        let content = UNMutableNotificationContent()
+        content.title = "Opened \(opened.title)"
+        content.subtitle = skipped.count == 1
+            ? "1 other meeting started at the same time"
+            : "\(skipped.count) other meetings started at the same time"
+        content.body = skipped.map(\.title).joined(separator: ", ")
+        content.sound = .default
+        content.categoryIdentifier = "MEETING_COUNTDOWN"
+        let key = "autojoin_clash_\(opened.id)_\(Int(opened.startDate.timeIntervalSince1970))"
+        guard !sentNotificationKeys.contains(key) else { return }
+        sentNotificationKeys.insert(key)
+        deliver(UNNotificationRequest(identifier: key, content: content, trigger: nil),
+                describing: "auto-join clash — opened \(opened.title), skipped \(skipped.count)")
+    }
+
+    func sendCountdownNotification(for meeting: MeetingEvent, minutesBefore: Int, threadID: String? = nil) {
         guard isEnabled else {
             diagnosticLog?.info(.notification, "Countdown notification suppressed (notifications disabled in app) — \(meeting.title) @ \(minutesBefore)m")
             return
@@ -144,6 +203,9 @@ final class NotificationManager: ObservableObject {
         }
         content.sound = .default
         content.categoryIdentifier = "MEETING_COUNTDOWN"
+        // Shared thread → macOS stacks the clash into one group in Notification Center
+        // instead of three separate entries (ConcurrentNotificationStyle.threaded).
+        if let threadID { content.threadIdentifier = threadID }
 
         let request = UNNotificationRequest(identifier: key, content: content, trigger: nil)
         deliver(request, describing: "countdown \(minutesBefore)m — \(meeting.title)")

@@ -70,6 +70,28 @@ final class VoiceReminderManager: NSObject, ObservableObject {
         speak(phrase)
     }
 
+    /// One spoken line for several meetings starting together — instead of the
+    /// synthesizer reading three reminders back to back over each other.
+    func speakGroupReminderIfNeeded(for meetings: [MeetingEvent], minutesBefore: Int) {
+        guard isEnabled, let first = meetings.first else { return }
+        guard meetings.count > 1 else { speakReminderIfNeeded(for: first); return }
+        // Claim every id so the per-meeting path can't also speak them.
+        let unspoken = meetings.filter { !spokenMeetingIDs.contains($0.id) }
+        guard !unspoken.isEmpty else { return }
+        for meeting in meetings { spokenMeetingIDs.insert(meeting.id) }
+
+        let count = Self.spelled(meetings.count)
+        let minutePhrase = minutesBefore == 1 ? "one minute" : "\(minutesBefore) minutes"
+        let name = userName.isEmpty ? "" : " \(userName)"
+        speak("Heads up\(name) — you have \(count) meetings starting in \(minutePhrase). First up: \(first.title).")
+    }
+
+    /// Small numbers read better spelled out than as digits.
+    private static func spelled(_ n: Int) -> String {
+        let words = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
+        return n < words.count ? words[n] : "\(n)"
+    }
+
     /// Speak a test phrase.
     func speakTest() {
         let testPhrase = "Hi \(userName), it's \(reminderMinutesBefore) minutes before your meeting: Team Standup."

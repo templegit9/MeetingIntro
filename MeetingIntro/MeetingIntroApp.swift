@@ -471,6 +471,9 @@ final class AppLifecycleManager: ObservableObject {
         // the auto-open is never silent (armed / fired / missed-while-away).
         calendarManager.onAutoJoinArmed = { notificationManager.sendAutoJoinArmedNotification(for: $0) }
         calendarManager.onAutoJoinFired = { notificationManager.sendAutoJoinFiredNotification(for: $0) }
+        calendarManager.onAutoJoinClash = { [weak notificationManager] opened, skipped in
+            notificationManager?.sendAutoJoinClashNotification(opened: opened, skipped: skipped)
+        }
         calendarManager.onAutoJoinMissed = { notificationManager.sendAutoJoinMissedNotification(for: $0) }
         calendarManager.onMeetingTimeChanged = { notificationManager.sendTimeChangeNotification(for: $0, from: $1) }
 
@@ -614,6 +617,10 @@ final class AppLifecycleManager: ObservableObject {
         calendarManager.$upcomingMeetings
             .sink { meetings in
                 let maxThreshold = TimeInterval((countdownConfig.triggers.map(\.minutes).max() ?? 0) * 60)
+                // Collected first, dispatched below — so meetings that start together can
+                // be merged into one notification / one spoken line.
+                var notifyQueue: [(Int, MeetingEvent)] = []
+                var voiceQueue: [(Int, MeetingEvent)] = []
                 for meeting in meetings where meeting.timeUntilStart > 0 && !meeting.isCancelled {
                     // Armed for auto-join → the menu-bar countdown is the only surface;
                     // suppress every original-start-time reminder for this event.
@@ -645,13 +652,44 @@ final class AppLifecycleManager: ObservableObject {
                         let ruleSuffix = smartConfig.matchingRuleName(for: meeting).map { " — rule: \($0)" } ?? ""
                         diagnosticLog.info(.reminder, "Reminder \(trigger.minutes)m fired for \(meeting.title) — notify=\(decision.sendNotification) voice=\(decision.playVoice) overlay=\(decision.showOverlay)\(reasonSuffix)\(ruleSuffix)")
 
-                        if decision.sendNotification {
-                            notificationManager.sendCountdownNotification(for: meeting, minutesBefore: trigger.minutes)
+                        if decision.sendNotification { notifyQueue.append((trigger.minutes, meeting)) }
+                        if decision.playVoice { voiceQueue.append((trigger.minutes, meeting)) }
+                    }
+                }
+
+                // Dispatch what we collected. Meetings sharing a threshold AND a start
+                // minute are one clash: without this, three 10:00 meetings meant three
+                // banners landing on top of each other and the synthesizer reading three
+                // reminders over itself. Grouping key is the START time (not "same poll"
+                // as the overlay uses) so the banner can honestly say "3 meetings at
+                // 10:00" — 9:58 and 10:00 stay separate messages.
+                let clashKey: (Int, MeetingEvent) -> String = { minutes, meeting in
+                    "\(minutes)_\(Int(meeting.startDate.timeIntervalSince1970 / 60))"
+                }
+
+                for (_, group) in Dictionary(grouping: notifyQueue, by: { clashKey($0.0, $0.1) }) {
+                    let minutes = group[0].0
+                    let meetings = CalendarManager.rankedForOverlay(group.map(\.1))
+                    switch countdownConfig.concurrentNotificationStyle {
+                    case .grouped:
+                        notificationManager.sendGroupedCountdownNotification(for: meetings, minutesBefore: minutes)
+                    case .threaded:
+                        let thread = meetings.count > 1
+                            ? "clash_\(Int(meetings[0].startDate.timeIntervalSince1970))" : nil
+                        for meeting in meetings {
+                            notificationManager.sendCountdownNotification(for: meeting, minutesBefore: minutes, threadID: thread)
                         }
-                        if decision.playVoice {
-                            voiceReminder.speakReminderIfNeeded(for: meeting)
+                    case .separate:
+                        for meeting in meetings {
+                            notificationManager.sendCountdownNotification(for: meeting, minutesBefore: minutes)
                         }
                     }
+                }
+
+                for (_, group) in Dictionary(grouping: voiceQueue, by: { clashKey($0.0, $0.1) }) {
+                    let minutes = group[0].0
+                    let meetings = CalendarManager.rankedForOverlay(group.map(\.1))
+                    voiceReminder.speakGroupReminderIfNeeded(for: meetings, minutesBefore: minutes)
                 }
             }
             .store(in: &cancellables)

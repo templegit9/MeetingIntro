@@ -235,6 +235,10 @@ final class CalendarManager: ObservableObject {
     /// Mac slept through it) — the join is NOT performed; the user is told instead.
     var onAutoJoinMissed: ((MeetingEvent) -> Void)?
 
+    /// Several armed meetings came due at the same moment and only one was opened.
+    /// `(opened, skipped)` — wired to a notification so the choice is never silent.
+    var onAutoJoinClash: ((MeetingEvent, [MeetingEvent]) -> Void)?
+
     /// Armed meetings still upcoming/in-progress (for the menu bar disarm list).
     var armedAutoJoinMeetings: [MeetingEvent] {
         upcomingMeetings
@@ -737,9 +741,23 @@ final class CalendarManager: ObservableObject {
         let now = Date()
         let grace = TimeInterval(autoJoinGraceMinutes * 60)
 
-        for id in armedAutoJoinIDs {
-            // Not in the current window yet (e.g. armed across a long gap) — leave armed.
-            guard let meeting = upcomingMeetings.first(where: { $0.id == id }) else { continue }
+        // Meetings opened in THIS tick. Three armed meetings coming due together used to
+        // open three links at once, which is not a usable way to start a meeting: unless
+        // the user opted into `autoJoinOpensAllOnClash`, the first (top-ranked) one wins
+        // and the rest are reported instead of opened. They're still marked joined so
+        // they can't spring open a moment later.
+        var openedThisTick: MeetingEvent?
+        var skippedThisTick: [MeetingEvent] = []
+        let opensAll = countdownConfigs?.autoJoinOpensAllOnClash ?? false
+
+        // Iterate in rank order so the meeting that wins a clash is the one you're most
+        // likely to attend, not whichever the Set happened to yield first. Armed ids with
+        // no meeting in the current window are simply absent here — they stay armed.
+        let armedMeetings = Self.rankedForOverlay(armedAutoJoinIDs.compactMap { armedID in
+            upcomingMeetings.first { $0.id == armedID }
+        })
+        for meeting in armedMeetings {
+            let id = meeting.id
 
             if meeting.isCancelled {
                 diagnosticLog?.info(.overlay, "Auto-join cancelled (meeting cancelled) — \(meeting.title)")
@@ -769,16 +787,32 @@ final class CalendarManager: ObservableObject {
                 armedAutoJoinIDs.remove(id); persistAutoJoinState(); continue
             }
 
+            // A clash: something was already opened this tick and the user hasn't asked
+            // for all of them. Mark it joined (so it can't open later) and report it.
+            if !opensAll, openedThisTick != nil {
+                diagnosticLog?.info(.overlay, "Auto-join held back (another meeting opened this tick) — \(meeting.title)")
+                skippedThisTick.append(meeting)
+                joinedAutoJoinIDs.insert(id)
+                armedAutoJoinIDs.remove(id)
+                persistAutoJoinState()
+                continue
+            }
+
             // Fire: open the link exactly once. Explicit user intent — fires regardless
             // of smart-context suppression, but the notification keeps it from being silent.
             diagnosticLog?.info(.overlay, "Auto-join firing — opening \(meeting.title)")
             NSWorkspace.shared.open(url)
+            openedThisTick = meeting
             joinedAutoJoinIDs.insert(id)
             armedAutoJoinIDs.remove(id)
             persistAutoJoinState()
             // The overlay was dismissed at arm time; close defensively if it's still up.
             if countdownMeeting?.id == id { dismissCountdown() }
             onAutoJoinFired?(meeting)
+        }
+        if let opened = openedThisTick, !skippedThisTick.isEmpty {
+            diagnosticLog?.info(.overlay, "Auto-join clash — opened \(opened.title), held back \(skippedThisTick.map(\.title).joined(separator: ", "))")
+            onAutoJoinClash?(opened, skippedThisTick)
         }
     }
 
