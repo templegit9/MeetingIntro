@@ -2298,7 +2298,7 @@ struct SettingsView: View {
 
             Spacer()
 
-            Text("© \(Calendar.current.component(.year, from: Date())) TempleGit. All rights reserved.")
+            Text("© \(Calendar.current.component(.year, from: Date())) TempleGit · MIT License")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
                 .padding(.bottom, 12)

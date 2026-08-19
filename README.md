@@ -40,4 +40,6 @@ Found a bug or have a feature request? Use the in-app **Settings → About → F
 
 ## License
 
-© TempleGit. All rights reserved.
+MIT — see [LICENSE](./LICENSE). Free to use, fork, and modify; keep the copyright notice.
+
+© 2026 TempleGit
