@@ -68,6 +68,8 @@ struct SettingsView: View {
     @ObservedObject var assistantConfig: AssistantConfig
     @ObservedObject var tickerConfig: TickerConfig
     @ObservedObject var tickerCoordinator: TickerCoordinator
+    @ObservedObject var cameraCoverConfig: CameraCoverConfig
+    @ObservedObject var cameraCoverReminder: CameraCoverReminder
     @ObservedObject var notesConfig: MeetingNotesConfig
     @ObservedObject var diagnosticLog: DiagnosticLog
     @ObservedObject var mirrorConfig: MirrorConfigManager
@@ -1412,11 +1414,42 @@ struct SettingsView: View {
             }
 
             tickerSection
+            cameraCoverSection
         }
         .formStyle(.grouped)
         .padding()
         .sheet(isPresented: $showTickerSettings) {
             TickerSettingsSheet(config: tickerConfig) { showTickerSettings = false }
+        }
+    }
+
+    // MARK: - Camera cover reminder
+
+    @ViewBuilder private var cameraCoverSection: some View {
+        Section {
+            HStack(spacing: 12) {
+                Image(systemName: "web.camera").font(.title2).foregroundStyle(.teal)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Camera Cover Reminder").font(.headline)
+                    Text("For people with a physical camera cover: a nudge to close it once you're out of meetings, with its own distinct sound.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Toggle("", isOn: $cameraCoverConfig.isEnabled).labelsHidden()
+            }
+
+            if cameraCoverConfig.isEnabled {
+                Stepper(value: $cameraCoverConfig.delayMinutes, in: 0...30) {
+                    Text("Remind me \(cameraCoverConfig.delayMinutes) min after a meeting ends")
+                }
+                Stepper(value: $cameraCoverConfig.skipIfNextMeetingWithinMinutes, in: 0...60, step: 5) {
+                    Text("Stay quiet if the next meeting is within \(cameraCoverConfig.skipIfNextMeetingWithinMinutes) min")
+                }
+                Button("Test the reminder") { cameraCoverReminder.testNow() }
+                    .help("Sends the notification with its sound, ignoring the delay and the conditions")
+            }
+        } header: {
+            SettingsSectionHeader("Camera Cover", info: "Built for people who use a physical camera cover (a sliding flap over the lens).\n\n**MeetingIntro cannot see your cover.** No app can — and checking by taking a photo would need camera permission and would light the green camera LED every time. So this reminds you to close the flap *if it's open*; it never claims your camera is exposed.\n\nIt fires once after a meeting ends, or after any call finishes that wasn't on your calendar. It stays quiet while a meeting is still running, while the camera is genuinely in use, and when your next meeting is close — and it never repeats.\n\nDetecting whether the camera is in use reads a system property; it never opens the camera, so there's no permission prompt and no camera light.")
         }
     }
 

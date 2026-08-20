@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import UserNotifications
 import AVFoundation
@@ -120,6 +121,47 @@ final class NotificationManager: ObservableObject {
     }
 
     /// Send a notification for a countdown trigger.
+    /// "Close the camera flap if it's open." Deliberately conditional — the app cannot
+    /// see a physical cover, so it never claims your camera is exposed.
+    ///
+    /// Carries its own distinct sound (a short system click, not the meeting-reminder
+    /// sound) so it's identifiable without reading it: different meaning, different noise.
+    /// We play it ourselves and leave `content.sound` nil, so the banner can't double up
+    /// with the default alert.
+    func sendCameraCoverNotification(isTest: Bool = false) {
+        guard isEnabled || isTest else {
+            diagnosticLog?.info(.notification, "Camera-cover reminder suppressed (notifications disabled in app)")
+            return
+        }
+        let content = UNMutableNotificationContent()
+        content.title = "Close camera flap if open"
+        content.subtitle = isTest ? "Test reminder" : "You're out of meetings"
+        content.sound = nil
+        content.categoryIdentifier = "CAMERA_COVER"
+
+        let key = "camera_cover_\(Int(Date().timeIntervalSince1970))"
+        deliver(UNNotificationRequest(identifier: key, content: content, trigger: nil),
+                describing: isTest ? "camera-cover reminder (test)" : "camera-cover reminder")
+        playCameraCoverSound()
+    }
+
+    /// A short, dry click — the closest thing macOS ships to a shutter, and distinct from
+    /// every other sound the app makes. Falls back to the standard alert if the system
+    /// sound is ever missing.
+    private func playCameraCoverSound() {
+        let url = URL(fileURLWithPath: "/System/Library/Sounds/Pop.aiff")
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            NSSound.beep()
+            return
+        }
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.play()
+        } catch {
+            diagnosticLog?.warn(.notification, "Camera-cover sound failed: \(error.localizedDescription)")
+        }
+    }
+
     /// One banner for several meetings that start together, instead of N banners landing
     /// on top of each other. Marks each meeting's own dedup key as sent, so a later poll
     /// can't follow up with the individual notifications this replaced.

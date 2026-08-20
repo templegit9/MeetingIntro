@@ -45,6 +45,7 @@
 		765165B7A75A0785336DB96D /* TickerFeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C735A96B380C97241A3455 /* TickerFeed.swift */; };
 		77BC54FBB62CDF7888C5F952 /* TaskModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAEF02F79EAE528318DB4E2D /* TaskModels.swift */; };
 		787C4DDF39E71D19EBB5C801 /* ReminderEscalationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B33CEBB2784C6AFE2BB1379 /* ReminderEscalationPolicy.swift */; };
+		7A2770A4BF9BAFD6B8C8CD09 /* CameraCoverReminder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 769C85809834D97A437384EF /* CameraCoverReminder.swift */; };
 		7C988823B083DA90D7A0A78D /* VoiceReminderManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C58BE975466982E750F7FDA /* VoiceReminderManager.swift */; };
 		7ED2557749FC1DDB68203F28 /* EventDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF7DCEE0AA262DB746742A6A /* EventDraft.swift */; };
 		85955A740FE1667D4701DCA0 /* MirrorEditSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41B9F2E85EE737CD879A15CE /* MirrorEditSheet.swift */; };
@@ -64,6 +65,7 @@
 		B7EA1C818EBD405895A0EB6F /* FocusModeDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B8186D8004986233B28EE7F /* FocusModeDetector.swift */; };
 		BC3209D8C8CC3570A12EA998 /* MeetingHoverCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F613B171FEEAEE9AF448698 /* MeetingHoverCard.swift */; };
 		C02348FCACD90D6B40D0A6EA /* PopoverRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B13DD9777C3BA467B874853 /* PopoverRootView.swift */; };
+		C13F7B2B4C696639B999205C /* CameraUseDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CAC3CAF14343B9EBCFA50C /* CameraUseDetector.swift */; };
 		C1E8129140CC40187BF1FB15 /* TickerLeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC444235069286A1DD2FEA6 /* TickerLeader.swift */; };
 		C689B7972F1CE125BB7A6C3B /* TickerCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18EB6DCA64E48B0F98D0A9F4 /* TickerCoordinator.swift */; };
 		C7D67F889CA6E39386F2B34D /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79AB0D1338EB2A471C1C13FD /* AudioManager.swift */; };
@@ -137,6 +139,7 @@
 		72275B905671FFA1F87F986C /* WhisperKitEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperKitEngine.swift; sourceTree = "<group>"; };
 		7269D692B89FD6576E4784D0 /* QuickAddConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddConfig.swift; sourceTree = "<group>"; };
 		732B93F16D10E8BEED65BCBB /* QuickAddLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddLink.swift; sourceTree = "<group>"; };
+		769C85809834D97A437384EF /* CameraCoverReminder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCoverReminder.swift; sourceTree = "<group>"; };
 		79AB0D1338EB2A471C1C13FD /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
 		81286000F64FE87B65167C38 /* FilePreviewExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilePreviewExtractor.swift; sourceTree = "<group>"; };
 		88FE80611C96045D0752ECE8 /* MeetingIntroApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingIntroApp.swift; sourceTree = "<group>"; };
@@ -164,6 +167,7 @@
 		C7C7F0E8190A10BB8431B931 /* MeetingNotesConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingNotesConfig.swift; sourceTree = "<group>"; };
 		C80250FD654EC927A87CDAB4 /* UpcomingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpcomingView.swift; sourceTree = "<group>"; };
 		C8E61F0E3FE2659AEA9B917D /* TaskDeadlineOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDeadlineOverlayView.swift; sourceTree = "<group>"; };
+		C9CAC3CAF14343B9EBCFA50C /* CameraUseDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraUseDetector.swift; sourceTree = "<group>"; };
 		CB0286A0A45265AE24EABC58 /* TranscriptionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionEngine.swift; sourceTree = "<group>"; };
 		CC93CC9B88A798A86B40D559 /* RuleEditSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleEditSheet.swift; sourceTree = "<group>"; };
 		CCC444235069286A1DD2FEA6 /* TickerLeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TickerLeader.swift; sourceTree = "<group>"; };
@@ -235,6 +239,7 @@
 		6533CA6AB49E16C366CCF8E8 /* MeetingContext */ = {
 			isa = PBXGroup;
 			children = (
+				C9CAC3CAF14343B9EBCFA50C /* CameraUseDetector.swift */,
 				6B8186D8004986233B28EE7F /* FocusModeDetector.swift */,
 				AEDC37D08E46673E508040D3 /* FrontmostAppDetector.swift */,
 				68E04A0A0326198310A91568 /* MeetingContextMonitor.swift */,
@@ -328,6 +333,7 @@
 				57848C89CCB36538773C65EE /* AutoJoinImminentView.swift */,
 				8A99A9D2EE9624DA582CD8D5 /* CalendarManager.swift */,
 				0DD250C84523C24862974C5D /* CalendarProvider.swift */,
+				769C85809834D97A437384EF /* CameraCoverReminder.swift */,
 				F2918B368AF626877462E126 /* CancellationOverlayView.swift */,
 				65AA4DF0A8F95DD6C9C2EBE4 /* CompactMenuView.swift */,
 				AF0A3C8188CBC74A7C99597C /* ConcurrentOverlayStyle.swift */,
@@ -472,6 +478,8 @@
 				2A15E4DF2BDC03E4F3D79756 /* CalendarManager.swift in Sources */,
 				6D165CF43230BB289017217D /* CalendarMirrorEngine.swift in Sources */,
 				3CEA795EFAD5F9E28F297D07 /* CalendarProvider.swift in Sources */,
+				7A2770A4BF9BAFD6B8C8CD09 /* CameraCoverReminder.swift in Sources */,
+				C13F7B2B4C696639B999205C /* CameraUseDetector.swift in Sources */,
 				159AA5A9C571071C598623DA /* CancellationOverlayView.swift in Sources */,
 				CA44BA8AC38617402B107E82 /* CompactMenuView.swift in Sources */,
 				644F9014457EA29379B4EDDC /* ConcurrentOverlayStyle.swift in Sources */,

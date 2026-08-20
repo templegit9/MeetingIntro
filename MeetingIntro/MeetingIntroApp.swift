@@ -104,6 +104,9 @@ struct MeetingIntroApp: App {
     @StateObject private var taskConfig: TaskConfig
     @StateObject private var taskManager: TaskManager
     @StateObject private var taskReminderCoordinator = TaskReminderCoordinator()
+    @StateObject private var cameraDetector = CameraUseDetector()
+    @StateObject private var cameraCoverConfig = CameraCoverConfig()
+    @StateObject private var cameraCoverReminder = CameraCoverReminder()
     @StateObject private var tickerConfig = TickerConfig()
     @StateObject private var tickerCoordinator = TickerCoordinator()
     @StateObject private var assistantConfig = AssistantConfig()
@@ -170,6 +173,9 @@ struct MeetingIntroApp: App {
             tickerConfig: tickerConfig,
             tickerCoordinator: tickerCoordinator,
             recordingController: recordingController,
+            cameraDetector: cameraDetector,
+            cameraCoverConfig: cameraCoverConfig,
+            cameraCoverReminder: cameraCoverReminder,
             notesPipeline: notesPipeline,
             diagnosticLog: diagnosticLog,
             mirrorConfig: mirrorConfig,
@@ -278,6 +284,8 @@ struct MeetingIntroApp: App {
                 assistantConfig: assistantConfig,
                 tickerConfig: tickerConfig,
                 tickerCoordinator: tickerCoordinator,
+                cameraCoverConfig: cameraCoverConfig,
+                cameraCoverReminder: cameraCoverReminder,
                 notesConfig: notesConfig,
                 diagnosticLog: diagnosticLog,
                 mirrorConfig: mirrorConfig,
@@ -370,6 +378,9 @@ final class AppLifecycleManager: ObservableObject {
         tickerConfig: TickerConfig,
         tickerCoordinator: TickerCoordinator,
         recordingController: RecordingController,
+        cameraDetector: CameraUseDetector,
+        cameraCoverConfig: CameraCoverConfig,
+        cameraCoverReminder: CameraCoverReminder,
         notesPipeline: MeetingNotesPipeline,
         diagnosticLog: DiagnosticLog,
         mirrorConfig: MirrorConfigManager,
@@ -409,6 +420,15 @@ final class AppLifecycleManager: ObservableObject {
         fileOrganizer.diagnosticLog = diagnosticLog
         fileOrganizerCoordinator.attach(config: assistantConfig, organizer: fileOrganizer,
                                         notificationManager: notificationManager, diagnosticLog: diagnosticLog)
+        // Camera-cover reminder (opt-in): nudges you to close a physical cover once
+        // you're out of meetings. Uses CameraUseDetector purely as a gate — a property
+        // read, never a capture, so no camera permission and no green LED.
+        cameraCoverReminder.attach(config: cameraCoverConfig,
+                                   calendarManager: calendarManager,
+                                   cameraDetector: cameraDetector,
+                                   notificationManager: notificationManager,
+                                   diagnosticLog: diagnosticLog)
+
         // Ticker (opt-in plugin): read-only over existing published state — it can't
         // affect reminders, and it no-ops entirely while `tickerConfig.isEnabled` is off.
         tickerCoordinator.attach(config: tickerConfig,
