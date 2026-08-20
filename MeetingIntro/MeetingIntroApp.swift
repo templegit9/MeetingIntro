@@ -426,6 +426,7 @@ final class AppLifecycleManager: ObservableObject {
         cameraCoverReminder.attach(config: cameraCoverConfig,
                                    calendarManager: calendarManager,
                                    cameraDetector: cameraDetector,
+                                   contextMonitor: contextMonitor,
                                    notificationManager: notificationManager,
                                    diagnosticLog: diagnosticLog)
 

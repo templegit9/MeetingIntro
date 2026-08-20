@@ -63,17 +63,20 @@ final class CameraCoverReminder: ObservableObject {
     private weak var config: CameraCoverConfig?
     private weak var calendarManager: CalendarManager?
     private weak var cameraDetector: CameraUseDetector?
+    private weak var contextMonitor: MeetingContextMonitor?
     private weak var notificationManager: NotificationManager?
     private var diagnosticLog: DiagnosticLog?
 
     func attach(config: CameraCoverConfig,
                 calendarManager: CalendarManager,
                 cameraDetector: CameraUseDetector,
+                contextMonitor: MeetingContextMonitor,
                 notificationManager: NotificationManager,
                 diagnosticLog: DiagnosticLog) {
         self.config = config
         self.calendarManager = calendarManager
         self.cameraDetector = cameraDetector
+        self.contextMonitor = contextMonitor
         self.notificationManager = notificationManager
         self.diagnosticLog = diagnosticLog
 
@@ -131,6 +134,14 @@ final class CameraCoverReminder: ObservableObject {
             diagnosticLog?.info(.notification, "Camera-cover reminder skipped — the camera is still in use")
             return
         }
+        // Focus / Do Not Disturb: skip entirely. macOS would hold the banner anyway, but
+        // our sound is played directly by the app, so it would NOT be silenced — you'd
+        // get a noise with no banner to explain it, during the one mode where you asked
+        // not to be disturbed. A cover nudge is never urgent enough to earn that.
+        if contextMonitor?.snapshot.isFocusActive == true {
+            diagnosticLog?.info(.notification, "Camera-cover reminder skipped — Focus is on")
+            return
+        }
         if let next = calendarManager.upcomingMeetings.first(where: { $0.timeUntilStart > 0 && !$0.isCancelled }),
            next.timeUntilStart <= TimeInterval(config.skipIfNextMeetingWithinMinutes * 60) {
             diagnosticLog?.info(.notification, "Camera-cover reminder skipped — \"\(next.title)\" starts in \(Int(next.timeUntilStart / 60))m")
@@ -143,7 +154,18 @@ final class CameraCoverReminder: ObservableObject {
 
     /// Settings "Test" — bypasses the delay and the gates so you can hear the sound and
     /// see the wording without waiting for a meeting to end.
+    ///
+    /// It does NOT bypass Focus, because it can't: macOS holds the banner, and a test
+    /// that plays a sound with no visible banner reads as a broken feature (it cost a
+    /// round trip of debugging exactly once). So we say so in the log, and Settings
+    /// shows the same warning inline.
     func testNow() {
+        if contextMonitor?.snapshot.isFocusActive == true {
+            diagnosticLog?.warn(.notification, "Camera-cover test sent while Focus is on — macOS will hold the banner")
+        }
         notificationManager?.sendCameraCoverNotification(isTest: true)
     }
+
+    /// True when a test would be swallowed by Focus — drives the inline Settings hint.
+    var focusWouldSuppress: Bool { contextMonitor?.snapshot.isFocusActive == true }
 }
