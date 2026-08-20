@@ -23,11 +23,45 @@ final class CameraCoverConfig: ObservableObject {
         didSet { UserDefaults.standard.set(skipIfNextMeetingWithinMinutes, forKey: "cameraCoverSkipWithinMinutes") }
     }
 
+    /// Focus/Do Not Disturb holds a notification banner, so when this is on the reminder
+    /// switches to the app's own corner panel — a window, which Focus doesn't govern —
+    /// instead of being swallowed. Default on: someone who turns this feature on wants
+    /// the nudge, and DND is usually about *other people's* interruptions.
+    @Published var notifyDuringFocus: Bool {
+        didSet { UserDefaults.standard.set(notifyDuringFocus, forKey: "cameraCoverNotifyDuringFocus") }
+    }
+
     init() {
         let d = UserDefaults.standard
         self.isEnabled = d.object(forKey: "cameraCoverReminderEnabled") as? Bool ?? false
+        self.notifyDuringFocus = d.object(forKey: "cameraCoverNotifyDuringFocus") as? Bool ?? true
         self.delayMinutes = d.object(forKey: "cameraCoverDelayMinutes") as? Int ?? 2
         self.skipIfNextMeetingWithinMinutes = d.object(forKey: "cameraCoverSkipWithinMinutes") as? Int ?? 10
+    }
+}
+
+/// The rotating wordings for the nudge. Every one **asks** rather than tells, because
+/// the app genuinely cannot see the cover — the phrasing carries that honesty, so don't
+/// add a variant that asserts the camera is uncovered.
+///
+/// Rotation matters more here than for a meeting reminder: this is the same message over
+/// and over, forever. Identical text becomes wallpaper faster than varied text does.
+/// (Same reasoning as `VoiceReminderManager.phraseTemplates`.)
+enum CameraCoverMessage {
+    static let templates: [(title: String, subtitle: String)] = [
+        ("Is your meeting over?", "If so, close your camera cover."),
+        ("Close camera flap if open", "You're out of meetings."),
+        ("Meeting's over", "Is your camera still uncovered?"),
+        ("Camera check", "Is the cover back on?"),
+        ("You're out of meetings", "Cover the camera?"),
+        ("Done for now?", "Slide the camera cover shut.")
+    ]
+
+    /// Pick a wording, never the same one twice in a row.
+    static func next(avoiding last: Int?) -> (index: Int, title: String, subtitle: String) {
+        let choices = templates.indices.filter { $0 != last }
+        let index = choices.randomElement() ?? 0
+        return (index, templates[index].title, templates[index].subtitle)
     }
 }
 
@@ -64,6 +98,9 @@ final class CameraCoverReminder: ObservableObject {
     private weak var calendarManager: CalendarManager?
     private weak var cameraDetector: CameraUseDetector?
     private weak var contextMonitor: MeetingContextMonitor?
+    private weak var overlayController: OverlayWindowController?
+    /// Last wording used, so rotation never repeats back to back.
+    private var lastMessageIndex: Int?
     private weak var notificationManager: NotificationManager?
     private var diagnosticLog: DiagnosticLog?
 
@@ -71,12 +108,14 @@ final class CameraCoverReminder: ObservableObject {
                 calendarManager: CalendarManager,
                 cameraDetector: CameraUseDetector,
                 contextMonitor: MeetingContextMonitor,
+                overlayController: OverlayWindowController,
                 notificationManager: NotificationManager,
                 diagnosticLog: DiagnosticLog) {
         self.config = config
         self.calendarManager = calendarManager
         self.cameraDetector = cameraDetector
         self.contextMonitor = contextMonitor
+        self.overlayController = overlayController
         self.notificationManager = notificationManager
         self.diagnosticLog = diagnosticLog
 
@@ -134,14 +173,6 @@ final class CameraCoverReminder: ObservableObject {
             diagnosticLog?.info(.notification, "Camera-cover reminder skipped — the camera is still in use")
             return
         }
-        // Focus / Do Not Disturb: skip entirely. macOS would hold the banner anyway, but
-        // our sound is played directly by the app, so it would NOT be silenced — you'd
-        // get a noise with no banner to explain it, during the one mode where you asked
-        // not to be disturbed. A cover nudge is never urgent enough to earn that.
-        if contextMonitor?.snapshot.isFocusActive == true {
-            diagnosticLog?.info(.notification, "Camera-cover reminder skipped — Focus is on")
-            return
-        }
         if let next = calendarManager.upcomingMeetings.first(where: { $0.timeUntilStart > 0 && !$0.isCancelled }),
            next.timeUntilStart <= TimeInterval(config.skipIfNextMeetingWithinMinutes * 60) {
             diagnosticLog?.info(.notification, "Camera-cover reminder skipped — \"\(next.title)\" starts in \(Int(next.timeUntilStart / 60))m")
@@ -149,23 +180,38 @@ final class CameraCoverReminder: ObservableObject {
         }
 
         diagnosticLog?.info(.notification, "Camera-cover reminder firing (\(reason))")
-        notificationManager?.sendCameraCoverNotification()
+        present()
     }
 
-    /// Settings "Test" — bypasses the delay and the gates so you can hear the sound and
-    /// see the wording without waiting for a meeting to end.
+    /// Choose the surface and show the nudge.
     ///
-    /// It does NOT bypass Focus, because it can't: macOS holds the banner, and a test
-    /// that plays a sound with no visible banner reads as a broken feature (it cost a
-    /// round trip of debugging exactly once). So we say so in the log, and Settings
-    /// shows the same warning inline.
-    func testNow() {
+    /// Focus off → a normal notification. Focus on → the app's own corner panel, because
+    /// macOS holds banners during Focus and the sanctioned way around that
+    /// (`interruptionLevel = .timeSensitive`) needs a restricted entitlement and is
+    /// downgraded **silently** when unauthorized — a promise we couldn't keep. A panel is
+    /// a window; Focus doesn't govern it. With `notifyDuringFocus` off we stay quiet
+    /// entirely, sound included.
+    private func present(isTest: Bool = false) {
+        let message = CameraCoverMessage.next(avoiding: lastMessageIndex)
+        lastMessageIndex = message.index
+
         if contextMonitor?.snapshot.isFocusActive == true {
-            diagnosticLog?.warn(.notification, "Camera-cover test sent while Focus is on — macOS will hold the banner")
+            guard config?.notifyDuringFocus == true else {
+                diagnosticLog?.info(.notification, "Camera-cover reminder skipped — Focus is on and 'remind me anyway' is off")
+                return
+            }
+            diagnosticLog?.info(.notification, "Camera-cover shown as a panel — Focus would hold a banner")
+            overlayController?.showCameraCover(title: message.title, subtitle: message.subtitle)
+            notificationManager?.playCameraCoverSound()
+        } else {
+            notificationManager?.sendCameraCoverNotification(title: message.title,
+                                                             subtitle: message.subtitle,
+                                                             isTest: isTest)
         }
-        notificationManager?.sendCameraCoverNotification(isTest: true)
     }
 
-    /// True when a test would be swallowed by Focus — drives the inline Settings hint.
-    var focusWouldSuppress: Bool { contextMonitor?.snapshot.isFocusActive == true }
+    /// Settings "Test" — bypasses the delay and the gates so you can see the wording and
+    /// hear the sound without waiting for a meeting to end. It goes through the same
+    /// surface selection, so testing under Focus shows you exactly what Focus will get.
+    func testNow() { present(isTest: true) }
 }

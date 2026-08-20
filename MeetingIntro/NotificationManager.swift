@@ -128,14 +128,14 @@ final class NotificationManager: ObservableObject {
     /// sound) so it's identifiable without reading it: different meaning, different noise.
     /// We play it ourselves and leave `content.sound` nil, so the banner can't double up
     /// with the default alert.
-    func sendCameraCoverNotification(isTest: Bool = false) {
+    func sendCameraCoverNotification(title: String, subtitle: String, isTest: Bool = false) {
         guard isEnabled || isTest else {
             diagnosticLog?.info(.notification, "Camera-cover reminder suppressed (notifications disabled in app)")
             return
         }
         let content = UNMutableNotificationContent()
-        content.title = "Close camera flap if open"
-        content.subtitle = isTest ? "Test reminder" : "You're out of meetings"
+        content.title = title
+        content.subtitle = isTest ? "\(subtitle)  ·  Test" : subtitle
         content.sound = nil
         content.categoryIdentifier = "CAMERA_COVER"
 
@@ -148,7 +148,7 @@ final class NotificationManager: ObservableObject {
     /// A short, dry click — the closest thing macOS ships to a shutter, and distinct from
     /// every other sound the app makes. Falls back to the standard alert if the system
     /// sound is ever missing.
-    private func playCameraCoverSound() {
+    func playCameraCoverSound() {
         let url = URL(fileURLWithPath: "/System/Library/Sounds/Pop.aiff")
         guard FileManager.default.fileExists(atPath: url.path) else {
             NSSound.beep()

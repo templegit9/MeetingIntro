@@ -37,6 +37,10 @@ final class OverlayWindowController: ObservableObject {
     private var autoJoinImminentID: String?
     /// Separate slot for a task deadline reminder (Issue #19).
     private var taskDeadlineWindow: NSPanel?
+    /// Separate slot for the camera-cover nudge — the Do-Not-Disturb surface, where a
+    /// notification banner would be held by macOS.
+    private var cameraCoverWindow: NSPanel?
+    private var cameraCoverTimeout: Task<Void, Never>?
     private var calendarManager: CalendarManager?
     private var audioManager: AudioManager?
     /// Injected so the task overlay's "Mark done" can complete the task.
@@ -294,6 +298,65 @@ final class OverlayWindowController: ObservableObject {
         pagerIndex = next
         showSingle(group[next], pager: (next, group.count))
     }
+
+    /// Show the camera-cover nudge as a corner panel (the surface used when Focus would
+    /// hold a notification banner). Auto-closes after `cameraCoverMaxMinutes` so it can
+    /// never become a panel that lives on screen for hours — the failure the countdown
+    /// overlay had before v2.15.2.
+    func showCameraCover(title: String, subtitle: String) {
+        dismissCameraCover()
+
+        let view = CameraCoverOverlayView(title: title, subtitle: subtitle,
+                                          onDismiss: { [weak self] in self?.dismissCameraCover() })
+        let host = NSHostingView(rootView: view)
+        host.frame = NSRect(x: 0, y: 0, width: 320, height: 2000)
+        host.layoutSubtreeIfNeeded()
+        let height = host.fittingSize.height
+
+        let panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 320, height: height),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered, defer: false
+        )
+        panel.contentView = host
+        panel.isFloatingPanel = true
+        panel.level = .floating
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = true
+        panel.titlebarAppearsTransparent = true
+        panel.titleVisibility = .hidden
+        panel.appearance = NSAppearance(named: .darkAqua)
+
+        if let frame = (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame {
+            panel.setFrameOrigin(NSPoint(x: frame.maxX - 320 - 20, y: frame.maxY - height - 20))
+        }
+        panel.orderFrontRegardless()
+        cameraCoverWindow = panel
+        diagnosticLog?.info(.overlay, "Camera-cover panel shown — \(title)")
+
+        cameraCoverTimeout = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(Self.cameraCoverMaxMinutes) * 60 * 1_000_000_000)
+            guard !Task.isCancelled else { return }
+            self?.dismissCameraCover()
+        }
+    }
+
+    func dismissCameraCover() {
+        cameraCoverTimeout?.cancel()
+        cameraCoverTimeout = nil
+        guard let panel = cameraCoverWindow else { return }
+        panel.orderOut(nil)
+        panel.contentView = nil
+        panel.close()
+        cameraCoverWindow = nil
+        diagnosticLog?.debug(.overlay, "Camera-cover panel dismissed")
+    }
+
+    /// Hard cap on the camera-cover panel's life. It's a nudge, not an acknowledgment
+    /// surface — if you didn't see it in 10 minutes, you were away and it's stale.
+    private static let cameraCoverMaxMinutes = 10
 
     /// Dismiss the overlay and stop music.
     func dismiss() {

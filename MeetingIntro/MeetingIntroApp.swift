@@ -427,6 +427,7 @@ final class AppLifecycleManager: ObservableObject {
                                    calendarManager: calendarManager,
                                    cameraDetector: cameraDetector,
                                    contextMonitor: contextMonitor,
+                                   overlayController: overlayController,
                                    notificationManager: notificationManager,
                                    diagnosticLog: diagnosticLog)
 

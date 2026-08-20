@@ -1445,16 +1445,12 @@ struct SettingsView: View {
                 Stepper(value: $cameraCoverConfig.skipIfNextMeetingWithinMinutes, in: 0...60, step: 5) {
                     Text("Stay quiet if the next meeting is within \(cameraCoverConfig.skipIfNextMeetingWithinMinutes) min")
                 }
+                Toggle("Remind me even in Do Not Disturb", isOn: $cameraCoverConfig.notifyDuringFocus)
                 Button("Test the reminder") { cameraCoverReminder.testNow() }
-                    .help("Sends the notification with its sound, ignoring the delay and the conditions")
-                if cameraCoverReminder.focusWouldSuppress {
-                    Label("Focus is on — macOS will hold the banner, so a test will only play the sound.",
-                          systemImage: "moon.fill")
-                        .font(.caption).foregroundStyle(.orange)
-                }
+                    .help("Shows the reminder the same way a real one would, ignoring the delay and the conditions")
             }
         } header: {
-            SettingsSectionHeader("Camera Cover", info: "Built for people who use a physical camera cover (a sliding flap over the lens).\n\n**MeetingIntro cannot see your cover.** No app can — and checking by taking a photo would need camera permission and would light the green camera LED every time. So this reminds you to close the flap *if it's open*; it never claims your camera is exposed.\n\nIt fires once after a meeting ends, or after any call finishes that wasn't on your calendar. It stays quiet while a meeting is still running, while the camera is genuinely in use, and when your next meeting is close — and it never repeats.\n\nDetecting whether the camera is in use reads a system property; it never opens the camera, so there's no permission prompt and no camera light.")
+            SettingsSectionHeader("Camera Cover", info: "Built for people who use a physical camera cover (a sliding flap over the lens).\n\n**MeetingIntro cannot see your cover.** No app can — and checking by taking a photo would need camera permission and would light the green camera LED every time. So this reminds you to close the flap *if it's open*; it never claims your camera is exposed.\n\nIt fires once after a meeting ends, or after any call finishes that wasn't on your calendar. It stays quiet while a meeting is still running, while the camera is genuinely in use, and when your next meeting is close — and it never repeats.\n\nDetecting whether the camera is in use reads a system property; it never opens the camera, so there's no permission prompt and no camera light.\n\nThe wording rotates between a few phrasings so it doesn't become wallpaper.\n\n**In Do Not Disturb**, macOS holds notification banners — so with \"Remind me even in Do Not Disturb\" on, the reminder appears as a small panel in the corner instead, which Focus doesn't govern. Turn it off and the reminder stays completely silent during Focus.")
         }
     }
 

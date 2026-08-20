@@ -50,6 +50,7 @@
 		7ED2557749FC1DDB68203F28 /* EventDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF7DCEE0AA262DB746742A6A /* EventDraft.swift */; };
 		85955A740FE1667D4701DCA0 /* MirrorEditSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41B9F2E85EE737CD879A15CE /* MirrorEditSheet.swift */; };
 		8E0C498C8FB52734B010B773 /* OverlayWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22E108D1CE89056097ED33FE /* OverlayWindowController.swift */; };
+		9006E306631DDA2D4A299195 /* CameraCoverOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADC8D8B1536346F141E3FC27 /* CameraCoverOverlayView.swift */; };
 		914FB58159F10D9161F4DD21 /* FrontmostAppDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEDC37D08E46673E508040D3 /* FrontmostAppDetector.swift */; };
 		9B34233499A40226A8A794E1 /* AssistantConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6D5293C913670C06E2CDE2A /* AssistantConfig.swift */; };
 		A37C805D6770F7294432E384 /* EventKitProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B73976360782F9155FDD238 /* EventKitProvider.swift */; };
@@ -152,6 +153,7 @@
 		A2C735A96B380C97241A3455 /* TickerFeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TickerFeed.swift; sourceTree = "<group>"; };
 		A4FCAC00891AF0B9BD3EC21D /* AudioTrackExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioTrackExporter.swift; sourceTree = "<group>"; };
 		A8EBA59B9A8286ABC8113431 /* TickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TickerView.swift; sourceTree = "<group>"; };
+		ADC8D8B1536346F141E3FC27 /* CameraCoverOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCoverOverlayView.swift; sourceTree = "<group>"; };
 		AEDC37D08E46673E508040D3 /* FrontmostAppDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrontmostAppDetector.swift; sourceTree = "<group>"; };
 		AF0A3C8188CBC74A7C99597C /* ConcurrentOverlayStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConcurrentOverlayStyle.swift; sourceTree = "<group>"; };
 		B0884058017A627B40452B5E /* ScreenCaptureDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCaptureDetector.swift; sourceTree = "<group>"; };
@@ -333,6 +335,7 @@
 				57848C89CCB36538773C65EE /* AutoJoinImminentView.swift */,
 				8A99A9D2EE9624DA582CD8D5 /* CalendarManager.swift */,
 				0DD250C84523C24862974C5D /* CalendarProvider.swift */,
+				ADC8D8B1536346F141E3FC27 /* CameraCoverOverlayView.swift */,
 				769C85809834D97A437384EF /* CameraCoverReminder.swift */,
 				F2918B368AF626877462E126 /* CancellationOverlayView.swift */,
 				65AA4DF0A8F95DD6C9C2EBE4 /* CompactMenuView.swift */,
@@ -478,6 +481,7 @@
 				2A15E4DF2BDC03E4F3D79756 /* CalendarManager.swift in Sources */,
 				6D165CF43230BB289017217D /* CalendarMirrorEngine.swift in Sources */,
 				3CEA795EFAD5F9E28F297D07 /* CalendarProvider.swift in Sources */,
+				9006E306631DDA2D4A299195 /* CameraCoverOverlayView.swift in Sources */,
 				7A2770A4BF9BAFD6B8C8CD09 /* CameraCoverReminder.swift in Sources */,
 				C13F7B2B4C696639B999205C /* CameraUseDetector.swift in Sources */,
 				159AA5A9C571071C598623DA /* CancellationOverlayView.swift in Sources */,
