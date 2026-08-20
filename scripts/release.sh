@@ -25,7 +25,23 @@ set -euo pipefail
 
 VERSION="${1:-}"
 if [[ -z "$VERSION" ]]; then
-  echo "Usage: $0 <version>   (e.g. $0 1.0.0)" >&2
+  echo "Usage: $0 <version> [--notes <file.md>]   (e.g. $0 1.0.0)" >&2
+  exit 1
+fi
+shift || true
+
+NOTES_FILE=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --notes) NOTES_FILE="${2:-}"; shift 2 ;;
+    *) echo "Unknown argument: $1" >&2; exit 1 ;;
+  esac
+done
+
+# Validate an explicit --notes path NOW, not after notarization: a typo shouldn't
+# surface twenty minutes and one Apple round-trip later.
+if [[ -n "$NOTES_FILE" && ! -f "$NOTES_FILE" ]]; then
+  echo "✗ Notes file not found: $NOTES_FILE" >&2
   exit 1
 fi
 
@@ -118,9 +134,15 @@ TAG="v$VERSION"
 # by conventional-commit type with release bookkeeping filtered out. Bounded at
 # 30 entries so a long gap between releases doesn't produce wall-of-text notes.
 #
-# NOTE: this auto-generated list is the FLOOR, not the ceiling. For feature-level
-# releases, hand-augment the notes after shipping (gh release edit <tag> --notes)
-# to enumerate the user-facing enhancements — a subject line can't carry them.
+# The auto-generated list is the FLOOR, not the ceiling — commit subjects describe a
+# change to a developer, not to a user. Write the user-facing version in
+#   docs/release-notes/<version>.md
+# and it becomes the body of the notes, with the generated list preserved beneath it
+# in a collapsed "All changes" section. Writing that file alongside the feature commit
+# is the point: notes get reviewed with the code instead of being remembered (or
+# forgotten) after the release is already public.
+#
+# Override the location with:  scripts/release.sh <version> --notes path/to/file.md
 PREV_TAG="$(cd "$REPO_ROOT" && git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo '')"
 if [[ -n "$PREV_TAG" ]]; then
     # NOTE: every grep needs `|| true` — grep exits 1 on no-match, which would
@@ -156,9 +178,36 @@ else
     CHANGELOG_HEADER="## What's in this release"
 fi
 
-RELEASE_NOTES="$CHANGELOG_HEADER
+# Hand-written highlights: --notes wins, else docs/release-notes/<version>.md.
+[[ -z "$NOTES_FILE" && -f "$REPO_ROOT/docs/release-notes/$VERSION.md" ]] \
+    && NOTES_FILE="$REPO_ROOT/docs/release-notes/$VERSION.md"
+
+if [[ -n "$NOTES_FILE" ]]; then
+    if [[ ! -f "$NOTES_FILE" ]]; then   # already validated for --notes; covers a race
+        echo "✗ Notes file not found: $NOTES_FILE" >&2
+        exit 1
+    fi
+    echo "▶ Using hand-written notes: ${NOTES_FILE#$REPO_ROOT/}"
+    HIGHLIGHTS="$(cat "$NOTES_FILE")"
+    # Prose leads; the generated list stays underneath, collapsed, so the full record
+    # is still there for anyone who wants it without burying the readable part.
+    CHANGELOG_BODY="$HIGHLIGHTS
+
+<details>
+<summary>All changes</summary>
 
 $CHANGELOG_LINES
+
+</details>"
+else
+    echo "⚠ No docs/release-notes/$VERSION.md — publishing raw commit subjects."
+    echo "  Write that file (or pass --notes) so users get prose instead of subject lines."
+    CHANGELOG_BODY="$CHANGELOG_LINES"
+fi
+
+RELEASE_NOTES="$CHANGELOG_HEADER
+
+$CHANGELOG_BODY
 
 ## Install
 

@@ -93,6 +93,22 @@ The app should open with no Gatekeeper warning. If you see "MeetingIntro can't b
 
 ---
 
+## Release notes
+
+Write the user-facing notes **with the feature commit**, in `docs/release-notes/<version>.md`. `scripts/release.sh` picks that file up automatically: it becomes the body of the GitHub release, with the auto-generated commit list preserved beneath it in a collapsed "All changes" section.
+
+```sh
+# notes are found automatically by version
+scripts/release.sh 2.19.0
+
+# or point at a file explicitly
+scripts/release.sh 2.19.0 --notes /tmp/notes.md
+```
+
+If the file is missing the release still goes out, but the script warns and publishes raw commit subjects — which describe the change to a developer, not to a user. An explicit `--notes` path that doesn't exist fails immediately, before the build.
+
+Write it for someone who has never seen the code: lead with the behaviour they get, and state plainly anything the feature deliberately does *not* do.
+
 ## Troubleshooting
 
 - **`xcodebuild` fails with "No signing certificate"** — the Developer ID cert isn't in your login keychain, or `MEETINGINTRO_SIGN_IDENTITY` doesn't exactly match what `security find-identity` prints. The full quoted string including the parenthesized team ID must match.
