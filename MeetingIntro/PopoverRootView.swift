@@ -482,9 +482,39 @@ struct PopoverRootView: View {
     /// timeline ~22, NEXT band ~56, footer rows + dividers ~230.
     private static let popoverChromeHeight: CGFloat = 350
 
-    /// Fitted height for a list: never below one row's worth, never above the cap.
-    private func fittedHeight(_ measured: CGFloat) -> CGFloat {
-        min(max(measured, 44), listHeightCap)
+    /// Fitted height for a list: never below one row's worth, never above the cap — and
+    /// **snapped to whole rows** so the bottom edge always lands between rows instead of
+    /// slicing one in half against the footer.
+    ///
+    /// The row height is derived from the measurement itself (`(measured - padding) /
+    /// rowCount`) rather than a hardcoded constant, so it stays exact if a row's font or
+    /// padding ever changes.
+    private func fittedHeight(_ measured: CGFloat, rowCount: Int) -> CGFloat {
+        let capped = min(max(measured, 44), listHeightCap)
+        guard rowCount > 0, measured > Self.listVerticalPadding else { return capped }
+        let rowHeight = (measured - Self.listVerticalPadding) / CGFloat(rowCount)
+        guard rowHeight > 1 else { return capped }
+        let wholeRows = floor((capped - Self.listVerticalPadding) / rowHeight)
+        guard wholeRows >= 1 else { return capped }
+        return wholeRows * rowHeight + Self.listVerticalPadding
+    }
+
+    /// The `.padding(.vertical, 2)` on each list's VStack, top + bottom.
+    private static let listVerticalPadding: CGFloat = 4
+
+    /// A soft fade over the last few points of a scrollable list. Used on the legacy
+    /// (fit-off) path, where the frame height is decided by the parent, so we can't snap
+    /// to whole rows — without it, a half-row sits flush against the footer and reads as
+    /// a rendering bug rather than "there's more below".
+    private func bottomFade(active: Bool) -> LinearGradient {
+        LinearGradient(
+            stops: active
+                ? [.init(color: .black, location: 0),
+                   .init(color: .black, location: 0.88),
+                   .init(color: .black.opacity(0.15), location: 1)]
+                : [.init(color: .black, location: 0), .init(color: .black, location: 1)],
+            startPoint: .top, endPoint: .bottom
+        )
     }
 
     private var eventsList: some View {
@@ -514,7 +544,7 @@ struct PopoverRootView: View {
                         // Sub-point churn would re-render for nothing.
                         if abs(height - eventsContentHeight) > 0.5 { eventsContentHeight = height }
                     }
-                    .frame(height: fittedHeight(eventsContentHeight))
+                    .frame(height: fittedHeight(eventsContentHeight, rowCount: listEvents.count))
                     .scrollIndicators(eventsContentHeight > listHeightCap ? .automatic : .never)
                     .scrollBounceBehavior(.basedOnSize)
                 } else {
@@ -526,6 +556,9 @@ struct PopoverRootView: View {
                     }
                     .frame(minHeight: 140, maxHeight: 300)
                     .scrollBounceBehavior(.basedOnSize)
+                    // Purely visual: no measurement, no state — the jank in v2.19.0 came
+                    // from measuring on this path, so it stays measurement-free.
+                    .mask(bottomFade(active: listEvents.count >= 5))
                 }
             }
         }
@@ -557,7 +590,7 @@ struct PopoverRootView: View {
                     .onPreferenceChange(TasksHeightKey.self) { height in
                         if abs(height - tasksContentHeight) > 0.5 { tasksContentHeight = height }
                     }
-                    .frame(height: fittedHeight(tasksContentHeight))
+                    .frame(height: fittedHeight(tasksContentHeight, rowCount: taskManager.sorted.count))
                     .scrollIndicators(tasksContentHeight > listHeightCap ? .automatic : .never)
                     .scrollBounceBehavior(.basedOnSize)
                 } else {
@@ -569,6 +602,7 @@ struct PopoverRootView: View {
                     }
                     .frame(minHeight: 120, maxHeight: 300)
                     .scrollBounceBehavior(.basedOnSize)
+                    .mask(bottomFade(active: taskManager.sorted.count >= 5))
                 }
             }
             HStack {
