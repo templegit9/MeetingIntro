@@ -482,26 +482,9 @@ struct PopoverRootView: View {
     /// timeline ~22, NEXT band ~56, footer rows + dividers ~230.
     private static let popoverChromeHeight: CGFloat = 350
 
-    /// Sizes a list either the legacy way (fixed reserved block) or fitted to its content.
-    private struct ListSizing: ViewModifier {
-        let fit: Bool
-        let measured: CGFloat
-        let legacyMin: CGFloat
-        let cap: CGFloat
-
-        func body(content: Content) -> some View {
-            if fit {
-                // Never below one row's worth, never above the cap. Indicators only
-                // appear when there's genuinely something out of view — a scrollbar on a
-                // list that fits is just noise advertising scrollability that isn't there.
-                let height = min(max(measured, 44), cap)
-                content
-                    .frame(height: height)
-                    .scrollIndicators(measured > cap ? .automatic : .never)
-            } else {
-                content.frame(minHeight: legacyMin, maxHeight: 300)
-            }
-        }
+    /// Fitted height for a list: never below one row's worth, never above the cap.
+    private func fittedHeight(_ measured: CGFloat) -> CGFloat {
+        min(max(measured, 44), listHeightCap)
     }
 
     private var eventsList: some View {
@@ -513,19 +496,37 @@ struct PopoverRootView: View {
                 }
                 .frame(maxWidth: .infinity).padding(.vertical, 24)
             } else {
-                ScrollView {
-                    VStack(spacing: 0) {
-                        ForEach(listEvents) { eventRow($0) }
+                // The two modes are kept as SEPARATE view trees on purpose. Measuring in
+                // both — a GeometryReader background feeding @State — wrote state on
+                // every layout pass, so with the toggle OFF the old path picked up a
+                // re-render per scroll frame and felt janky. Off means untouched.
+                if fitDropdownToContent {
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            ForEach(listEvents) { eventRow($0) }
+                        }
+                        .padding(.vertical, 2)
+                        .background(GeometryReader { proxy in
+                            Color.clear.preference(key: EventsHeightKey.self, value: proxy.size.height)
+                        })
                     }
-                    .padding(.vertical, 2)
-                    .background(GeometryReader { proxy in
-                        Color.clear.preference(key: EventsHeightKey.self, value: proxy.size.height)
-                    })
+                    .onPreferenceChange(EventsHeightKey.self) { height in
+                        // Sub-point churn would re-render for nothing.
+                        if abs(height - eventsContentHeight) > 0.5 { eventsContentHeight = height }
+                    }
+                    .frame(height: fittedHeight(eventsContentHeight))
+                    .scrollIndicators(eventsContentHeight > listHeightCap ? .automatic : .never)
+                    .scrollBounceBehavior(.basedOnSize)
+                } else {
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            ForEach(listEvents) { eventRow($0) }
+                        }
+                        .padding(.vertical, 2)
+                    }
+                    .frame(minHeight: 140, maxHeight: 300)
+                    .scrollBounceBehavior(.basedOnSize)
                 }
-                .onPreferenceChange(EventsHeightKey.self) { eventsContentHeight = $0 }
-                .modifier(ListSizing(fit: fitDropdownToContent, measured: eventsContentHeight,
-                                     legacyMin: 140, cap: listHeightCap))
-                .scrollBounceBehavior(.basedOnSize)
             }
         }
     }
@@ -543,19 +544,32 @@ struct PopoverRootView: View {
                 }
                 .frame(maxWidth: .infinity).padding(.vertical, 18)
             } else {
-                ScrollView {
-                    VStack(spacing: 0) {
-                        ForEach(taskManager.sorted) { taskRow($0) }
+                if fitDropdownToContent {
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            ForEach(taskManager.sorted) { taskRow($0) }
+                        }
+                        .padding(.vertical, 2)
+                        .background(GeometryReader { proxy in
+                            Color.clear.preference(key: TasksHeightKey.self, value: proxy.size.height)
+                        })
                     }
-                    .padding(.vertical, 2)
-                    .background(GeometryReader { proxy in
-                        Color.clear.preference(key: TasksHeightKey.self, value: proxy.size.height)
-                    })
+                    .onPreferenceChange(TasksHeightKey.self) { height in
+                        if abs(height - tasksContentHeight) > 0.5 { tasksContentHeight = height }
+                    }
+                    .frame(height: fittedHeight(tasksContentHeight))
+                    .scrollIndicators(tasksContentHeight > listHeightCap ? .automatic : .never)
+                    .scrollBounceBehavior(.basedOnSize)
+                } else {
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            ForEach(taskManager.sorted) { taskRow($0) }
+                        }
+                        .padding(.vertical, 2)
+                    }
+                    .frame(minHeight: 120, maxHeight: 300)
+                    .scrollBounceBehavior(.basedOnSize)
                 }
-                .onPreferenceChange(TasksHeightKey.self) { tasksContentHeight = $0 }
-                .modifier(ListSizing(fit: fitDropdownToContent, measured: tasksContentHeight,
-                                     legacyMin: 120, cap: listHeightCap))
-                .scrollBounceBehavior(.basedOnSize)
             }
             HStack {
                 Button { editingTask = taskManager.makeTask(title: "", dueDate: nil) } label: {
