@@ -79,6 +79,7 @@ struct SettingsView: View {
     @State private var showMirrorSheet = false
 
     @AppStorage("nextMeetingHighlightHex") private var nextMeetingHighlightHex: String = defaultNextMeetingHighlightHex
+    @AppStorage("popoverFitToContent") private var popoverFitToContent: Bool = false
 
     @State private var diagCategoryFilter: DiagnosticLog.Category?
     @State private var diagSearch: String = ""
@@ -722,8 +723,13 @@ struct SettingsView: View {
                     }
                 }
                 .pickerStyle(.inline)
+
+                Toggle("Fit dropdown height to content", isOn: $popoverFitToContent)
+                    .disabled(menuBarPresentationRaw != MenuBarPresentation.popover.rawValue)
+                Text("Sizes each tab to the number of rows instead of reserving a fixed block — no empty space under a short list, no scrollbar until there's something to scroll. Grows to at most 70% of your screen.")
+                    .font(.caption).foregroundStyle(.secondary)
             } header: {
-                SettingsSectionHeader("Dropdown Style", info: "\"Compact menu\" is the familiar list. \"Rich popover\" is a wider panel with a Today/Upcoming switcher and columned rows. (Both open from the menu bar icon.)")
+                SettingsSectionHeader("Dropdown Style", info: "\"Compact menu\" is the familiar list. \"Rich popover\" is a wider panel with a Today/Upcoming switcher and columned rows. (Both open from the menu bar icon.)\n\n\"Fit dropdown height to content\" applies to the rich popover: Today, Upcoming and Tasks each size themselves to their rows, so one meeting no longer leaves a block of empty space above the actions. Switching tabs will resize the window. Past 70% of your screen height the list scrolls instead of growing.")
             }
 
             Section {

@@ -25,6 +25,9 @@ struct PopoverRootView: View {
     @Environment(\.openWindow) private var openWindow
     @AppStorage("cancellationShowInTodayView") private var showCancelled: Bool = true
     @AppStorage("nextMeetingHighlightHex") private var nextMeetingHighlightHex: String = defaultNextMeetingHighlightHex
+    /// Opt-in (Settings → Menu Bar): size each list to its rows instead of reserving a
+    /// fixed block, growing the popover up to 70% of the screen before it scrolls.
+    @AppStorage("popoverFitToContent") private var fitDropdownToContent: Bool = false
     @AppStorage("assistantEnabled") private var assistantEnabled: Bool = false
     @AppStorage("dictionaryEnabled") private var dictionaryEnabled: Bool = false
 
@@ -458,6 +461,49 @@ struct PopoverRootView: View {
 
     // MARK: - Events
 
+    /// Height of the rows inside each list, measured at layout time. Sizing on the
+    /// *measured* content (rather than letting a flexible frame decide) is what lets the
+    /// popover fit exactly — and it's also why this can't reintroduce the v2.9.4 bug,
+    /// where a flexible list got squeezed to ~0 on a shorter display. An explicit height
+    /// can't be squeezed.
+    @State private var eventsContentHeight: CGFloat = 0
+    @State private var tasksContentHeight: CGFloat = 0
+
+    /// Ceiling for a list when fit-to-content is on: the popover as a whole shouldn't
+    /// exceed 70% of the screen, so the list gets that minus the fixed chrome above and
+    /// below it (header, timeline, NEXT band, footer actions). Floored so a very short
+    /// display still shows something scrollable rather than a sliver.
+    private var listHeightCap: CGFloat {
+        let screen = (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame.height ?? 900
+        return max(160, screen * 0.70 - Self.popoverChromeHeight)
+    }
+
+    /// Measured height of everything in the popover that isn't the list: header ~44,
+    /// timeline ~22, NEXT band ~56, footer rows + dividers ~230.
+    private static let popoverChromeHeight: CGFloat = 350
+
+    /// Sizes a list either the legacy way (fixed reserved block) or fitted to its content.
+    private struct ListSizing: ViewModifier {
+        let fit: Bool
+        let measured: CGFloat
+        let legacyMin: CGFloat
+        let cap: CGFloat
+
+        func body(content: Content) -> some View {
+            if fit {
+                // Never below one row's worth, never above the cap. Indicators only
+                // appear when there's genuinely something out of view — a scrollbar on a
+                // list that fits is just noise advertising scrollability that isn't there.
+                let height = min(max(measured, 44), cap)
+                content
+                    .frame(height: height)
+                    .scrollIndicators(measured > cap ? .automatic : .never)
+            } else {
+                content.frame(minHeight: legacyMin, maxHeight: 300)
+            }
+        }
+    }
+
     private var eventsList: some View {
         Group {
             if listEvents.isEmpty {
@@ -472,8 +518,13 @@ struct PopoverRootView: View {
                         ForEach(listEvents) { eventRow($0) }
                     }
                     .padding(.vertical, 2)
+                    .background(GeometryReader { proxy in
+                        Color.clear.preference(key: EventsHeightKey.self, value: proxy.size.height)
+                    })
                 }
-                .frame(minHeight: 140, maxHeight: 300)
+                .onPreferenceChange(EventsHeightKey.self) { eventsContentHeight = $0 }
+                .modifier(ListSizing(fit: fitDropdownToContent, measured: eventsContentHeight,
+                                     legacyMin: 140, cap: listHeightCap))
                 .scrollBounceBehavior(.basedOnSize)
             }
         }
@@ -497,8 +548,13 @@ struct PopoverRootView: View {
                         ForEach(taskManager.sorted) { taskRow($0) }
                     }
                     .padding(.vertical, 2)
+                    .background(GeometryReader { proxy in
+                        Color.clear.preference(key: TasksHeightKey.self, value: proxy.size.height)
+                    })
                 }
-                .frame(minHeight: 120, maxHeight: 300)
+                .onPreferenceChange(TasksHeightKey.self) { tasksContentHeight = $0 }
+                .modifier(ListSizing(fit: fitDropdownToContent, measured: tasksContentHeight,
+                                     legacyMin: 120, cap: listHeightCap))
                 .scrollBounceBehavior(.basedOnSize)
             }
             HStack {
@@ -760,4 +816,17 @@ private struct DayTimelineBar: View {
         if m.id == nextID { return accent }
         return Color.secondary.opacity(0.55)
     }
+}
+
+
+/// Separate keys per list: both would otherwise merge into one value if SwiftUI ever
+/// keeps two tabs alive at once.
+private struct EventsHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
+private struct TasksHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
 }
