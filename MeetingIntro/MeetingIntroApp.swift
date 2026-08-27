@@ -343,6 +343,18 @@ final class AppLifecycleManager: ObservableObject {
     /// silencing reminders. Reset when the call ends. (0-minute cap = never set.)
     private var inCallSuppressionCapExceeded = false
 
+    /// (meeting, threshold, start time) combinations the notification/voice fan-out has
+    /// already handled. The fan-out runs on EVERY `$upcomingMeetings` publish, and the
+    /// freshness gate stays true for 60s, so without this the same reminder re-ran ~10
+    /// times per threshold (observed 2026-08-27: "Reminder 15m fired" logged 10× for one
+    /// meeting). Only NotificationManager's dedup kept that from being 10 banners — but
+    /// the log, which is the first thing read when a user says "it didn't remind me",
+    /// overstated reality by 10×, and `decide()` plus rule matching re-ran each time.
+    ///
+    /// The start time is in the key so a recurring series — whose occurrences share one
+    /// EventKit id on some calendar sources — doesn't have its next occurrence swallowed.
+    private var firedReminderKeys: Set<String> = []
+
     /// After this long, surface a held cancellation notice anyway — an acknowledgment
     /// surface must never hide indefinitely (overnight cancellations were stuck ~11.5h
     /// in the v2.7.0 regression). Date() comparison spans system sleep, so a notice
@@ -637,7 +649,14 @@ final class AppLifecycleManager: ObservableObject {
         // are excluded — they fire a single cancellation notification at detection
         // time (above) and skip the original-start-time reminders entirely.
         calendarManager.$upcomingMeetings
-            .sink { meetings in
+            .sink { [weak self] meetings in
+                guard let self else { return }
+                // Bound the fired-key set: drop keys whose meeting is no longer in the
+                // window. Same conservative rule as pruneCancellationState.
+                let liveKeyPrefixes = Set(meetings.map { "\($0.id)_" })
+                self.firedReminderKeys = self.firedReminderKeys.filter { key in
+                    liveKeyPrefixes.contains { key.hasPrefix($0) }
+                }
                 let maxThreshold = TimeInterval((countdownConfig.triggers.map(\.minutes).max() ?? 0) * 60)
                 // Collected first, dispatched below — so meetings that start together can
                 // be merged into one notification / one spoken line.
@@ -668,6 +687,11 @@ final class AppLifecycleManager: ObservableObject {
                         // dump every backed-up reminder for the meeting.
                         let catchUp = calendarManager.catchUpThresholdMinutes(for: meeting) == trigger.minutes
                         guard secondsSinceCrossed <= 60 || catchUp else { continue }
+
+                        // Fire each (meeting, threshold, occurrence) exactly once.
+                        let firedKey = "\(meeting.id)_\(trigger.minutes)_\(Int(meeting.startDate.timeIntervalSince1970))"
+                        guard !self.firedReminderKeys.contains(firedKey) else { continue }
+                        self.firedReminderKeys.insert(firedKey)
 
                         let decision = decide(trigger, meeting)
                         let reasonSuffix = decision.suppressedBy.map { " — suppressed: \($0.logDescription)" } ?? ""

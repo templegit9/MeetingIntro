@@ -186,6 +186,11 @@ final class CalendarManager: ObservableObject {
 
     private var pollTimer: Timer?
     private var eventStoreObserver: NSObjectProtocol?
+    /// Pending debounced refresh from an EventKit change notification.
+    private var changeRefreshTask: Task<Void, Never>?
+    /// Trailing debounce for change-driven refreshes. Long enough to swallow a commit
+    /// storm, short enough that granting calendar access still feels immediate.
+    private static let changeRefreshDebounce: Double = 2.0
     private var wakeObserver: NSObjectProtocol?
 
     /// Timestamp of the previous poll. A large gap means the Mac was asleep (the
@@ -307,7 +312,7 @@ final class CalendarManager: ObservableObject {
                 object: eventKitProvider.eventStore,
                 queue: .main
             ) { [weak self] _ in
-                Task { @MainActor [weak self] in await self?.refreshEvents() }
+                Task { @MainActor [weak self] in self?.scheduleChangeDrivenRefresh() }
             }
         }
 
@@ -326,6 +331,26 @@ final class CalendarManager: ObservableObject {
 
         // Also fetch immediately
         Task { await refreshEvents() }
+    }
+
+    /// Coalesce `EKEventStoreChanged`-driven refreshes.
+    ///
+    /// Every mirror commit — and every edit made in Calendar.app, or by any other app —
+    /// posts this notification, and each one used to trigger an immediate full fetch
+    /// (30 events + 21 mirror copies in one observed log) which then re-ran the whole
+    /// reminder fan-out and another mirror reconcile. Measured 2026-08-27: **62 refreshes
+    /// landed under 25s after the previous one**, against a 30s poll cadence.
+    ///
+    /// A short trailing debounce collapses a burst into one refresh while keeping the
+    /// property this observer exists for: granting calendar access still updates the app
+    /// within a couple of seconds, no restart needed.
+    private func scheduleChangeDrivenRefresh() {
+        changeRefreshTask?.cancel()
+        changeRefreshTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(Self.changeRefreshDebounce * 1_000_000_000))
+            guard !Task.isCancelled else { return }
+            await self?.refreshEvents()
+        }
     }
 
     /// On a catch-up poll (post-sleep), the single most-imminent enabled threshold a

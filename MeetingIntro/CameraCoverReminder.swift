@@ -162,15 +162,20 @@ final class CameraCoverReminder: ObservableObject {
         }
     }
 
-    private func fireIfAppropriate(reason: String) {
+    private func fireIfAppropriate(reason: String, attempt: Int = 1) {
         guard let config, config.isEnabled, let calendarManager else { return }
 
+        // "Still busy" is TRANSIENT — retry rather than dropping the nudge. Observed
+        // 2026-08-27: three checks in a row were skipped because a meeting was running,
+        // and the reminder only landed later because an unrelated trigger happened to
+        // fall in a free moment. On a back-to-back day that means no nudge at all, which
+        // is exactly the day you'd want one.
         if !calendarManager.meetingsCurrentlyRunning.isEmpty {
-            diagnosticLog?.info(.notification, "Camera-cover reminder skipped — a meeting is running")
+            retry(reason: reason, attempt: attempt, because: "a meeting is running")
             return
         }
         if cameraDetector?.isCameraInUse == true {
-            diagnosticLog?.info(.notification, "Camera-cover reminder skipped — the camera is still in use")
+            retry(reason: reason, attempt: attempt, because: "the camera is still in use")
             return
         }
         if let next = calendarManager.upcomingMeetings.first(where: { $0.timeUntilStart > 0 && !$0.isCancelled }),
@@ -182,6 +187,27 @@ final class CameraCoverReminder: ObservableObject {
         diagnosticLog?.info(.notification, "Camera-cover reminder firing (\(reason))")
         present()
     }
+
+    /// Re-arm a blocked check. Bounded: after `maxRetries` the nudge is stale enough that
+    /// the meeting it belonged to is long over, and the next meeting's end will schedule
+    /// a fresh one anyway.
+    private func retry(reason: String, attempt: Int, because blocker: String) {
+        guard attempt < Self.maxRetries else {
+            diagnosticLog?.info(.notification, "Camera-cover reminder dropped — \(blocker) after \(attempt) checks")
+            return
+        }
+        diagnosticLog?.debug(.notification, "Camera-cover check deferred — \(blocker) (attempt \(attempt))")
+        pendingCheck?.cancel()
+        pendingCheck = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(Self.retryIntervalMinutes) * 60 * 1_000_000_000)
+            guard !Task.isCancelled else { return }
+            self?.fireIfAppropriate(reason: reason, attempt: attempt + 1)
+        }
+    }
+
+    /// Up to 5 attempts, 2 minutes apart — about 10 minutes of patience.
+    private static let maxRetries = 5
+    private static let retryIntervalMinutes = 2
 
     /// Choose the surface and show the nudge.
     ///
