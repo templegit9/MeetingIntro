@@ -68,6 +68,8 @@ struct SettingsView: View {
     @ObservedObject var assistantConfig: AssistantConfig
     @ObservedObject var tickerConfig: TickerConfig
     @ObservedObject var tickerCoordinator: TickerCoordinator
+    @ObservedObject var graphVerifierConfig: GraphVerifierConfig
+    @ObservedObject var graphVerifier: GraphVerifier
     @ObservedObject var cameraCoverConfig: CameraCoverConfig
     @ObservedObject var cameraCoverReminder: CameraCoverReminder
     @ObservedObject var notesConfig: MeetingNotesConfig
@@ -214,6 +216,7 @@ struct SettingsView: View {
 
             if selectedProvider == .microsoftGraph {
                 graphSettingsSection
+                graphVerifierSection
             }
 
             Section("Calendars to Monitor") {
@@ -306,6 +309,32 @@ struct SettingsView: View {
         Task {
             try? await Task.sleep(nanoseconds: 2_500_000_000)
             await loadCalendars()
+        }
+    }
+
+    // MARK: - Graph verification (issue #23 — the phantom meeting)
+
+    private var graphVerifierSection: some View {
+        Section {
+            Toggle("Cross-check Exchange meetings against Microsoft 365", isOn: $graphVerifierConfig.isEnabled)
+            if graphVerifierConfig.isEnabled {
+                if let error = graphVerifier.lastError {
+                    Label(error, systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption).foregroundStyle(.orange)
+                } else if let last = graphVerifier.lastRun {
+                    let flagged = graphVerifier.verdicts.values.filter { $0.suppressesReminders }.count
+                    Text(flagged == 0
+                         ? "Checked \(last, format: .relative(presentation: .named)) — everything matches."
+                         : "Checked \(last, format: .relative(presentation: .named)) — \(flagged) meeting\(flagged == 1 ? "" : "s") no longer on the server.")
+                        .font(.caption).foregroundStyle(.secondary)
+                } else {
+                    Text("Waiting for the first check.").font(.caption).foregroundStyle(.secondary)
+                }
+                Button("Check now") { Task { await graphVerifier.verify() } }
+                    .controlSize(.small)
+            }
+        } header: {
+            SettingsSectionHeader("Verify against Microsoft 365", info: "macOS Calendar's Exchange sync can leave a meeting behind after it has been cancelled on the server. A real case had a meeting cancelled a week earlier still firing reminders, and auto-join opening a Zoom for it. Nothing in the local calendar marks that event as different, so the only way to catch it is to ask the server.\n\nWith this on, meetings on Exchange calendars are cross-checked against Microsoft 365 every 5 minutes. Anything the server says is cancelled, or no longer has at all, stops firing reminders and won't auto-join. Your other calendars are untouched and nothing about them is sent anywhere.\n\nIt is deliberately cautious: a failed or empty response from Microsoft 365 is ignored rather than read as \"everything is cancelled\", and a meeting must fail two checks in a row before it is silenced.\n\nRequires signing in under Microsoft Graph API above. EventKit stays your calendar source — this only adds a second opinion.")
         }
     }
 

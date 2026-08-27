@@ -89,6 +89,7 @@ final class EventKitProvider: CalendarProvider {
                     // original slot and stays fixed even when the occurrence is moved,
                     // so time-change detection can spot a rescheduled occurrence.
                     occurrenceDate: event.hasRecurrenceRules ? event.occurrenceDate : nil,
+                    isExchangeBacked: event.calendar?.source?.sourceType == .exchange,
                     myResponse: myResponse,
                     responseCounts: counts
                 )

@@ -104,6 +104,8 @@ struct MeetingIntroApp: App {
     @StateObject private var taskConfig: TaskConfig
     @StateObject private var taskManager: TaskManager
     @StateObject private var taskReminderCoordinator = TaskReminderCoordinator()
+    @StateObject private var graphVerifierConfig = GraphVerifierConfig()
+    @StateObject private var graphVerifier = GraphVerifier()
     @StateObject private var cameraDetector = CameraUseDetector()
     @StateObject private var cameraCoverConfig = CameraCoverConfig()
     @StateObject private var cameraCoverReminder = CameraCoverReminder()
@@ -173,6 +175,8 @@ struct MeetingIntroApp: App {
             tickerConfig: tickerConfig,
             tickerCoordinator: tickerCoordinator,
             recordingController: recordingController,
+            graphVerifierConfig: graphVerifierConfig,
+            graphVerifier: graphVerifier,
             cameraDetector: cameraDetector,
             cameraCoverConfig: cameraCoverConfig,
             cameraCoverReminder: cameraCoverReminder,
@@ -284,6 +288,8 @@ struct MeetingIntroApp: App {
                 assistantConfig: assistantConfig,
                 tickerConfig: tickerConfig,
                 tickerCoordinator: tickerCoordinator,
+                graphVerifierConfig: graphVerifierConfig,
+                graphVerifier: graphVerifier,
                 cameraCoverConfig: cameraCoverConfig,
                 cameraCoverReminder: cameraCoverReminder,
                 notesConfig: notesConfig,
@@ -390,6 +396,8 @@ final class AppLifecycleManager: ObservableObject {
         tickerConfig: TickerConfig,
         tickerCoordinator: TickerCoordinator,
         recordingController: RecordingController,
+        graphVerifierConfig: GraphVerifierConfig,
+        graphVerifier: GraphVerifier,
         cameraDetector: CameraUseDetector,
         cameraCoverConfig: CameraCoverConfig,
         cameraCoverReminder: CameraCoverReminder,
@@ -499,6 +507,13 @@ final class AppLifecycleManager: ObservableObject {
         // RSVP gate (shared by overlay, notification/voice, and recording). Reads the
         // live settings each call. Personal events / organizer / unknown never match.
         calendarManager.responseGate = { smartConfig.suppresses($0) }
+        // Graph verification: EventKit still decides what's shown; Graph only answers
+        // "does the server still have this?" for Exchange events (issue #23's phantom).
+        graphVerifier.attach(config: graphVerifierConfig,
+                             calendarManager: calendarManager,
+                             graphProvider: calendarManager.graphProvider,
+                             diagnosticLog: diagnosticLog)
+        calendarManager.upstreamGate = { [weak graphVerifier] in graphVerifier?.suppresses($0) ?? false }
         recordingCoordinator.responseSuppressed = { smartConfig.suppresses($0) }
 
         // Auto-join ("Start at Time") — surface each transition as a notification so

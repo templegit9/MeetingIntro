@@ -55,6 +55,11 @@ struct MeetingEvent: Identifiable, Equatable {
     /// This is the stable per-occurrence identity time-change detection needs; nil for
     /// non-recurring events and providers that don't expose it. Defaults nil.
     var occurrenceDate: Date? = nil
+    /// True when this event lives on an Exchange-backed calendar, i.e. one whose truth
+    /// lives on a Microsoft 365 server that `GraphVerifier` can cross-check. Only
+    /// EventKit sets it; nothing else is ever verified. Defaults false, so an event we
+    /// aren't sure about is never a verification candidate.
+    var isExchangeBacked: Bool = false
     /// The current user's RSVP. Defaults to `.unknown` so events without invitee
     /// data are never accidentally suppressed.
     var myResponse: ResponseStatus = .unknown

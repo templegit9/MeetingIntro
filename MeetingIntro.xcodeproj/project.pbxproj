@@ -14,6 +14,7 @@
 		13DB22F7D352761787331EE1 /* DictionaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9F6897888DDBB2A95264B8D /* DictionaryService.swift */; };
 		159AA5A9C571071C598623DA /* CancellationOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2918B368AF626877462E126 /* CancellationOverlayView.swift */; };
 		175F2E49C8587451AB910A93 /* MicrophoneDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B60DBB01A2C688FE793716C /* MicrophoneDetector.swift */; };
+		23C42BF2CF83A30D77F3E853 /* GraphVerifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6AC0A6B400AA7DBA28C0B48 /* GraphVerifier.swift */; };
 		247B578665DCD441288D37AA /* TranscriptionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB0286A0A45265AE24EABC58 /* TranscriptionEngine.swift */; };
 		2649B2641C264DCD2843158F /* TickerConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69F7F2B7C42D4C60A4716417 /* TickerConfig.swift */; };
 		27ED839518A9FCCB5DA7AB02 /* MeetingNotesPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1E98AD28DFC4BE3320297CA /* MeetingNotesPipeline.swift */; };
@@ -184,6 +185,7 @@
 		EF585F8BEF5487338065E75D /* ReleaseNotesManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseNotesManager.swift; sourceTree = "<group>"; };
 		F2918B368AF626877462E126 /* CancellationOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CancellationOverlayView.swift; sourceTree = "<group>"; };
 		F3B08B967919790FF813AD95 /* DictionaryWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryWindow.swift; sourceTree = "<group>"; };
+		F6AC0A6B400AA7DBA28C0B48 /* GraphVerifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphVerifier.swift; sourceTree = "<group>"; };
 		FAEF02F79EAE528318DB4E2D /* TaskModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskModels.swift; sourceTree = "<group>"; };
 		FF8C273D97F1B3730C901661 /* RecordingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -256,6 +258,7 @@
 			isa = PBXGroup;
 			children = (
 				4CAC212711667C92D4767C0F /* CalendarMirrorEngine.swift */,
+				F6AC0A6B400AA7DBA28C0B48 /* GraphVerifier.swift */,
 				14B4D39A7A32C15CF3C1E9B7 /* Mirror.swift */,
 				41B9F2E85EE737CD879A15CE /* MirrorEditSheet.swift */,
 			);
@@ -505,6 +508,7 @@
 				B7EA1C818EBD405895A0EB6F /* FocusModeDetector.swift in Sources */,
 				914FB58159F10D9161F4DD21 /* FrontmostAppDetector.swift in Sources */,
 				C8676CAB632124F3AFBD267B /* GraphCalendarProvider.swift in Sources */,
+				23C42BF2CF83A30D77F3E853 /* GraphVerifier.swift in Sources */,
 				A86F18A52513641C6C274116 /* HandoffConfig.swift in Sources */,
 				383CE6338C41F88BF51B7F8C /* HandoffStateSnapshot.swift in Sources */,
 				4AB46FF6A5BBC1A5EE9B08DC /* KeychainStore.swift in Sources */,

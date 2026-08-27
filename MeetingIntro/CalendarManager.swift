@@ -81,6 +81,11 @@ final class CalendarManager: ObservableObject {
     /// stays free of a MeetingContext dependency. nil → never suppress.
     var responseGate: ((MeetingEvent) -> Bool)?
 
+    /// Suppress reminders for an event Microsoft 365 says is gone or cancelled while
+    /// macOS Calendar still lists it (`GraphVerifier`). Same shape and the same three
+    /// gate sites as `responseGate` — keep them in sync.
+    var upstreamGate: ((MeetingEvent) -> Bool)?
+
     /// Convenience: list of all enabled countdown minutes.
     var countdownMinutesList: [Int] {
         countdownConfigs?.enabledMinutes ?? [2]
@@ -159,7 +164,9 @@ final class CalendarManager: ObservableObject {
     /// SAME EKEventStore this manager reads from — an EKEvent fetched from one store
     /// can't be saved via another.
     let eventKitProvider = EventKitProvider()
-    private let graphProvider = GraphCalendarProvider()
+    /// Internal, not private: `GraphVerifier` uses it to cross-check Exchange events
+    /// even while EventKit is the active provider.
+    let graphProvider = GraphCalendarProvider()
 
     /// The currently active provider type.
     var activeProviderType: CalendarProviderType {
@@ -475,6 +482,8 @@ final class CalendarManager: ObservableObject {
             let reason: String?
             if event.isCancelled {
                 reason = "marked CANCELLED (EventKit status .canceled or a \"Canceled:\"/\"Cancelled:\" title) — verify it isn't actually cancelled in Calendar"
+            } else if upstreamGate?(event) ?? false {
+                reason = "Microsoft 365 says this meeting is cancelled or no longer exists — macOS Calendar is out of date"
             } else if responseGate?(event) ?? false {
                 reason = "RSVP gate (you declined / didn't respond, with the skip setting on)"
             } else if armedAutoJoinIDs.contains(event.id) {
@@ -502,7 +511,7 @@ final class CalendarManager: ObservableObject {
         // "overlay already showing" check, so they were never shown and never retried.
         // `ConcurrentOverlayStyle` decides how the group is presented.
         var firingNow: [MeetingEvent] = []
-        for event in upcomingMeetings where event.timeUntilStart > 0 && !event.isCancelled && !(responseGate?(event) ?? false) && !armedAutoJoinIDs.contains(event.id) && !dismissedReminderIDs.contains(event.id) {
+        for event in upcomingMeetings where event.timeUntilStart > 0 && !event.isCancelled && !(responseGate?(event) ?? false) && !(upstreamGate?(event) ?? false) && !armedAutoJoinIDs.contains(event.id) && !dismissedReminderIDs.contains(event.id) {
             for minutes in countdownMinutesList {
                 let thresholdSeconds = TimeInterval(minutes * 60)
                 let comboKey = "\(event.id)_\(minutes)"
@@ -786,6 +795,13 @@ final class CalendarManager: ObservableObject {
 
             if meeting.isCancelled {
                 diagnosticLog?.info(.overlay, "Auto-join cancelled (meeting cancelled) — \(meeting.title)")
+                disarmAutoJoin(id)
+                continue
+            }
+            // The exact failure this whole verifier exists for: a phantom meeting that
+            // armed auto-join and opened a Zoom nobody was in.
+            if upstreamGate?(meeting) ?? false {
+                diagnosticLog?.warn(.overlay, "Auto-join cancelled — Microsoft 365 no longer has \"\(meeting.title)\"")
                 disarmAutoJoin(id)
                 continue
             }

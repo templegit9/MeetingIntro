@@ -335,6 +335,17 @@ Settings → About shows an update control beside the version. On a newer releas
 
 **Hidden Diagnostics tab** (Android developer-options mechanic): `SettingsSection.diagnostics` is filtered out of the sidebar until `diagnosticsUnlocked` (UserDefaults) is set by tapping the version line in About **3×**. The log captures regardless of tab visibility; a "Hide Diagnostics" button re-hides. The tab shows a live filterable stream + a notification-authorization banner with an Open-System-Settings deep link.
 
+### Graph verification — a second opinion on Exchange events (`CalendarSync/GraphVerifier.swift`, issue #23, v2.20.0)
+
+macOS Calendar's Exchange sync can fail to apply a change and leave a **phantom**: a meeting cancelled on the server that EventKit still reports as live, with `status != .canceled` and no title prefix, so **nothing local can distinguish it**. The reported case reminded a user about a meeting cancelled a week earlier and then auto-joined him into a Zoom that didn't exist. The only fix is to ask the server.
+
+- **A verifier, NOT a provider switch.** The app runs one provider at a time, so switching to Graph would drop every non-Exchange calendar in macOS Calendar. EventKit stays the source of truth for display; Graph answers only "does the server still have this?" for events where `MeetingEvent.isExchangeBacked` (set at the EventKit boundary from `EKSource.sourceType == .exchange`).
+- **Verdicts**: `.confirmed` / `.cancelledUpstream` / `.absentUpstream`. Suppressing verdicts feed `CalendarManager.upstreamGate` — same shape and the same gate sites as `responseGate` (overlay where-clause, the "why no reminder" diagnostic) **plus `evaluateAutoJoin`**, since opening a phantom's link is the exact harm.
+- **Every rail points at "never suppress a real meeting"** — do not weaken these: a **failed or empty** Graph fetch aborts the run (treating "server returned nothing" as "everything is cancelled" would silence a whole day); a suppressing verdict needs **two consecutive agreeing runs** while `.confirmed` clears immediately; only Exchange-backed, non-all-day, non-cancelled events are candidates. The two-run rule doubles as grace for a locally-created event that hasn't synced upstream yet.
+- **Matching** is by normalised title + start minute (`matchKey`) because Graph and EventKit ids are unrelated: lowercased, whitespace collapsed, `Canceled:`/`Cancelled:` prefix stripped (one side often carries it). Verified: tolerant of case/spacing/prefix and a 30s start difference, and does **not** collapse same-title meetings 30 min apart.
+- **Runs every 5 min** (`runInterval`), driven by a `$upcomingWeek` subscription — **not** `onPollComplete`, which `CalendarMirrorEngine` already owns as a single closure (assigning it there would silently disable mirroring).
+- Opt-in (`GraphVerifierConfig.isEnabled`, default off) under Settings → Calendar → "Verify against Microsoft 365"; requires the Graph sign-in above. **Note the deployment reality:** since Microsoft's managed consent policy (Oct 2025, extended June 2026) even `Calendars.Read` needs **admin consent** in default tenants, so enterprise users need IT approval regardless of scope.
+
 ### Calendar mirror / sync (`CalendarSync/`, v2.5.0)
 
 One-way continuous mirror: source calendar(s) → a destination, every poll. **The app's first autonomous recurring write to real calendars** — treat changes here with the caution that implies.
