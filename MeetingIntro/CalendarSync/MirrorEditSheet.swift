@@ -209,6 +209,16 @@ struct MirrorEditSheet: View {
         mirror.enabled = true
         mirror.paused = false
         mirror.lastError = nil
+        // Changing the sources or the destination makes mass deletion of the old copies
+        // the CORRECT outcome, so approve it once. A rename or a detail-mode change
+        // doesn't, and must not hand out that approval.
+        if let existing {
+            let sourcesChanged = Set(existing.sourceCalendarIDs) != selectedSources
+            let destinationChanged = existing.destinationCalendarID != destinationID
+            mirror.approveLargeChangeOnce = sourcesChanged || destinationChanged
+        } else {
+            mirror.approveLargeChangeOnce = nil   // brand new mirror: nothing to delete
+        }
         onSave(mirror)
     }
 }

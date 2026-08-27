@@ -31,6 +31,17 @@ struct Mirror: Codable, Identifiable, Equatable {
     var lastError: String?
     /// Tripped by the delete circuit-breaker — held until the user re-enables.
     var paused: Bool
+    /// One-shot consent to a large deletion, set when the user does something that makes
+    /// mass removal the *correct* outcome: changing which calendars are mirrored, or
+    /// clicking Re-enable on a mirror the breaker already paused (the message tells them
+    /// the count first). Consumed by the next reconcile.
+    ///
+    /// Without it the breaker was a trap: re-saving or re-enabling cleared `paused`, the
+    /// next reconcile found the same orphans and paused again, so the mirror could never
+    /// converge and every escape route led back into it. **Optional on purpose** — a
+    /// non-optional addition would fail to decode mirrors persisted before this release,
+    /// silently losing the user's configuration.
+    var approveLargeChangeOnce: Bool?
 
     init(
         id: UUID = UUID(),
@@ -53,6 +64,7 @@ struct Mirror: Codable, Identifiable, Equatable {
         self.lastSync = nil
         self.lastError = nil
         self.paused = false
+        self.approveLargeChangeOnce = nil
     }
 }
 

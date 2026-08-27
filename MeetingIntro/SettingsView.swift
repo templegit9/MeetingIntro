@@ -640,7 +640,7 @@ struct SettingsView: View {
                             if mirror.paused, let err = mirror.lastError {
                                 Label(err, systemImage: "pause.circle.fill")
                                     .font(.caption2).foregroundStyle(.orange)
-                                Button("Re-enable") { reEnableMirror(mirror) }
+                                Button("Re-enable and sync") { reEnableMirror(mirror) }
                                     .controlSize(.small)
                             } else if let err = mirror.lastError {
                                 Label(err, systemImage: "exclamationmark.triangle.fill")
@@ -694,8 +694,16 @@ struct SettingsView: View {
         }
     }
 
+    /// Re-enable a mirror the delete breaker paused. The paused message states how many
+    /// copies would go, so clicking this IS the consent — it grants a one-shot approval,
+    /// otherwise the next reconcile just pauses again and the button appears to do
+    /// nothing (which is exactly what a user hit in the wild, clicking it seven times).
     private func reEnableMirror(_ mirror: Mirror) {
-        mirrorConfig.update(mirror.id) { $0.paused = false; $0.lastError = nil }
+        mirrorConfig.update(mirror.id) {
+            $0.paused = false
+            $0.lastError = nil
+            $0.approveLargeChangeOnce = true
+        }
         mirrorEngine.reconcileAll()
     }
 

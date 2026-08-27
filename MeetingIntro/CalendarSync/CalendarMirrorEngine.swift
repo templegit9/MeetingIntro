@@ -125,12 +125,26 @@ final class CalendarMirrorEngine: ObservableObject {
         if !orphans.isEmpty && !existing.isEmpty {
             let fraction = Double(orphans.count) / Double(existing.count)
             if orphans.count > Self.deleteCountCeiling || fraction >= Self.deleteFractionCeiling {
-                config.update(mirror.id) {
-                    $0.paused = true
-                    $0.lastError = "Paused for safety: a sync would have deleted \(orphans.count) of \(existing.count) copies. Re-enable if this is expected."
+                // The breaker exists for a source calendar that transiently returns
+                // nothing. It must NOT block the other case that looks identical from
+                // here: the user deliberately changed which calendars are mirrored, where
+                // removing the old copies is the whole point. `approveLargeChangeOnce` is
+                // that distinction — set by an edit that changes sources/destination, or
+                // by Re-enable (whose message states the count before they click).
+                if mirror.approveLargeChangeOnce == true {
+                    config.update(mirror.id) {
+                        $0.approveLargeChangeOnce = false
+                        $0.lastError = nil
+                    }
+                    diagnosticLog?.info(.calendar, "Mirror \"\(mirror.name)\" applying an approved large change — deleting \(orphans.count) of \(existing.count) copies")
+                } else {
+                    config.update(mirror.id) {
+                        $0.paused = true
+                        $0.lastError = "Paused for safety: a sync would have deleted \(orphans.count) of \(existing.count) copies. Choose \"Re-enable and sync\" if that's what you intended."
+                    }
+                    diagnosticLog?.warn(.calendar, "Mirror \"\(mirror.name)\" PAUSED by delete throttle (\(orphans.count)/\(existing.count) copies)")
+                    return
                 }
-                diagnosticLog?.warn(.calendar, "Mirror \"\(mirror.name)\" PAUSED by delete throttle (\(orphans.count)/\(existing.count) copies)")
-                return
             }
         }
 
