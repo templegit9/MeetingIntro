@@ -176,6 +176,17 @@ protocol CalendarProvider {
 /// source sets the title to `Canceled: ...` / `Cancelled: ...` but doesn't expose
 /// the cancellation via the structured status field — common with older Exchange
 /// servers that forward invites with a rewritten title.
+extension CalendarProvider {
+    /// True when authorizing means putting a sign-in UI in front of the user.
+    ///
+    /// EventKit's `requestAccess` is a system permission prompt macOS shows once, so
+    /// firing it from a background poll is acceptable. A Graph sign-in opens a browser
+    /// and a macOS consent sheet — doing that from a poll means **merely switching the
+    /// provider tab throws a login at you**, which is what happened in v2.20.1. Anything
+    /// interactive must be started by the user pressing Sign In.
+    var requiresInteractiveSignIn: Bool { false }
+}
+
 enum CancellationTitlePrefix {
     static func matches(_ title: String) -> Bool {
         let lower = title.lowercased()

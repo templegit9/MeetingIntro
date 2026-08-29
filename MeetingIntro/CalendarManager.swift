@@ -422,6 +422,16 @@ final class CalendarManager: ObservableObject {
         do {
             // Check authorization
             if !activeProvider.isAuthorized {
+                // Never authenticate from a poll when doing so shows UI: switching the
+                // provider would ambush the user with a browser sign-in before they'd
+                // asked for one (v2.20.1). Say what's needed and wait for them.
+                if activeProvider.requiresInteractiveSignIn {
+                    isAuthorized = false
+                    upcomingMeetings = []
+                    upcomingWeek = []
+                    errorMessage = "Sign in to Microsoft 365 in Settings → Calendar to load your meetings."
+                    return
+                }
                 let granted = try await activeProvider.requestAccess()
                 isAuthorized = granted
                 if !granted {

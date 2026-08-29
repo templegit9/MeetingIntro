@@ -106,6 +106,10 @@ final class GraphCalendarProvider: CalendarProvider {
     /// Set of calendar IDs the user has chosen to monitor (empty = all).
     var selectedCalendarIDs: Set<String> = []
 
+    /// Graph sign-in opens a browser; it is never started automatically. See the
+    /// protocol extension for why.
+    var requiresInteractiveSignIn: Bool { true }
+
     var isAuthorized: Bool {
         // A live access token, or a refresh token we can mint one from.
         if let token = accessToken, !token.isEmpty, let expiration = tokenExpiration, expiration > Date() {
