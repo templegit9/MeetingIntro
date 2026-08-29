@@ -7,9 +7,19 @@ final class GraphCalendarProvider: CalendarProvider {
 
     let providerType: CalendarProviderType = .microsoftGraph
 
-    /// The Azure AD Application (client) ID, set by the user in Settings.
+    /// MeetingIntro's own Azure app registration. **A client ID is not a secret** — a
+    /// public client has none, which is why VS Code and the Azure CLI ship theirs in the
+    /// open. Bundling it is the entire difference between "sign in with Microsoft" and
+    /// "go create an app registration in the Azure Portal", which no user will do.
+    static let defaultClientID = "meetingintro://auth"
+
+    /// The Application (client) ID. Falls back to the bundled registration, so the
+    /// Settings field is an override for someone who wants their own, not a requirement.
     var clientId: String {
-        get { UserDefaults.standard.string(forKey: "graphClientId") ?? "" }
+        get {
+            let stored = UserDefaults.standard.string(forKey: "graphClientId") ?? ""
+            return stored.isEmpty ? Self.defaultClientID : stored
+        }
         set { UserDefaults.standard.set(newValue, forKey: "graphClientId") }
     }
 
@@ -117,8 +127,23 @@ final class GraphCalendarProvider: CalendarProvider {
             throw CalendarProviderError.notAuthenticated
         }
 
-        // Use Device Code Flow for macOS CLI / menu bar apps
-        // This avoids the need for a web view redirect URI
+        // Browser sign-in (authorization code + PKCE). The device code flow is kept
+        // below as a fallback for the case where the custom-scheme callback can't be
+        // presented; it asks the user to copy a code by hand, so it is never the default.
+        let browser = await GraphBrowserAuth()
+        let tokens = try await browser.signIn(clientID: clientId, scope: Self.oauthScope)
+        self.accessToken = tokens.accessToken
+        self.tokenExpiration = tokens.expiration
+        if let rt = tokens.refreshToken { self.refreshToken = rt }
+        self.grantedScope = tokens.scope ?? Self.oauthScope
+        return true
+    }
+
+    /// The original device code flow: shows a code the user types at
+    /// microsoft.com/devicelogin. Retained for troubleshooting when the browser
+    /// callback doesn't come back.
+    func requestAccessWithDeviceCode() async throws -> Bool {
+        guard !clientId.isEmpty else { throw CalendarProviderError.notAuthenticated }
         let token = try await performDeviceCodeAuth()
         self.accessToken = token.accessToken
         self.tokenExpiration = token.expiration

@@ -14,6 +14,7 @@
 		13DB22F7D352761787331EE1 /* DictionaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9F6897888DDBB2A95264B8D /* DictionaryService.swift */; };
 		159AA5A9C571071C598623DA /* CancellationOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2918B368AF626877462E126 /* CancellationOverlayView.swift */; };
 		175F2E49C8587451AB910A93 /* MicrophoneDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B60DBB01A2C688FE793716C /* MicrophoneDetector.swift */; };
+		18C4BCEB05941BA1EB6257AF /* GraphBrowserAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0899A6EF46ABB7178E3CEFFC /* GraphBrowserAuth.swift */; };
 		23C42BF2CF83A30D77F3E853 /* GraphVerifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6AC0A6B400AA7DBA28C0B48 /* GraphVerifier.swift */; };
 		247B578665DCD441288D37AA /* TranscriptionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB0286A0A45265AE24EABC58 /* TranscriptionEngine.swift */; };
 		2649B2641C264DCD2843158F /* TickerConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69F7F2B7C42D4C60A4716417 /* TickerConfig.swift */; };
@@ -103,6 +104,7 @@
 		021E3CACD81AFC8B3CDCB8FC /* TranscriptModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptModels.swift; sourceTree = "<group>"; };
 		032FDEB0D30107ADCC02AD92 /* MeetingIntro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MeetingIntro.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		06B89F3A47268C68A4AF32C6 /* AudioRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRouter.swift; sourceTree = "<group>"; };
+		0899A6EF46ABB7178E3CEFFC /* GraphBrowserAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphBrowserAuth.swift; sourceTree = "<group>"; };
 		0A5247E977C9C28BF96B334C /* TickerSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TickerSettingsSheet.swift; sourceTree = "<group>"; };
 		0DD250C84523C24862974C5D /* CalendarProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarProvider.swift; sourceTree = "<group>"; };
 		14B4D39A7A32C15CF3C1E9B7 /* Mirror.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mirror.swift; sourceTree = "<group>"; };
@@ -348,6 +350,7 @@
 				2BA29FA390A4A1D580C895A8 /* CountdownConfig.swift */,
 				B4D81EBB57F5E6FDD478BC43 /* CountdownOverlayView.swift */,
 				1B73976360782F9155FDD238 /* EventKitProvider.swift */,
+				0899A6EF46ABB7178E3CEFFC /* GraphBrowserAuth.swift */,
 				711DFD4598AE2E83744CCFBD /* GraphCalendarProvider.swift */,
 				570F13DE8551AC2384BF9DB7 /* MeetingDetailsPanel.swift */,
 				5F613B171FEEAEE9AF448698 /* MeetingHoverCard.swift */,
@@ -507,6 +510,7 @@
 				E6BC699DC42179C53C65FDAB /* FocusModeController.swift in Sources */,
 				B7EA1C818EBD405895A0EB6F /* FocusModeDetector.swift in Sources */,
 				914FB58159F10D9161F4DD21 /* FrontmostAppDetector.swift in Sources */,
+				18C4BCEB05941BA1EB6257AF /* GraphBrowserAuth.swift in Sources */,
 				C8676CAB632124F3AFBD267B /* GraphCalendarProvider.swift in Sources */,
 				23C42BF2CF83A30D77F3E853 /* GraphVerifier.swift in Sources */,
 				A86F18A52513641C6C274116 /* HandoffConfig.swift in Sources */,

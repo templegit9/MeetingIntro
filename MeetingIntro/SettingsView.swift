@@ -144,6 +144,8 @@ struct SettingsView: View {
     @AppStorage("contextPanelMinThreshold") private var contextPanelMinThreshold: Int = 0
 
     @State private var graphClientId: String = ""
+    /// Set when a tenant refuses consent — drives the "send this to IT" affordance.
+    @State private var graphAdminConsentURL: URL?
     @State private var graphAuthMessage: String?
     @State private var isSigningIn: Bool = false
     @State private var availableCalendars: [CalendarInfo] = []
@@ -342,11 +344,19 @@ struct SettingsView: View {
 
     private var graphSettingsSection: some View {
         Section("Microsoft Graph API") {
-            TextField("Client ID (from Azure Portal)", text: $graphClientId)
-                .textFieldStyle(.roundedBorder)
-                .onChange(of: graphClientId) { _, newValue in
-                    calendarManager.graphCalendarProvider.clientId = newValue
-                }
+            // The app ships its own registration, so this is an override, not a
+            // requirement — asking every user to visit the Azure Portal is not a flow
+            // anyone completes.
+            DisclosureGroup("Use my own Azure app registration") {
+                TextField("Client ID (optional)", text: $graphClientId)
+                    .textFieldStyle(.roundedBorder)
+                    .onChange(of: graphClientId) { _, newValue in
+                        calendarManager.graphCalendarProvider.clientId = newValue
+                    }
+                Text("Leave empty to use MeetingIntro's built-in registration.")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+            .font(.caption)
 
             HStack {
                 if calendarManager.graphCalendarProvider.isAuthorized {
@@ -361,10 +371,10 @@ struct SettingsView: View {
                     }
                     .tint(.red)
                 } else {
-                    Button(isSigningIn ? "Waiting for browser…" : "Sign In") {
+                    Button(isSigningIn ? "Waiting for browser…" : "Sign in with Microsoft") {
                         Task { await signInGraph() }
                     }
-                    .disabled(graphClientId.isEmpty || isSigningIn)
+                    .disabled(isSigningIn)
 
                     if isSigningIn {
                         ProgressView()
@@ -385,6 +395,25 @@ struct SettingsView: View {
                         Task { await signInGraph() }
                     }
                     .disabled(isSigningIn)
+                }
+            }
+
+            if let consentURL = graphAdminConsentURL {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("Your organisation requires an administrator to approve calendar access.",
+                          systemImage: "person.badge.shield.checkmark")
+                        .font(.caption).foregroundStyle(.orange)
+                    Text("This is Microsoft's default for work accounts and isn't something MeetingIntro can bypass. Send your IT administrator this link — approving it once covers everyone in your organisation.")
+                        .font(.caption2).foregroundStyle(.secondary)
+                    HStack {
+                        Button("Copy link for IT") {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(consentURL.absoluteString, forType: .string)
+                        }
+                        .controlSize(.small)
+                        Button("Open") { NSWorkspace.shared.open(consentURL) }
+                            .controlSize(.small)
+                    }
                 }
             }
 
@@ -2490,10 +2519,22 @@ struct SettingsView: View {
             }
         }
 
+        graphAdminConsentURL = nil
         do {
             let success = try await calendarManager.graphCalendarProvider.requestAccess()
             calendarManager.isAuthorized = success
             graphAuthMessage = success ? "✅ Successfully signed in!" : "Sign-in failed."
+        } catch let error as GraphBrowserAuth.AuthError {
+            // "Your admin must approve this" is the EXPECTED outcome for most work
+            // accounts, not a bug — surface the next step rather than an OAuth string.
+            if case .adminConsentRequired = error {
+                graphAdminConsentURL = error.adminConsentURL
+                graphAuthMessage = nil
+            } else if case .cancelled = error {
+                graphAuthMessage = nil
+            } else {
+                graphAuthMessage = error.localizedDescription
+            }
         } catch {
             graphAuthMessage = "Error: \(error.localizedDescription)"
         }
