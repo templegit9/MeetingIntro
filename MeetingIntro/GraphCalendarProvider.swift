@@ -21,7 +21,15 @@ final class GraphCalendarProvider: CalendarProvider {
     /// OAuth scope. `Calendars.ReadWrite` (v2.7.0, was `.Read`) so we can RSVP to
     /// invitations; `offline_access` yields a refresh token. Used by both the
     /// device-code request and the refresh request so they stay consistent.
-    private static let oauthScope = "https://graph.microsoft.com/Calendars.ReadWrite offline_access"
+    /// What we ask for at sign-in. **The registration's permission list doesn't grant
+    /// anything — this string does.** A permission added in Azure but missing here is
+    /// simply never consented to, which is a silent way to lose a capability.
+    ///
+    /// `Calendars.ReadWrite` covers reading (so `GraphVerifier` works) plus creating
+    /// events with attendees, which is the one thing EventKit categorically cannot do —
+    /// Apple blocks programmatic invitations. `Calendars.Read.Shared` extends reading to
+    /// calendars shared with the user or accessed as a delegate.
+    private static let oauthScope = "https://graph.microsoft.com/Calendars.ReadWrite https://graph.microsoft.com/Calendars.Read.Shared offline_access"
 
     /// Cached OAuth2 access token. Backed by Keychain; on first read after upgrading
     /// from a UserDefaults-storing build, the legacy value is migrated and cleared.
