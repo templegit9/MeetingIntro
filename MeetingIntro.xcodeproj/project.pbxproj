@@ -43,6 +43,7 @@
 		6D89F0F14CE5474AF8968E50 /* RecordingConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A3DCA2311169ED15B355E39 /* RecordingConfig.swift */; };
 		6F7F935A1286F166E6E55276 /* FileOrganizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5162BAF65FF7445D0AED9599 /* FileOrganizer.swift */; };
 		70EA5C5D3C9C3001612AA4AC /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2415B0B2BBF77234529B496A /* NotificationManager.swift */; };
+		70EA7AA6CA19F636AA1E3D36 /* PluginGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DA13D3684D8A428FE7348A9 /* PluginGrid.swift */; };
 		724871746BD559C816813C96 /* LLMClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C529555F228CD4BB1EF1E936 /* LLMClient.swift */; };
 		765165B7A75A0785336DB96D /* TickerFeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C735A96B380C97241A3455 /* TickerFeed.swift */; };
 		77BC54FBB62CDF7888C5F952 /* TaskModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAEF02F79EAE528318DB4E2D /* TaskModels.swift */; };
@@ -152,6 +153,7 @@
 		8B60DBB01A2C688FE793716C /* MicrophoneDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicrophoneDetector.swift; sourceTree = "<group>"; };
 		9B33CEBB2784C6AFE2BB1379 /* ReminderEscalationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderEscalationPolicy.swift; sourceTree = "<group>"; };
 		9C58BE975466982E750F7FDA /* VoiceReminderManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceReminderManager.swift; sourceTree = "<group>"; };
+		9DA13D3684D8A428FE7348A9 /* PluginGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginGrid.swift; sourceTree = "<group>"; };
 		9F3370AFA9E12241C562AFFA /* MeetingNotesWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingNotesWindow.swift; sourceTree = "<group>"; };
 		A2C735A96B380C97241A3455 /* TickerFeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TickerFeed.swift; sourceTree = "<group>"; };
 		A4FCAC00891AF0B9BD3EC21D /* AudioTrackExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioTrackExporter.swift; sourceTree = "<group>"; };
@@ -359,6 +361,7 @@
 				C252C77AB45CB10DE5063A4E /* MixkitSoundManager.swift */,
 				2415B0B2BBF77234529B496A /* NotificationManager.swift */,
 				22E108D1CE89056097ED33FE /* OverlayWindowController.swift */,
+				9DA13D3684D8A428FE7348A9 /* PluginGrid.swift */,
 				2B13DD9777C3BA467B874853 /* PopoverRootView.swift */,
 				EF585F8BEF5487338065E75D /* ReleaseNotesManager.swift */,
 				CC93CC9B88A798A86B40D559 /* RuleEditSheet.swift */,
@@ -534,6 +537,7 @@
 				AF1D34505247C3FC85ECEFB3 /* NotesGenerator.swift in Sources */,
 				70EA5C5D3C9C3001612AA4AC /* NotificationManager.swift in Sources */,
 				8E0C498C8FB52734B010B773 /* OverlayWindowController.swift in Sources */,
+				70EA7AA6CA19F636AA1E3D36 /* PluginGrid.swift in Sources */,
 				C02348FCACD90D6B40D0A6EA /* PopoverRootView.swift in Sources */,
 				FAC89668E4EA7DFCDB5A4B06 /* QuickAddConfig.swift in Sources */,
 				A87B427E6B6FC7EF9929EC1B /* QuickAddLink.swift in Sources */,

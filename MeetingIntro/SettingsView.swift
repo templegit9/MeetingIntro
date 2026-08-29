@@ -130,6 +130,7 @@ struct SettingsView: View {
 
     @State private var showRecordingDisclaimer = false
     @State private var showTickerSettings = false
+    @State private var showCameraCoverSettings = false
     @State private var recordingStats: (count: Int, sizeBytes: Int64) = (0, 0)
     /// Bumped when the app reactivates so the recording permission rows re-read TCC
     /// state after the user grants access in System Settings.
@@ -146,6 +147,7 @@ struct SettingsView: View {
     @State private var graphClientId: String = ""
     /// Set when a tenant refuses consent — drives the "send this to IT" affordance.
     @State private var graphAdminConsentURL: URL?
+    @State private var graphAccountLabel: String?
     @State private var graphAuthMessage: String?
     @State private var isSigningIn: Bool = false
     @State private var availableCalendars: [CalendarInfo] = []
@@ -344,6 +346,15 @@ struct SettingsView: View {
 
     private var graphSettingsSection: some View {
         Section("Microsoft Graph API") {
+            Color.clear.frame(height: 0)
+                .task {
+                    graphAccountLabel = calendarManager.graphCalendarProvider.accountLabel
+                    // Refresh in the background: a cached label shows instantly, and this
+                    // corrects it if the account changed.
+                    if calendarManager.graphCalendarProvider.isAuthorized {
+                        graphAccountLabel = await calendarManager.graphCalendarProvider.refreshAccountLabel()
+                    }
+                }
             // The app ships its own registration, so this is an override, not a
             // requirement — asking every user to visit the Azure Portal is not a flow
             // anyone completes.
@@ -360,14 +371,22 @@ struct SettingsView: View {
 
             HStack {
                 if calendarManager.graphCalendarProvider.isAuthorized {
-                    Label("Signed In", systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Label("Signed In", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                        // Which account — the whole point when a work and a personal
+                        // account are both in play.
+                        Text(graphAccountLabel ?? "Checking account…")
+                            .font(.caption).foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
 
                     Spacer()
 
                     Button("Sign Out") {
                         calendarManager.graphCalendarProvider.signOut()
                         calendarManager.isAuthorized = false
+                        graphAccountLabel = nil
                     }
                     .tint(.red)
                 } else {
@@ -1446,127 +1465,109 @@ struct SettingsView: View {
     private var pluginsTab: some View {
         Form {
             Section {
-                HStack(spacing: 12) {
-                    Image(systemName: "folder.badge.gearshape").font(.title2).foregroundStyle(.purple)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("File Organizer").font(.headline)
-                        Text("AI file organizer — sorts a chosen folder into tidy subfolders (move + rename) with a preview + undo. Uses its own model, set in Settings → AI Models.")
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Toggle("", isOn: $assistantEnabled).labelsHidden()
+                LazyVGrid(columns: PluginGridLayout.columns, spacing: 10) {
+                    PluginTile(
+                        symbol: "folder.badge.gearshape", tint: .purple,
+                        name: "File Organizer",
+                        blurb: "Sorts a chosen folder into tidy subfolders — move and rename, with a preview and undo.",
+                        status: assistantEnabled
+                            ? (assistantConfig.jobs.isEmpty
+                               ? .idle("No folders yet")
+                               : .active("\(assistantConfig.jobs.count) folder\(assistantConfig.jobs.count == 1 ? "" : "s")"))
+                            : nil,
+                        isEnabled: $assistantEnabled,
+                        onOpen: { openWindow(id: "assistant"); NSApp.activate(ignoringOtherApps: true) }
+                    )
+
+                    PluginTile(
+                        symbol: "character.book.closed", tint: .blue,
+                        name: "Dictionary",
+                        blurb: "Meaning, part of speech, examples, synonyms and pronunciation. No key; works offline.",
+                        status: dictionaryEnabled ? .idle("Ready") : nil,
+                        isEnabled: $dictionaryEnabled,
+                        onOpen: { openWindow(id: "dictionary"); NSApp.activate(ignoringOtherApps: true) }
+                    )
+
+                    PluginTile(
+                        symbol: "text.line.first.and.arrowtriangle.forward", tint: .orange,
+                        name: "Ticker",
+                        blurb: "A news-style crawl across the top of your screen. Click-through, so it never steals a click.",
+                        status: tickerStatus,
+                        isEnabled: $tickerConfig.isEnabled,
+                        onOpen: { showTickerSettings = true }
+                    )
+
+                    PluginTile(
+                        symbol: "web.camera", tint: .teal,
+                        name: "Camera Cover",
+                        blurb: "For a physical lens cover: a nudge to close it once you're out of meetings.",
+                        status: cameraCoverConfig.isEnabled
+                            ? .idle("After meetings, \(cameraCoverConfig.delayMinutes) min")
+                            : nil,
+                        isEnabled: $cameraCoverConfig.isEnabled,
+                        onOpen: { showCameraCoverSettings = true }
+                    )
+
+                    PluginTile(
+                        symbol: "sparkles", tint: .pink,
+                        name: "Assistant",
+                        blurb: "Type what you want and it does it — meetings, tasks, folders — using a local model.",
+                        isEnabled: .constant(false),
+                        comingSoon: true
+                    )
                 }
-                if assistantEnabled {
-                    Button {
-                        openWindow(id: "assistant")
-                        NSApp.activate(ignoringOtherApps: true)
-                    } label: { Label("Open File Organizer", systemImage: "arrow.up.forward.app") }
-                }
+                .padding(.vertical, 2)
             } header: {
-                SettingsSectionHeader("Plugins", info: "Optional add-ons, off by default. Enabling one reveals its own window/config — it doesn't touch your reminders or meetings.")
+                SettingsSectionHeader("Plugins", info: "Optional add-ons, off by default. Each one is self-contained — enabling a plugin doesn't touch your reminders or meetings.\n\nThe dot on each tile shows what it's doing right now. Click a tile to open it or its settings; the switch turns it on and off.")
             }
-
-            Section {
-                HStack(spacing: 12) {
-                    Image(systemName: "character.book.closed").font(.title2).foregroundStyle(.blue)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Dictionary").font(.headline)
-                        Text("Look up any word — meaning, part of speech, examples, synonyms & antonyms, and pronunciation. Free, no key; works offline via the macOS dictionary.")
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Toggle("", isOn: $dictionaryEnabled).labelsHidden()
-                }
-                if dictionaryEnabled {
-                    Button {
-                        openWindow(id: "dictionary")
-                        NSApp.activate(ignoringOtherApps: true)
-                    } label: { Label("Open Dictionary", systemImage: "arrow.up.forward.app") }
-                }
-            }
-
-            tickerSection
-            cameraCoverSection
         }
         .formStyle(.grouped)
         .padding()
         .sheet(isPresented: $showTickerSettings) {
             TickerSettingsSheet(config: tickerConfig) { showTickerSettings = false }
         }
-    }
-
-    // MARK: - Camera cover reminder
-
-    @ViewBuilder private var cameraCoverSection: some View {
-        Section {
-            HStack(spacing: 12) {
-                Image(systemName: "web.camera").font(.title2).foregroundStyle(.teal)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Camera Cover Reminder").font(.headline)
-                    Text("For people with a physical camera cover: a nudge to close it once you're out of meetings, with its own distinct sound.")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-                Spacer()
-                Toggle("", isOn: $cameraCoverConfig.isEnabled).labelsHidden()
-            }
-
-            if cameraCoverConfig.isEnabled {
-                Stepper(value: $cameraCoverConfig.delayMinutes, in: 0...30) {
-                    Text("Remind me \(cameraCoverConfig.delayMinutes) min after a meeting ends")
-                }
-                Stepper(value: $cameraCoverConfig.skipIfNextMeetingWithinMinutes, in: 0...60, step: 5) {
-                    Text("Stay quiet if the next meeting is within \(cameraCoverConfig.skipIfNextMeetingWithinMinutes) min")
-                }
-                Toggle("Remind me even in Do Not Disturb", isOn: $cameraCoverConfig.notifyDuringFocus)
-                Button("Test the reminder") { cameraCoverReminder.testNow() }
-                    .help("Shows the reminder the same way a real one would, ignoring the delay and the conditions")
-            }
-        } header: {
-            SettingsSectionHeader("Camera Cover", info: "Built for people who use a physical camera cover (a sliding flap over the lens).\n\n**MeetingIntro cannot see your cover.** No app can — and checking by taking a photo would need camera permission and would light the green camera LED every time. So this reminds you to close the flap *if it's open*; it never claims your camera is exposed.\n\nIt fires once after a meeting ends, or after any call finishes that wasn't on your calendar. It stays quiet while a meeting is still running, while the camera is genuinely in use, and when your next meeting is close — and it never repeats.\n\nDetecting whether the camera is in use reads a system property; it never opens the camera, so there's no permission prompt and no camera light.\n\nThe wording rotates between a few phrasings so it doesn't become wallpaper.\n\n**In Do Not Disturb**, macOS holds notification banners — so with \"Remind me even in Do Not Disturb\" on, the reminder appears as a small panel in the corner instead, which Focus doesn't govern. Turn it off and the reminder stays completely silent during Focus.")
+        .sheet(isPresented: $showCameraCoverSettings) {
+            cameraCoverSheet
         }
     }
 
-    // MARK: - Ticker plugin
+    /// Live status for the Ticker tile — reuses the coordinator's own reason string, so
+    /// the tile can't drift from what the ticker is actually doing.
+    private var tickerStatus: PluginTile.Status? {
+        guard tickerConfig.isEnabled else { return nil }
+        if let reason = tickerCoordinator.hiddenReason { return .attention("Hidden — \(reason)") }
+        let count = tickerCoordinator.items.count
+        return count == 0 ? .idle("Nothing to show") : .active("Showing \(count) item\(count == 1 ? "" : "s")")
+    }
 
-    @ViewBuilder private var tickerSection: some View {
-        Section {
-            HStack(spacing: 12) {
-                Image(systemName: "text.line.first.and.arrowtriangle.forward").font(.title2).foregroundStyle(.orange)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Ticker").font(.headline)
-                    Text("A news-style crawl across the top of your screen — next meetings, tasks due, cancellations. Click-through, so it never steals a click from the menu bar.")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-                Spacer()
-                Toggle("", isOn: $tickerConfig.isEnabled).labelsHidden()
-            }
-
-            if tickerConfig.isEnabled {
-                // Live status — this is the answer to "why can't I see it?".
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(tickerCoordinator.hiddenReason == nil ? Color.green : Color.orange)
-                        .frame(width: 8, height: 8)
-                    if let reason = tickerCoordinator.hiddenReason {
-                        Text("Hidden — \(reason)").font(.caption).foregroundStyle(.secondary)
-                    } else {
-                        Text("Showing \(tickerCoordinator.items.count) item\(tickerCoordinator.items.count == 1 ? "" : "s")")
-                            .font(.caption).foregroundStyle(.secondary)
+    /// The camera-cover controls, moved out of the tab body: a grid tile is too small to
+    /// hold steppers, and the inline block was most of the tab's height.
+    private var cameraCoverSheet: some View {
+        VStack(spacing: 0) {
+            Form {
+                Section {
+                    Stepper(value: $cameraCoverConfig.delayMinutes, in: 0...30) {
+                        Text("Remind me \(cameraCoverConfig.delayMinutes) min after a meeting ends")
                     }
-                }
-
-                // Configuration lives behind this button, not inline — the Plugins tab
-                // lists what's available, it isn't the place to configure one add-on at
-                // length (three inline sections pushed the other plugins off screen).
-                HStack {
-                    Button("Ticker Settings…") { showTickerSettings = true }
-                    Button("Preview the Ticker") { tickerCoordinator.showPreview() }
-                        .help("Show a sample crawl for a few seconds — your real feed is often empty")
+                    Stepper(value: $cameraCoverConfig.skipIfNextMeetingWithinMinutes, in: 0...60, step: 5) {
+                        Text("Stay quiet if the next meeting is within \(cameraCoverConfig.skipIfNextMeetingWithinMinutes) min")
+                    }
+                    Toggle("Remind me even in Do Not Disturb", isOn: $cameraCoverConfig.notifyDuringFocus)
+                    Button("Test the reminder") { cameraCoverReminder.testNow() }
+                } header: {
+                    SettingsSectionHeader("Camera Cover", info: "Built for people who use a physical camera cover (a sliding flap over the lens).\n\n**MeetingIntro cannot see your cover.** No app can — and checking by taking a photo would need camera permission and would light the green camera LED every time. So this reminds you to close the flap *if it's open*; it never claims your camera is exposed.\n\nIt fires once after a meeting ends, or after any call that wasn't on your calendar. It stays quiet while a meeting is still running, while the camera is genuinely in use, and when your next meeting is close — and it never repeats.\n\n**In Do Not Disturb**, macOS holds notification banners, so the reminder appears as a small panel in the corner instead. Turn that off and it stays completely silent during Focus.")
                 }
             }
-        } header: {
-            SettingsSectionHeader("Ticker", info: "A thin strip that crawls across the empty middle of the menu bar — the spot that lines up with your webcam — cycling whatever you pick in Ticker Settings. It ignores the mouse entirely, so clicks pass through to whatever's underneath. On a Mac with a notch it drops just below the menu bar so the camera housing doesn't cut it in half.")
+            .formStyle(.grouped)
+            Divider()
+            HStack {
+                Spacer()
+                Button("Done") { showCameraCoverSettings = false }
+                    .keyboardShortcut(.defaultAction)
+            }
+            .padding(12)
         }
+        .frame(width: 480, height: 340)
     }
 
     // MARK: - Recording Tab
@@ -2523,6 +2524,7 @@ struct SettingsView: View {
         do {
             let success = try await calendarManager.graphCalendarProvider.requestAccess()
             calendarManager.isAuthorized = success
+            graphAccountLabel = calendarManager.graphCalendarProvider.accountLabel
             graphAuthMessage = success ? "✅ Successfully signed in!" : "Sign-in failed."
         } catch let error as GraphBrowserAuth.AuthError {
             // "Your admin must approve this" is the EXPECTED outcome for most work

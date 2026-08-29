@@ -147,15 +147,36 @@ final class CalendarManager: ObservableObject {
         .sorted { $0.startDate < $1.startDate }
     }
 
-    /// Set of calendar IDs to monitor (empty = all).
+    /// Calendars to monitor for the **active** provider (empty = all).
+    ///
+    /// Stored per provider: an `EKCalendar` identifier and a Graph calendar id are
+    /// unrelated strings, so one shared set meant a selection made under EventKit
+    /// filtered Graph down to nothing — a user saw "0 events" on Microsoft Graph and
+    /// reasonably read it as the app being broken.
     var selectedCalendarIDs: Set<String> {
-        get {
-            Set(UserDefaults.standard.stringArray(forKey: "selectedCalendarIDs") ?? [])
+        get { selectedCalendarIDs(for: activeProviderType) }
+        set { setSelectedCalendarIDs(newValue, for: activeProviderType) }
+    }
+
+    func selectedCalendarIDs(for provider: CalendarProviderType) -> Set<String> {
+        let d = UserDefaults.standard
+        if let stored = d.stringArray(forKey: Self.calendarSelectionKey(provider)) {
+            return Set(stored)
         }
-        set {
-            UserDefaults.standard.set(Array(newValue), forKey: "selectedCalendarIDs")
-            updateProviderCalendarFilter()
+        // Migration: the pre-split key held an EventKit selection.
+        if provider == .eventKit, let legacy = d.stringArray(forKey: "selectedCalendarIDs") {
+            return Set(legacy)
         }
+        return []
+    }
+
+    func setSelectedCalendarIDs(_ ids: Set<String>, for provider: CalendarProviderType) {
+        UserDefaults.standard.set(Array(ids), forKey: Self.calendarSelectionKey(provider))
+        updateProviderCalendarFilter()
+    }
+
+    private static func calendarSelectionKey(_ provider: CalendarProviderType) -> String {
+        "selectedCalendarIDs_\(provider.rawValue)"
     }
 
     // MARK: - Providers
@@ -903,9 +924,13 @@ final class CalendarManager: ObservableObject {
     // MARK: - Provider Helpers
 
     private func updateProviderCalendarFilter() {
-        let ids = selectedCalendarIDs
-        eventKitProvider.selectedCalendarIDs = ids
-        graphProvider.selectedCalendarIDs = ids
+        // Per provider: EventKit calendar identifiers and Graph calendar ids are
+        // unrelated strings. Assigning one set to both meant that selecting EventKit
+        // calendars and then switching to Graph filtered Graph down to nothing — the
+        // "0 in reminder window, 0 in browse window (Microsoft Graph)" a user hit,
+        // which looks exactly like "my calendar is empty".
+        eventKitProvider.selectedCalendarIDs = selectedCalendarIDs(for: .eventKit)
+        graphProvider.selectedCalendarIDs = selectedCalendarIDs(for: .microsoftGraph)
     }
 
     /// Get the Graph provider for settings UI (sign in/out).

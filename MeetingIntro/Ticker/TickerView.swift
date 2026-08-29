@@ -51,8 +51,16 @@ struct TickerView: View {
         }
         .onPreferenceChange(TickerStripWidthKey.self) { width in
             guard width > 0, abs(width - stripWidth) > 0.5 else { return }
-            stripWidth = width
-            restart()
+            // Defer the state write off the layout pass. Setting @State from inside
+            // `onPreferenceChange` re-enters layout, and this view lives in an NSPanel
+            // whose NSHostingView participates in the window's constraint cycle — the
+            // shape AppKit throws on (SwiftUI invalidating a window's size from within
+            // AppKit's own constraint update). One hop breaks the re-entrancy.
+            DispatchQueue.main.async {
+                guard abs(width - stripWidth) > 0.5 else { return }
+                stripWidth = width
+                restart()
+            }
         }
         .onChange(of: style.speed) { _, _ in restart() }
         .onDisappear { animating = false }

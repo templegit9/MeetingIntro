@@ -14,7 +14,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     weak var taskManager: TaskManager?
     weak var taskReminderCoordinator: TaskReminderCoordinator?
 
+    /// Write the exception's name, reason and backtrace where we can read it later.
+    ///
+    /// A crash report gives the *stack* but not the *message*: a v2.20.1 crash showed
+    /// SwiftUI invalidating a window's size from inside AppKit's constraint pass, which
+    /// narrows it to "some hosted view", and no further. The reason string names the
+    /// view; without it, diagnosis is inference. Writes synchronously to the Diagnostics
+    /// folder because the process is about to die — no async, no MainActor hop.
+    private func installExceptionLogger() {
+        NSSetUncaughtExceptionHandler { exception in
+            let text = """
+            === UNCAUGHT EXCEPTION \(Date()) ===
+            name:   \(exception.name.rawValue)
+            reason: \(exception.reason ?? "(none)")
+            stack:
+            \(exception.callStackSymbols.prefix(40).joined(separator: "\n"))
+
+            """
+            let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
+                .first?.appendingPathComponent("MeetingIntro/Diagnostics", isDirectory: true)
+            guard let dir else { return }
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            let url = dir.appendingPathComponent("crashes.log")
+            if let data = text.data(using: .utf8) {
+                if let handle = try? FileHandle(forWritingTo: url) {
+                    handle.seekToEndOfFile()
+                    handle.write(data)
+                    try? handle.close()
+                } else {
+                    try? data.write(to: url)
+                }
+            }
+            NSLog("MeetingIntro uncaught exception: %@ — %@", exception.name.rawValue, exception.reason ?? "")
+        }
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+        installExceptionLogger()
         #if DEBUG
         // Headless File Organizer self-test: `MEETINGINTRO_SELFTEST=1 <app-binary>`.
         if ProcessInfo.processInfo.environment["MEETINGINTRO_SELFTEST"] == "1" {

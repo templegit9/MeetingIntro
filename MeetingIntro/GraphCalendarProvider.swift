@@ -136,6 +136,7 @@ final class GraphCalendarProvider: CalendarProvider {
         self.tokenExpiration = tokens.expiration
         if let rt = tokens.refreshToken { self.refreshToken = rt }
         self.grantedScope = tokens.scope ?? Self.oauthScope
+        await refreshAccountLabel()
         return true
     }
 
@@ -300,6 +301,54 @@ final class GraphCalendarProvider: CalendarProvider {
         tokenExpiration = nil
         refreshToken = nil
         grantedScope = ""
+        accountLabel = nil
+    }
+
+    // MARK: - Which account is connected
+
+    /// Cached "Name (email)" for the signed-in account. Persisted so Settings can say
+    /// *who* is connected the moment it opens, with no network round trip — "Signed In"
+    /// on its own doesn't tell you whether you're on your work or personal account,
+    /// which is the only thing you actually want to know when two are in play.
+    private(set) var accountLabel: String? {
+        get { UserDefaults.standard.string(forKey: "graphAccountLabel") }
+        set {
+            if let value = newValue { UserDefaults.standard.set(value, forKey: "graphAccountLabel") }
+            else { UserDefaults.standard.removeObject(forKey: "graphAccountLabel") }
+        }
+    }
+
+    /// Ask Graph who we're signed in as. Uses `User.Read`, which sign-in already
+    /// requests. Best-effort: a failure leaves the previous label rather than blanking
+    /// a perfectly good sign-in over a transient network error.
+    @discardableResult
+    func refreshAccountLabel() async -> String? {
+        guard isAuthorized else { return nil }
+        do {
+            let token = try await validToken()
+            var request = URLRequest(url: URL(string: "https://graph.microsoft.com/v1.0/me?$select=displayName,mail,userPrincipalName")!)
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard (response as? HTTPURLResponse)?.statusCode == 200 else { return accountLabel }
+            struct Me: Decodable {
+                let displayName: String?
+                let mail: String?
+                let userPrincipalName: String?
+            }
+            let me = try JSONDecoder().decode(Me.self, from: data)
+            let address = me.mail ?? me.userPrincipalName
+            let label: String?
+            switch (me.displayName, address) {
+            case let (name?, addr?): label = "\(name) (\(addr))"
+            case let (name?, nil):   label = name
+            case let (nil, addr?):   label = addr
+            default:                 label = nil
+            }
+            if let label { accountLabel = label }
+            return accountLabel
+        } catch {
+            return accountLabel
+        }
     }
 
     // MARK: - RSVP write
