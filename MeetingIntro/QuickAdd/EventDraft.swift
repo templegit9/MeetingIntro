@@ -33,6 +33,11 @@ struct EventDraft: Equatable {
     /// out of the text). Written to `EKEvent.url`, so the overlay Join button,
     /// audio handoff, and auto-record all pick it up for self-created meetings.
     var url: String? = nil
+    /// Email addresses to invite. **Only Microsoft 365 can act on these** — EventKit
+    /// offers no API to add attendees or send invitations, which is the whole reason
+    /// creating in Graph exists. Written events carry them; EventKit writes ignore them
+    /// and the preview says so rather than silently dropping people.
+    var attendees: [String] = []
     /// Display name of the saved link that was attached, if any — shown as an
     /// informational row in the preview (distinct from the orange assumptions).
     var attachedLinkName: String? = nil

@@ -169,6 +169,9 @@ protocol CalendarProvider {
     /// in an extension) so the override actually dispatches.
     var canCreateEvents: Bool { get }
 
+    /// Create an event on this source. Providers that can't, throw `.notSupported`.
+    func createEvent(from draft: EventDraft, calendarID: String?) async throws
+
     /// Request access to the calendar (may trigger system permission dialog or OAuth flow).
     func requestAccess() async throws -> Bool
 
@@ -202,6 +205,9 @@ extension CalendarProvider {
     /// the user. This is a *default for a declared requirement* — see the protocol.
     var requiresInteractiveSignIn: Bool { false }
     var canCreateEvents: Bool { false }
+    func createEvent(from draft: EventDraft, calendarID: String?) async throws {
+        throw CalendarProviderError.notSupported
+    }
 }
 
 enum CancellationTitlePrefix {

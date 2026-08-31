@@ -187,7 +187,12 @@ final class EventKitProvider: CalendarProvider {
     ///
     /// Known EventKit limitation: attendees cannot be set programmatically (Apple
     /// blocks it), so drafts never carry invitees in the EventKit v1 of Quick Add.
-    func createEvent(from draft: EventDraft, calendarID: String?) throws {
+    func createEvent(from draft: EventDraft, calendarID: String?) async throws {
+        try createEventSync(from: draft, calendarID: calendarID)
+    }
+
+    /// The synchronous body — also called directly by the mirror engine and tests.
+    func createEventSync(from draft: EventDraft, calendarID: String?) throws {
         guard isAuthorized else { throw CreateError.notAuthorized }
 
         let event = EKEvent(eventStore: eventStore)

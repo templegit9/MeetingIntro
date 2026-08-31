@@ -66,6 +66,18 @@ struct CompactMenuView: View {
                         .font(.caption).foregroundStyle(.secondary)
                     if draft.kind == .event {
                         newEventLinkControl(draft)
+                        // Same honesty as the popover: only Microsoft 365 can send the
+                        // invitations, so never let a typed address vanish quietly.
+                        if !draft.attendees.isEmpty {
+                            let canInvite = calendarManager.eventCreationProvider == .microsoftGraph
+                            Label(canInvite
+                                  ? "Inviting \(draft.attendees.joined(separator: ", "))"
+                                  : "\(draft.attendees.count) invitee\(draft.attendees.count == 1 ? "" : "s") won't be invited — macOS Calendar can't send invitations.",
+                                  systemImage: canInvite ? "person.crop.circle.badge.plus" : "person.crop.circle.badge.exclamationmark")
+                                .font(.caption)
+                                .foregroundStyle(canInvite ? Color.secondary : Color.orange)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                         if !quickAddService.conflicts.isEmpty {
                             Label("Overlaps “\(quickAddService.conflicts[0])”" + (quickAddService.conflicts.count > 1 ? " + \(quickAddService.conflicts.count - 1) more" : ""),
                                   systemImage: "calendar.badge.exclamationmark")

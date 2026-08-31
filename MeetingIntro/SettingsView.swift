@@ -269,9 +269,8 @@ struct SettingsView: View {
                     }
                 }
 
-                // Only sources that can actually create events belong here. Graph event
-                // creation isn't built, so listing it would promise a write that
-                // silently lands in macOS Calendar instead.
+                // Only sources that can actually create events belong here — listing one
+                // that can't would promise a write that silently lands somewhere else.
                 let writable = CalendarProviderType.allCases.filter {
                     enabledProviders.contains($0) && calendarManager.provider(for: $0).canCreateEvents
                 }
@@ -283,7 +282,7 @@ struct SettingsView: View {
                         calendarManager.activeProviderType = newValue
                     }
                 } else if writable.isEmpty {
-                    Label("New events are created in macOS Calendar — creating events in Microsoft 365 isn't supported yet.",
+                    Label("Turn on a calendar source to create events from Quick Add.",
                           systemImage: "info.circle")
                         .font(.caption).foregroundStyle(.secondary)
                 }
@@ -564,7 +563,7 @@ struct SettingsView: View {
                     Text("Default duration: \(quickAddConfig.defaultDurationMinutes) min")
                 }
             } header: {
-                SettingsSectionHeader("Event Defaults", info: "Events are created in your Mac calendars (EventKit). Note: macOS doesn't let apps add attendees or send invites — events are created without invitees.")
+                SettingsSectionHeader("Event Defaults", info: "New events go to the source named in **Calendar Sources → \"Create new events in\"**, and this list shows that source's calendars.\n\nInvitations only work in Microsoft 365. Type an email address into Quick Add and the person is invited. macOS Calendar gives apps no way to add attendees, so events created there carry no invitees and the New Event preview says so before you create it.")
             }
 
             Section {
@@ -619,7 +618,7 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .padding()
         .task {
-            quickAddCalendars = await calendarManager.eventKitCalendars()
+            quickAddCalendars = await calendarManager.writableCalendars()
         }
         .sheet(item: $editingTemplate) { template in
             TemplateEditSheet(
@@ -837,7 +836,7 @@ struct SettingsView: View {
                 diagnosticLog: diagnosticLog
             )
         }
-        .task { quickAddCalendars = await calendarManager.eventKitCalendars() }
+        .task { quickAddCalendars = await calendarManager.writableCalendars() }
     }
 
     private func toggleMirror(_ mirror: Mirror, enabled: Bool) {

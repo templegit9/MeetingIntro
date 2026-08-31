@@ -218,6 +218,21 @@ struct PopoverRootView: View {
                     ForEach(draft.assumptions, id: \.self) { a in
                         Label(a, systemImage: "exclamationmark.triangle.fill").font(.caption2).foregroundStyle(.orange)
                     }
+                    // Invitees, and the honest caveat: only Microsoft 365 can send the
+                    // invitations. EventKit has no API for attendees, so creating there
+                    // would put the meeting on your own calendar and nobody else's —
+                    // silently dropping the people you named is not acceptable.
+                    if draft.kind == .event, !draft.attendees.isEmpty {
+                        let canInvite = calendarManager.eventCreationProvider == .microsoftGraph
+                        Label(canInvite
+                              ? "Inviting \(draft.attendees.joined(separator: ", "))"
+                              : "\(draft.attendees.count) invitee\(draft.attendees.count == 1 ? "" : "s") won't be invited — macOS Calendar can't send invitations. Switch \"Create new events in\" to Microsoft Graph.",
+                              systemImage: canInvite ? "person.crop.circle.badge.plus" : "person.crop.circle.badge.exclamationmark")
+                            .font(.caption2)
+                            .foregroundStyle(canInvite ? Color.secondary : Color.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
                     if draft.kind == .event, !quickAddService.conflicts.isEmpty {
                         Label("Overlaps “\(quickAddService.conflicts[0])”" + (quickAddService.conflicts.count > 1 ? " + \(quickAddService.conflicts.count - 1) more" : ""),
                               systemImage: "calendar.badge.exclamationmark")

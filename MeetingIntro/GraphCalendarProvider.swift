@@ -131,9 +131,31 @@ final class GraphCalendarProvider: CalendarProvider {
     /// Set of calendar IDs the user has chosen to monitor (empty = all).
     var selectedCalendarIDs: Set<String> = []
 
+    /// Where this provider reports trouble that isn't fatal — an unreadable calendar, a
+    /// non-200 response. The provider owns no logger, so `CalendarManager` supplies one.
+    var onDiagnostic: ((String) -> Void)?
+
+    /// Fires when the signed-in Microsoft account changes. Calendar ids are per-account,
+    /// so the previous account's ticked calendars are dead ids in the new one — they
+    /// return `ErrorItemNotFound` and the app shows an empty Outlook until they're
+    /// re-ticked. The manager clears the selection when this fires.
+    var onAccountChanged: ((String) -> Void)?
+
+    /// Address of the account whose calendar ids we currently hold.
+    private var accountAddress: String? {
+        get { UserDefaults.standard.string(forKey: "graphAccountAddress") }
+        set {
+            if let newValue { UserDefaults.standard.set(newValue, forKey: "graphAccountAddress") }
+            else { UserDefaults.standard.removeObject(forKey: "graphAccountAddress") }
+        }
+    }
+
     /// Graph sign-in opens a browser; it is never started automatically. See the
     /// protocol extension for why.
     var requiresInteractiveSignIn: Bool { true }
+
+    /// Graph can create events — and unlike EventKit it can invite people.
+    var canCreateEvents: Bool { true }
 
     var isAuthorized: Bool {
         // A live access token, or a refresh token we can mint one from.
@@ -229,7 +251,51 @@ final class GraphCalendarProvider: CalendarProvider {
         let startStr = formatter.string(from: now)
         let endStr = formatter.string(from: endDate)
 
-        let urlString = "https://graph.microsoft.com/v1.0/me/calendarview?startdatetime=\(startStr)&enddatetime=\(endStr)&$select=id,subject,start,end,location,isAllDay,organizer,body,attendees,onlineMeeting,isOnlineMeeting,isCancelled,responseStatus,type&$orderby=start/dateTime"
+        // `/me/calendarview` reads the DEFAULT calendar only. A work account whose
+        // meetings live in any other calendar returned zero events with no error, which
+        // reads exactly like a broken sign-in. So when calendars are ticked in
+        // "Calendars to Monitor", query each one; only fall back to the default calendar
+        // when nothing is ticked.
+        let paths: [String] = selectedCalendarIDs.isEmpty
+            ? ["me/calendarview"]
+            : selectedCalendarIDs.sorted().map { id in
+                let escaped = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
+                return "me/calendars/\(escaped)/calendarview"
+            }
+
+        var raw: [GraphEvent] = []
+        var seenIDs = Set<String>()
+        var failedCalendars: [String] = []
+        for path in paths {
+            do {
+                let events = try await fetchEvents(path: path, startStr: startStr, endStr: endStr, token: token)
+                for event in events where seenIDs.insert(event.id).inserted { raw.append(event) }
+            } catch let error as CalendarProviderError {
+                // A single unreadable calendar (deleted, renamed id, a stale tick left
+                // over from when both sources shared one selection list) must not take
+                // the whole account down with it.
+                if case .notAuthenticated = error { throw error }
+                guard paths.count > 1 || !selectedCalendarIDs.isEmpty else { throw error }
+                failedCalendars.append(path)
+            }
+        }
+
+        // Every ticked calendar failed — fall back to the account's default calendar so
+        // the user sees their meetings instead of an empty app.
+        if raw.isEmpty, !failedCalendars.isEmpty {
+            onDiagnostic?("Microsoft 365: none of the \(failedCalendars.count) selected calendar(s) could be read — falling back to the default calendar. Re-tick your calendars in Settings → Calendar.")
+            raw = try await fetchEvents(path: "me/calendarview", startStr: startStr, endStr: endStr, token: token)
+        } else if !failedCalendars.isEmpty {
+            onDiagnostic?("Microsoft 365: \(failedCalendars.count) selected calendar(s) could not be read; the rest loaded.")
+        }
+
+        return Self.mapEvents(raw)
+    }
+
+    /// One calendarview request. Split out so the multi-calendar loop above has a single
+    /// place that owns status handling and decoding.
+    private func fetchEvents(path: String, startStr: String, endStr: String, token: String) async throws -> [GraphEvent] {
+        let urlString = "https://graph.microsoft.com/v1.0/\(path)?startdatetime=\(startStr)&enddatetime=\(endStr)&$select=id,subject,start,end,location,isAllDay,organizer,body,attendees,onlineMeeting,isOnlineMeeting,isCancelled,responseStatus,type&$orderby=start/dateTime&$top=250"
 
         guard let url = URL(string: urlString) else {
             throw CalendarProviderError.unknown(underlying: URLError(.badURL))
@@ -251,22 +317,24 @@ final class GraphCalendarProvider: CalendarProvider {
         }
 
         guard httpResponse.statusCode == 200 else {
+            let detail = String(data: data, encoding: .utf8)?.prefix(200) ?? ""
+            onDiagnostic?("Microsoft 365 request failed — HTTP \(httpResponse.statusCode) on /\(path). \(detail)")
             throw CalendarProviderError.networkError(
                 underlying: URLError(.init(rawValue: httpResponse.statusCode))
             )
         }
 
-        let decoded = try JSONDecoder().decode(GraphCalendarResponse.self, from: data)
+        return try JSONDecoder().decode(GraphCalendarResponse.self, from: data).value
+    }
 
-        return decoded.value
+    /// Graph JSON → `MeetingEvent`, the provider boundary. Nothing above this line ever
+    /// sees Graph JSON.
+    private static func mapEvents(_ events: [GraphEvent]) -> [MeetingEvent] {
+        events
             .filter { !$0.isAllDay }
             .compactMap { event -> MeetingEvent? in
-                guard let startDate = parseGraphDate(event.start),
-                      let endDate = parseGraphDate(event.end) else { return nil }
-
-                // Filter by selected calendars if any are set
-                // Graph calendarview doesn't include calendar ID by default,
-                // so we skip calendar filtering for now unless we add calendar-specific queries
+                guard let startDate = Self.parseGraphDate(event.start),
+                      let endDate = Self.parseGraphDate(event.end) else { return nil }
 
                 let attendeeNames = (event.attendees ?? []).compactMap { $0.emailAddress?.name }
                 let notes = event.body.flatMap { Self.plainText(from: $0) }
@@ -380,11 +448,82 @@ final class GraphCalendarProvider: CalendarProvider {
             default:                 label = nil
             }
             if let label { accountLabel = label }
+            if let address {
+                if let previous = accountAddress, previous.caseInsensitiveCompare(address) != .orderedSame {
+                    onDiagnostic?("Microsoft 365 account changed from \(previous) to \(address) — clearing the calendars ticked for the old account")
+                    onAccountChanged?(address)
+                }
+                accountAddress = address
+            }
             return accountLabel
         } catch {
             await log("warn", "Graph /me failed — \(error.localizedDescription)")
             return accountLabel
         }
+    }
+
+    // MARK: - Event creation
+
+    /// Create an event on Microsoft 365.
+    ///
+    /// The reason this exists: **Graph can invite people and EventKit cannot.** Apple
+    /// provides no API to add attendees or send invitations, so an event created through
+    /// macOS Calendar reaches your own calendar and nobody else's. Attendees on the
+    /// draft are sent here, and Exchange mails the invitations itself — no `Mail.Send`
+    /// scope involved.
+    func createEvent(from draft: EventDraft, calendarID: String?) async throws {
+        let token = try await validToken()
+
+        // Graph wants a wall-clock string plus a named zone, NOT a UTC instant with an
+        // offset: sending an offset with the local zone name double-applies it and the
+        // meeting lands hours away.
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        formatter.timeZone = TimeZone.current
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+
+        var body: [String: Any] = [
+            "subject": draft.title,
+            "start": ["dateTime": formatter.string(from: draft.startDate), "timeZone": TimeZone.current.identifier],
+            "end": ["dateTime": formatter.string(from: draft.endDate), "timeZone": TimeZone.current.identifier]
+        ]
+        if let location = draft.location, !location.isEmpty {
+            body["location"] = ["displayName": location]
+        }
+        // The join link rides in the body so the overlay's link extractor finds it, the
+        // same way it does for invitations that arrive from other people.
+        var notes = draft.notes ?? ""
+        if let url = draft.url, !url.isEmpty {
+            notes = notes.isEmpty ? url : "\(notes)\n\n\(url)"
+        }
+        if !notes.isEmpty {
+            body["body"] = ["contentType": "text", "content": notes]
+        }
+        if !draft.attendees.isEmpty {
+            body["attendees"] = draft.attendees.map { address in
+                ["emailAddress": ["address": address], "type": "required"]
+            }
+        }
+
+        let path = (calendarID?.isEmpty == false)
+            ? "https://graph.microsoft.com/v1.0/me/calendars/\(calendarID!)/events"
+            : "https://graph.microsoft.com/v1.0/me/events"
+        var request = URLRequest(url: URL(string: path)!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+        // Graph answers 201 Created here; accept the 2xx family rather than pinning to
+        // one code, the lesson from RSVP returning 202 where 200 was expected.
+        guard (200...299).contains(status) else {
+            let detail = String(data: data, encoding: .utf8)?.prefix(300) ?? ""
+            await log("warn", "Graph event creation failed (HTTP \(status)): \(detail)")
+            throw CalendarProviderError.networkError(underlying: URLError(.init(rawValue: status)))
+        }
+        await log("info", "Created event on Microsoft 365 — \"\(draft.title)\"\(draft.attendees.isEmpty ? "" : ", \(draft.attendees.count) invitee(s)")")
     }
 
     // MARK: - RSVP write
@@ -512,7 +651,7 @@ final class GraphCalendarProvider: CalendarProvider {
 
     // MARK: - Date Parsing
 
-    private func parseGraphDate(_ graphDate: GraphDateTime?) -> Date? {
+    private static func parseGraphDate(_ graphDate: GraphDateTime?) -> Date? {
         guard let dateStr = graphDate?.dateTime else { return nil }
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]

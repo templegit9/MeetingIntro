@@ -1,3 +1,33 @@
+/// Pulls email addresses out of Quick Add text so they can be invited.
+///
+/// **Addresses only, never names.** "meet John tomorrow at 3" gives a name, and turning
+/// a name into an address means guessing — a wrongly addressed meeting invitation is not
+/// a mistake you can take back. If the user types an address, we invite it; otherwise we
+/// invite nobody and say so.
+enum InviteeExtractor {
+    static func addresses(in text: String) -> [String] {
+        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else { return [] }
+        let range = NSRange(text.startIndex..., in: text)
+        var found: [String] = []
+        for match in detector.matches(in: text, options: [], range: range) {
+            guard let url = match.url, url.scheme == "mailto",
+                  let address = url.absoluteString.split(separator: ":").last.map(String.init) else { continue }
+            let cleaned = address.split(separator: "?").first.map(String.init) ?? address
+            if !found.contains(cleaned) { found.append(cleaned) }
+        }
+        return found
+    }
+
+    /// The text with addresses removed, so "lunch with sam@x.com" titles as "lunch with".
+    static func stripped(from text: String) -> String {
+        var out = text
+        for address in addresses(in: text) {
+            out = out.replacingOccurrences(of: address, with: "")
+        }
+        return out.replacingOccurrences(of: "  ", with: " ").trimmingCharacters(in: .whitespaces)
+    }
+}
+
 import Combine
 import Foundation
 
@@ -302,6 +332,13 @@ final class QuickAddService: ObservableObject {
 
     /// Store the parser/template output as the base draft and apply the link choice.
     private func publish(_ draft: EventDraft?) {
+        var draft = draft
+        // Invite anyone whose address was typed. Only Microsoft 365 can act on this;
+        // the preview says so rather than dropping people silently.
+        if var value = draft {
+            value.attendees = InviteeExtractor.addresses(in: inputText)
+            draft = value
+        }
         baseDraft = draft
         self.draft = draft.map(applyingLink)
         // Overlap check keys off the draft's time window (unaffected by link choice).

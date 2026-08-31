@@ -63,7 +63,16 @@ final class CalendarManager: ObservableObject {
     var countdownConfigs: CountdownConfigManager?
 
     /// Diagnostic log — injected in AppLifecycleManager.observe.
-    var diagnosticLog: DiagnosticLog?
+    var diagnosticLog: DiagnosticLog? {
+        didSet {
+            graphProvider.onDiagnostic = { [weak self] message in self?.diagnosticLog?.warn(.calendar, message) }
+            graphProvider.onAccountChanged = { [weak self] _ in
+                guard let self else { return }
+                self.setSelectedCalendarIDs([], for: .microsoftGraph)
+                self.graphProvider.selectedCalendarIDs = []
+            }
+        }
+    }
 
     /// Called at the end of each successful refresh — the calendar-mirror engine
     /// hooks here so reconciliation rides the existing 30s poll.
@@ -955,6 +964,11 @@ final class CalendarManager: ObservableObject {
     /// orphan all of it. Graph therefore contributes only what macOS can't see, which is
     /// exactly the gap it exists to fill. (Graph remains the *authority* on cancellation
     /// through `GraphVerifier` — this is about identity, not truth.)
+    /// Sources currently skipped for lack of a token, and sources currently returning
+    /// nothing. Both are logged on transition only — a per-poll line would drown the log.
+    private var skippedUnauthorizedSources: Set<CalendarProviderType> = []
+    private var emptySources: Set<CalendarProviderType> = []
+
     private func fetchFromEnabledSources(within window: TimeInterval) async throws -> [MeetingEvent] {
         let types = CalendarProviderType.allCases.filter { enabledProviderTypes.contains($0) }
         var merged: [MeetingEvent] = []
@@ -966,9 +980,19 @@ final class CalendarManager: ObservableObject {
         for type in types {
             let source = provider(for: type)
             guard source.isAuthorized else {
-                if type != activeProviderType { continue }   // silent: not signed in yet
+                // Log the transition, not every poll. An enabled source that quietly
+                // stops contributing is otherwise invisible — and `isAuthorized` reads
+                // the Keychain, so a single flaky read drops a whole source for one poll
+                // with nothing in the log to explain the gap.
+                if skippedUnauthorizedSources.insert(type).inserted {
+                    diagnosticLog?.warn(.calendar, "Source \(type.rawValue) skipped — not signed in (no valid token). Its events are missing until you sign in.")
+                }
+                if type != activeProviderType { continue }
                 failures.append("\(type.rawValue): not authorized")
                 continue
+            }
+            if skippedUnauthorizedSources.remove(type) != nil {
+                diagnosticLog?.info(.calendar, "Source \(type.rawValue) authorized again — including its events")
             }
             do {
                 let events = try await source.fetchUpcomingEvents(within: window)
@@ -981,6 +1005,16 @@ final class CalendarManager: ObservableObject {
                     added += 1
                 }
                 counts.append("\(type.rawValue) \(added)")
+                // "0 events" from a signed-in source is a legitimate answer (an empty
+                // calendar) and a symptom (wrong account, events in a non-default
+                // calendar). Say it once per transition so it is at least visible.
+                if events.isEmpty {
+                    if emptySources.insert(type).inserted {
+                        diagnosticLog?.warn(.calendar, "Source \(type.rawValue) is signed in but returned 0 events for the next \(Int(window / 86_400)) day(s)")
+                    }
+                } else if emptySources.remove(type) != nil {
+                    diagnosticLog?.info(.calendar, "Source \(type.rawValue) is returning events again (\(events.count))")
+                }
             } catch {
                 failures.append("\(type.rawValue): \(error.localizedDescription)")
                 diagnosticLog?.warn(.calendar, "Source \(type.rawValue) failed — \(error.localizedDescription); other sources still used")
@@ -1048,14 +1082,36 @@ final class CalendarManager: ObservableObject {
 
     // MARK: - Event creation (Quick Add)
 
-    /// Create an event from a Quick Add draft. v1 writes go through EventKit only,
-    /// regardless of the active read provider — Graph write support needs an OAuth
-    /// scope upgrade (Calendars.Read → ReadWrite) and is a later phase. Refreshes
-    /// immediately so the Today view shows the new event without waiting for the
-    /// next poll.
+    /// Create an event on whichever source is the write target.
+    ///
+    /// Routed rather than hardcoded to EventKit, because creating in Microsoft 365 is
+    /// the only way to invite anyone — Apple gives EventKit no API for attendees.
     func createEvent(from draft: EventDraft, calendarID: String?) async throws {
-        try eventKitProvider.createEvent(from: draft, calendarID: calendarID)
+        let target = eventCreationProvider
+        // The saved "Create in calendar" id belongs to whichever source was the write
+        // target when it was picked. Handing an EventKit id to Graph (or the reverse)
+        // fails on an id space that doesn't exist there, so fall back to that source's
+        // default calendar instead of erroring out on the user's event.
+        var resolvedID = calendarID
+        if let calendarID, !calendarID.isEmpty {
+            let owned = (try? await provider(for: target).availableCalendars())?
+                .contains { $0.id == calendarID } ?? false
+            if !owned {
+                resolvedID = nil
+                diagnosticLog?.warn(.quickAdd, "Saved calendar isn't in \(target.rawValue) — creating in that source's default calendar instead")
+            }
+        }
+        try await provider(for: target).createEvent(from: draft, calendarID: resolvedID)
+        diagnosticLog?.info(.quickAdd, "Created \"\(draft.title)\" in \(target.rawValue)\(draft.attendees.isEmpty ? "" : " with \(draft.attendees.count) invitee(s)")")
         await refreshEvents()
+    }
+
+    /// Calendars that can receive a new event — from the write target only, since that's
+    /// where it will actually land.
+    func writableCalendars() async -> [CalendarInfo] {
+        let target = provider(for: eventCreationProvider)
+        guard target.isAuthorized else { return [] }
+        return (try? await target.availableCalendars()) ?? []
     }
 
     /// Available EventKit calendars for the Quick Add target picker.
@@ -1094,9 +1150,8 @@ final class CalendarManager: ObservableObject {
         provider(for: meeting.sourceProvider).supportsResponding
     }
 
-    /// Where a Quick Add event will actually be created. Graph event creation isn't
-    /// implemented, so the write target is the primary only when it can write; otherwise
-    /// EventKit, which is the truth the Settings copy must state.
+    /// Where a Quick Add event will actually be created: the primary source when it can
+    /// write, otherwise EventKit. This is the truth the Settings copy must state.
     var eventCreationProvider: CalendarProviderType {
         activeProvider.canCreateEvents ? activeProviderType : .eventKit
     }
