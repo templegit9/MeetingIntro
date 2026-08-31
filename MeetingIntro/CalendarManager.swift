@@ -1081,12 +1081,33 @@ final class CalendarManager: ObservableObject {
     // MARK: - RSVP
 
     /// Whether the active provider can write an RSVP response (Graph, write-scoped).
-    var supportsRSVPWrite: Bool { activeProvider.supportsResponding }
+    /// Deprecated in favour of `canRespond(to:)` — kept for callers that only ask in
+    /// general. With two sources merged, capability is a property of the EVENT, not of
+    /// the app: an EventKit event can never RSVP (Apple provides no API), while a Graph
+    /// event can, regardless of which source is "primary".
+    var supportsRSVPWrite: Bool {
+        CalendarProviderType.allCases.contains { enabledProviderTypes.contains($0) && provider(for: $0).supportsResponding }
+    }
+
+    /// Whether THIS meeting can be responded to — routed by where it came from.
+    func canRespond(to meeting: MeetingEvent) -> Bool {
+        provider(for: meeting.sourceProvider).supportsResponding
+    }
+
+    /// Where a Quick Add event will actually be created. Graph event creation isn't
+    /// implemented, so the write target is the primary only when it can write; otherwise
+    /// EventKit, which is the truth the Settings copy must state.
+    var eventCreationProvider: CalendarProviderType {
+        activeProvider.canCreateEvents ? activeProviderType : .eventKit
+    }
 
     /// Respond to an invitation, then refresh so the new status shows immediately.
     func respond(to eventID: String, status: ResponseStatus) async throws {
+        // Route to the provider the event came from. Sending an EventKit id to Graph
+        // (or the reverse) can't work — the id spaces are unrelated.
+        let origin = upcomingWeek.first { $0.id == eventID }?.sourceProvider ?? activeProviderType
         do {
-            try await activeProvider.respond(to: eventID, status: status)
+            try await provider(for: origin).respond(to: eventID, status: status)
             diagnosticLog?.info(.calendar, "RSVP \(status.rawValue) sent for event \(eventID)")
         } catch {
             diagnosticLog?.error(.calendar, "RSVP \(status.rawValue) failed: \(error.localizedDescription)")

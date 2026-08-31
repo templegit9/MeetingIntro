@@ -296,6 +296,7 @@ final class GraphCalendarProvider: CalendarProvider {
                     organizerName: event.organizer?.emailAddress?.name,
                     isCancelled: cancelled,
                     isRecurring: event.type != nil && event.type != "singleInstance",
+                    sourceProvider: .microsoftGraph,
                     myResponse: myResponse,
                     responseCounts: counts
                 )

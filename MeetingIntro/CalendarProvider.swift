@@ -55,6 +55,10 @@ struct MeetingEvent: Identifiable, Equatable {
     /// This is the stable per-occurrence identity time-change detection needs; nil for
     /// non-recurring events and providers that don't expose it. Defaults nil.
     var occurrenceDate: Date? = nil
+    /// Which backend produced this event. With both sources merged into one list, an
+    /// action on an event must be routed to **its own** provider: sending an EventKit id
+    /// to Graph (or vice versa) fails, since the id spaces are unrelated.
+    var sourceProvider: CalendarProviderType = .eventKit
     /// True when this event lives on an Exchange-backed calendar, i.e. one whose truth
     /// lives on a Microsoft 365 server that `GraphVerifier` can cross-check. Only
     /// EventKit sets it; nothing else is ever verified. Defaults false, so an event we
@@ -160,6 +164,11 @@ protocol CalendarProvider {
     /// the user with a login.
     var requiresInteractiveSignIn: Bool { get }
 
+    /// Whether this source can create events. EventKit can; Graph event creation isn't
+    /// implemented, so offering it as a write target would be a lie. Declared here (not
+    /// in an extension) so the override actually dispatches.
+    var canCreateEvents: Bool { get }
+
     /// Request access to the calendar (may trigger system permission dialog or OAuth flow).
     func requestAccess() async throws -> Bool
 
@@ -192,6 +201,7 @@ extension CalendarProvider {
     /// it; a Graph sign-in opens a browser plus a consent sheet and must be started by
     /// the user. This is a *default for a declared requirement* — see the protocol.
     var requiresInteractiveSignIn: Bool { false }
+    var canCreateEvents: Bool { false }
 }
 
 enum CancellationTitlePrefix {

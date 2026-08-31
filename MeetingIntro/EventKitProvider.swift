@@ -15,6 +15,9 @@ final class EventKitProvider: CalendarProvider {
     /// Diagnostic log (injected in AppLifecycleManager.observe) for the mirror-dedup trail.
     var diagnosticLog: DiagnosticLog?
 
+    /// EventKit is the only backend that writes events today.
+    var canCreateEvents: Bool { true }
+
     var isAuthorized: Bool {
         EKEventStore.authorizationStatus(for: .event) == .fullAccess
     }

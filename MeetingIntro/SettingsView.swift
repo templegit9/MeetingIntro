@@ -269,15 +269,23 @@ struct SettingsView: View {
                     }
                 }
 
-                if enabledProviders.count > 1 {
+                // Only sources that can actually create events belong here. Graph event
+                // creation isn't built, so listing it would promise a write that
+                // silently lands in macOS Calendar instead.
+                let writable = CalendarProviderType.allCases.filter {
+                    enabledProviders.contains($0) && calendarManager.provider(for: $0).canCreateEvents
+                }
+                if writable.count > 1 {
                     Picker("Create new events in", selection: $selectedProvider) {
-                        ForEach(CalendarProviderType.allCases.filter { enabledProviders.contains($0) }) { type in
-                            Text(type.displayName).tag(type)
-                        }
+                        ForEach(writable) { type in Text(type.displayName).tag(type) }
                     }
                     .onChange(of: selectedProvider) { _, newValue in
                         calendarManager.activeProviderType = newValue
                     }
+                } else if writable.isEmpty {
+                    Label("New events are created in macOS Calendar — creating events in Microsoft 365 isn't supported yet.",
+                          systemImage: "info.circle")
+                        .font(.caption).foregroundStyle(.secondary)
                 }
             } header: {
                 SettingsSectionHeader("Calendar Sources", info: "Turn on both to see everything at once — Google, iCloud and anything else in macOS Calendar through EventKit, plus a work Outlook calendar through Microsoft 365.\n\nA meeting that appears in both (a work calendar synced into macOS *and* read from Microsoft 365) is shown once. If one source fails, the other still loads.\n\nWhen both are on, \"Create new events in\" decides where Quick Add writes.")

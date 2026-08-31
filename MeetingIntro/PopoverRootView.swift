@@ -690,7 +690,7 @@ struct PopoverRootView: View {
             }
             if !meeting.isCancelled {
                 Menu {
-                    if calendarManager.supportsRSVPWrite,
+                    if calendarManager.canRespond(to: meeting),
                        [.accepted, .declined, .tentative, .noResponse].contains(meeting.myResponse) {
                         Button("Accept") { Task { try? await calendarManager.respond(to: meeting.id, status: .accepted) } }
                         Button("Tentative") { Task { try? await calendarManager.respond(to: meeting.id, status: .tentative) } }
