@@ -426,8 +426,16 @@ struct SettingsView: View {
                     .onChange(of: graphClientId) { _, newValue in
                         calendarManager.graphCalendarProvider.clientId = newValue
                     }
-                Text("Leave empty to use MeetingIntro's built-in registration.")
-                    .font(.caption2).foregroundStyle(.secondary)
+                if !graphClientId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                   !GraphCalendarProvider.isPlausibleClientID(graphClientId) {
+                    Label("That isn't a client ID — it's the GUID from your app registration's Overview page, not the redirect URI. The built-in registration is being used instead.",
+                          systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption2).foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    Text("Leave empty to use MeetingIntro's built-in registration.")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
             }
             .font(.caption)
 
@@ -2573,7 +2581,7 @@ struct SettingsView: View {
         selectedProvider = calendarManager.activeProviderType
         enabledProviders = calendarManager.enabledProviderTypes
 
-        graphClientId = calendarManager.graphCalendarProvider.clientId
+        graphClientId = UserDefaults.standard.string(forKey: "graphClientId") ?? ""
         volume = audioManager.volume
         selectedCalendarIDs = calendarManager.selectedCalendarIDs
     }

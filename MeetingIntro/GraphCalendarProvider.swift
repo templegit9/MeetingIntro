@@ -11,7 +11,21 @@ final class GraphCalendarProvider: CalendarProvider {
     /// public client has none, which is why VS Code and the Azure CLI ship theirs in the
     /// open. Bundling it is the entire difference between "sign in with Microsoft" and
     /// "go create an app registration in the Azure Portal", which no user will do.
-    static let defaultClientID = "meetingintro://auth"
+    ///
+    /// **This is the Application (client) ID, a GUID — not the redirect URI.** v2.20.1
+    /// through v2.20.4 shipped `"meetingintro://auth"` here by a copy/paste, and every
+    /// user without their own registration got `AADSTS900023: Specified tenant
+    /// identifier 'auth' is neither a valid DNS name...` because Microsoft reads the
+    /// path segment of an unparseable client_id as a tenant. Reproduced against the live
+    /// authorize endpoint; `isPlausibleClientID` below is the guard that stops it
+    /// recurring silently.
+    static let defaultClientID = "73eb19c6-e5b0-468d-a66e-2499269e33d1"
+
+    /// A client ID is always a GUID. Anything else reaches Microsoft as an unreadable
+    /// AADSTS page instead of a sign-in, so catch it here and say what is wrong.
+    static func isPlausibleClientID(_ value: String) -> Bool {
+        UUID(uuidString: value.trimmingCharacters(in: .whitespacesAndNewlines)) != nil
+    }
 
     /// Diagnostic log, injected in `AppLifecycleManager.observe` (same as the EventKit
     /// provider). `DiagnosticLog` is main-actor isolated, so writes hop through
@@ -30,8 +44,11 @@ final class GraphCalendarProvider: CalendarProvider {
     /// Settings field is an override for someone who wants their own, not a requirement.
     var clientId: String {
         get {
-            let stored = UserDefaults.standard.string(forKey: "graphClientId") ?? ""
-            return stored.isEmpty ? Self.defaultClientID : stored
+            let stored = (UserDefaults.standard.string(forKey: "graphClientId") ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            // An override that isn't a GUID would fail at Microsoft with an AADSTS page
+            // nobody can act on. Fall back to the bundled registration instead.
+            return Self.isPlausibleClientID(stored) ? stored : Self.defaultClientID
         }
         set { UserDefaults.standard.set(newValue, forKey: "graphClientId") }
     }
