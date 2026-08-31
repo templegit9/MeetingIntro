@@ -150,6 +150,16 @@ protocol CalendarProvider {
     /// Whether the provider is currently authenticated / has access.
     var isAuthorized: Bool { get }
 
+    /// True when authorizing puts a sign-in UI in front of the user.
+    ///
+    /// **This MUST stay a protocol requirement.** It lived only in a protocol extension
+    /// once, and Swift dispatches extension-only members statically: called through the
+    /// existential `CalendarProvider`, it always returned the extension's `false` and
+    /// Graph's `true` was never consulted — so the guard meant to stop a poll from
+    /// launching a browser sign-in was dead code, and switching provider still ambushed
+    /// the user with a login.
+    var requiresInteractiveSignIn: Bool { get }
+
     /// Request access to the calendar (may trigger system permission dialog or OAuth flow).
     func requestAccess() async throws -> Bool
 
@@ -177,13 +187,10 @@ protocol CalendarProvider {
 /// the cancellation via the structured status field — common with older Exchange
 /// servers that forward invites with a rewritten title.
 extension CalendarProvider {
-    /// True when authorizing means putting a sign-in UI in front of the user.
-    ///
-    /// EventKit's `requestAccess` is a system permission prompt macOS shows once, so
-    /// firing it from a background poll is acceptable. A Graph sign-in opens a browser
-    /// and a macOS consent sheet — doing that from a poll means **merely switching the
-    /// provider tab throws a login at you**, which is what happened in v2.20.1. Anything
-    /// interactive must be started by the user pressing Sign In.
+    /// Default: authorizing is silent or a one-time system prompt. EventKit's
+    /// `requestAccess` is a macOS permission dialog shown once, so a poll may trigger
+    /// it; a Graph sign-in opens a browser plus a consent sheet and must be started by
+    /// the user. This is a *default for a declared requirement* — see the protocol.
     var requiresInteractiveSignIn: Bool { false }
 }
 

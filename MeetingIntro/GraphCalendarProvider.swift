@@ -52,7 +52,19 @@ final class GraphCalendarProvider: CalendarProvider {
     /// events with attendees, which is the one thing EventKit categorically cannot do —
     /// Apple blocks programmatic invitations. `Calendars.Read.Shared` extends reading to
     /// calendars shared with the user or accessed as a delegate.
-    private static let oauthScope = "https://graph.microsoft.com/Calendars.ReadWrite https://graph.microsoft.com/Calendars.Read.Shared offline_access"
+    /// `User.Read` is here for a reason that cost a debugging round trip: without it the
+    /// token is valid for calendars but **`/me` returns 401**, so the app could read your
+    /// meetings while being unable to say whose they were. The registration listing a
+    /// permission grants nothing — only this string does, which is the same trap that
+    /// hid `Calendars.Read.Shared` earlier.
+    private static let oauthScope = "https://graph.microsoft.com/Calendars.ReadWrite https://graph.microsoft.com/Calendars.Read.Shared https://graph.microsoft.com/User.Read offline_access"
+
+    /// Whether the current token was granted `User.Read`. A token minted before that
+    /// scope was requested keeps working for calendars, so the honest ask is "sign in
+    /// again", not "something went wrong".
+    var canReadProfile: Bool {
+        grantedScope.lowercased().contains("user.read")
+    }
 
     /// Cached OAuth2 access token. Backed by Keychain; on first read after upgrading
     /// from a UserDefaults-storing build, the legacy value is migrated and cleared.

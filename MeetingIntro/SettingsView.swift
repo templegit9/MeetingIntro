@@ -369,7 +369,9 @@ struct SettingsView: View {
                         // Which account — the whole point when a work and a personal
                         // account are both in play.
                         Text(graphAccountLabel ?? (accountLookupFailed
-                                                   ? "Couldn't read the account name — check Diagnostics"
+                                                   ? (calendarManager.graphCalendarProvider.canReadProfile
+                                                      ? "Couldn't read the account name — check Diagnostics"
+                                                      : "Sign in again to show which account is connected")
                                                    : "Checking account…"))
                             .font(.caption)
                             .foregroundStyle(accountLookupFailed ? .orange : .secondary)
