@@ -66,6 +66,13 @@ final class CalendarManager: ObservableObject {
     var diagnosticLog: DiagnosticLog? {
         didSet {
             graphProvider.onDiagnostic = { [weak self] message in self?.diagnosticLog?.warn(.calendar, message) }
+            graphProvider.onStaleCalendar = { [weak self] id in
+                guard let self else { return }
+                var ids = self.selectedCalendarIDs(for: .microsoftGraph)
+                guard ids.remove(id) != nil else { return }
+                self.setSelectedCalendarIDs(ids, for: .microsoftGraph)
+                self.diagnosticLog?.warn(.calendar, "Dropped a Microsoft 365 calendar that no longer exists in this account — re-tick your calendars if one is missing")
+            }
             graphProvider.onAccountChanged = { [weak self] _ in
                 guard let self else { return }
                 self.setSelectedCalendarIDs([], for: .microsoftGraph)

@@ -141,6 +141,10 @@ final class GraphCalendarProvider: CalendarProvider {
     /// re-ticked. The manager clears the selection when this fires.
     var onAccountChanged: ((String) -> Void)?
 
+    /// Fires when a ticked calendar is gone from the store for good, so the manager can
+    /// drop it from the persisted selection.
+    var onStaleCalendar: ((String) -> Void)?
+
     /// Address of the account whose calendar ids we currently hold.
     private var accountAddress: String? {
         get { UserDefaults.standard.string(forKey: "graphAccountAddress") }
@@ -277,6 +281,16 @@ final class GraphCalendarProvider: CalendarProvider {
                 if case .notAuthenticated = error { throw error }
                 guard paths.count > 1 || !selectedCalendarIDs.isEmpty else { throw error }
                 failedCalendars.append(path)
+                // A calendar the store says doesn't exist will never exist again — it
+                // belongs to a previously signed-in account. Drop the tick instead of
+                // re-requesting a 404 every 30 seconds forever.
+                if case .networkError(let underlying) = error,
+                   (underlying as? URLError)?.errorCode == 404,
+                   let id = selectedCalendarIDs.first(where: { path.contains($0) ||
+                       path.contains($0.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? $0) }) {
+                    selectedCalendarIDs.remove(id)
+                    onStaleCalendar?(id)
+                }
             }
         }
 
@@ -289,7 +303,13 @@ final class GraphCalendarProvider: CalendarProvider {
             onDiagnostic?("Microsoft 365: \(failedCalendars.count) selected calendar(s) could not be read; the rest loaded.")
         }
 
-        return Self.mapEvents(raw)
+        let mapped = Self.mapEvents(raw)
+        // A fetch that returns rows and yields no meetings is a parsing failure, not an
+        // empty calendar. That distinction cost a debugging round trip; keep it logged.
+        if !raw.isEmpty, mapped.isEmpty {
+            onDiagnostic?("Microsoft 365 returned \(raw.count) event(s) but none could be read — check the date format Graph is sending")
+        }
+        return mapped
     }
 
     /// One calendarview request. Split out so the multi-calendar loop above has a single
@@ -651,14 +671,40 @@ final class GraphCalendarProvider: CalendarProvider {
 
     // MARK: - Date Parsing
 
+    /// Graph sends **naive wall-clock time with the zone in a sibling field** —
+    /// `{"dateTime": "2026-08-31T09:00:00.0000000", "timeZone": "UTC"}`. There is no
+    /// trailing `Z` and no offset, and `ISO8601DateFormatter` *requires* a zone
+    /// designator, so both of its options returned nil and **every Graph event was
+    /// dropped by the `compactMap`** — the account looked empty with HTTP 200 and no
+    /// error anywhere. Parse the wall-clock string in the zone Graph named.
+    ///
+    /// Verified against the literal strings Graph returns; don't replace this with a
+    /// bare `ISO8601DateFormatter` again.
     private static func parseGraphDate(_ graphDate: GraphDateTime?) -> Date? {
         guard let dateStr = graphDate?.dateTime else { return nil }
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = formatter.date(from: dateStr) { return date }
-        // Fallback without fractional seconds
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter.date(from: dateStr)
+
+        // A zone-carrying string (some endpoints do send one) still parses first.
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = iso.date(from: dateStr) { return date }
+        iso.formatOptions = [.withInternetDateTime]
+        if let date = iso.date(from: dateStr) { return date }
+
+        // Graph's own shape: wall clock plus a named zone. Windows zone names
+        // ("Pacific Standard Time") aren't IANA ids, so fall back to UTC — which is what
+        // calendarview returns unless a Prefer header asks for something else.
+        let zone = graphDate?.timeZone.flatMap { TimeZone(identifier: $0) }
+            ?? TimeZone(abbreviation: "UTC")!
+        for format in ["yyyy-MM-dd'T'HH:mm:ss.SSSSSSS",
+                       "yyyy-MM-dd'T'HH:mm:ss.SSS",
+                       "yyyy-MM-dd'T'HH:mm:ss"] {
+            let df = DateFormatter()
+            df.locale = Locale(identifier: "en_US_POSIX")
+            df.timeZone = zone
+            df.dateFormat = format
+            if let date = df.date(from: dateStr) { return date }
+        }
+        return nil
     }
 
     /// Converts a Graph `itemBody` payload into plain text. HTML bodies are stripped
