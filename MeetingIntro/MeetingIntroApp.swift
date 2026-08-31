@@ -451,6 +451,7 @@ final class AppLifecycleManager: ObservableObject {
         menuBarCountdown.configure(calendarManager: calendarManager, countdownConfig: countdownConfig)
         calendarManager.diagnosticLog = diagnosticLog
         calendarManager.eventKitProvider.diagnosticLog = diagnosticLog
+        calendarManager.graphProvider.diagnosticLog = diagnosticLog
         notificationManager.soundManager = mixkitSounds
         notificationManager.diagnosticLog = diagnosticLog
         overlayController.diagnosticLog = diagnosticLog

@@ -148,6 +148,7 @@ struct SettingsView: View {
     /// Set when a tenant refuses consent — drives the "send this to IT" affordance.
     @State private var graphAdminConsentURL: URL?
     @State private var graphAccountLabel: String?
+    @State private var accountLookupFailed = false
     @State private var graphAuthMessage: String?
     @State private var isSigningIn: Bool = false
     @State private var availableCalendars: [CalendarInfo] = []
@@ -346,15 +347,6 @@ struct SettingsView: View {
 
     private var graphSettingsSection: some View {
         Section("Microsoft Graph API") {
-            Color.clear.frame(height: 0)
-                .task {
-                    graphAccountLabel = calendarManager.graphCalendarProvider.accountLabel
-                    // Refresh in the background: a cached label shows instantly, and this
-                    // corrects it if the account changed.
-                    if calendarManager.graphCalendarProvider.isAuthorized {
-                        graphAccountLabel = await calendarManager.graphCalendarProvider.refreshAccountLabel()
-                    }
-                }
             // The app ships its own registration, so this is an override, not a
             // requirement — asking every user to visit the Azure Portal is not a flow
             // anyone completes.
@@ -376,9 +368,25 @@ struct SettingsView: View {
                             .foregroundStyle(.green)
                         // Which account — the whole point when a work and a personal
                         // account are both in play.
-                        Text(graphAccountLabel ?? "Checking account…")
-                            .font(.caption).foregroundStyle(.secondary)
+                        Text(graphAccountLabel ?? (accountLookupFailed
+                                                   ? "Couldn't read the account name — check Diagnostics"
+                                                   : "Checking account…"))
+                            .font(.caption)
+                            .foregroundStyle(accountLookupFailed ? .orange : .secondary)
                             .textSelection(.enabled)
+                    }
+                    // Attached to a view that actually renders. Keyed on the authorized
+                    // flag so signing in or out re-runs it.
+                    .task(id: calendarManager.graphCalendarProvider.isAuthorized) {
+                        accountLookupFailed = false
+                        graphAccountLabel = calendarManager.graphCalendarProvider.accountLabel
+                        guard calendarManager.graphCalendarProvider.isAuthorized else { return }
+                        // A cached label shows instantly; this corrects it if the
+                        // account changed, and fills it in for anyone who signed in
+                        // before the label existed.
+                        let fetched = await calendarManager.graphCalendarProvider.refreshAccountLabel()
+                        graphAccountLabel = fetched
+                        accountLookupFailed = (fetched == nil)
                     }
 
                     Spacer()

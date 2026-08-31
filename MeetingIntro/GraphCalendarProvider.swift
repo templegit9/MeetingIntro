@@ -13,6 +13,19 @@ final class GraphCalendarProvider: CalendarProvider {
     /// "go create an app registration in the Azure Portal", which no user will do.
     static let defaultClientID = "meetingintro://auth"
 
+    /// Diagnostic log, injected in `AppLifecycleManager.observe` (same as the EventKit
+    /// provider). `DiagnosticLog` is main-actor isolated, so writes hop through
+    /// `MainActor.run`.
+    var diagnosticLog: DiagnosticLog?
+
+    private func log(_ level: String, _ message: String) async {
+        guard let diagnosticLog else { return }
+        await MainActor.run {
+            if level == "warn" { diagnosticLog.warn(.calendar, message) }
+            else { diagnosticLog.info(.calendar, message) }
+        }
+    }
+
     /// The Application (client) ID. Falls back to the bundled registration, so the
     /// Settings field is an override for someone who wants their own, not a requirement.
     var clientId: String {
@@ -333,7 +346,11 @@ final class GraphCalendarProvider: CalendarProvider {
             var request = URLRequest(url: URL(string: "https://graph.microsoft.com/v1.0/me?$select=displayName,mail,userPrincipalName")!)
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             let (data, response) = try await URLSession.shared.data(for: request)
-            guard (response as? HTTPURLResponse)?.statusCode == 200 else { return accountLabel }
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            guard status == 200 else {
+                await log("warn", "Graph /me returned HTTP \(status) — can't show which account is signed in")
+                return accountLabel
+            }
             struct Me: Decodable {
                 let displayName: String?
                 let mail: String?
@@ -351,6 +368,7 @@ final class GraphCalendarProvider: CalendarProvider {
             if let label { accountLabel = label }
             return accountLabel
         } catch {
+            await log("warn", "Graph /me failed — \(error.localizedDescription)")
             return accountLabel
         }
     }
