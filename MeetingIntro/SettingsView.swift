@@ -229,6 +229,32 @@ struct SettingsView: View {
                         }
                         Text(type.description)
                             .font(.caption).foregroundStyle(.secondary)
+
+                        // Connecting belongs HERE, on the switch that turns the source
+                        // on — that's the moment you're saying "use this account".
+                        // It used to hang off the write picker only because that control
+                        // was once the source selector too; writing and authenticating
+                        // are unrelated.
+                        if enabledProviders.contains(type), !calendarManager.provider(for: type).isAuthorized {
+                            HStack(spacing: 8) {
+                                Label("Not connected", systemImage: "exclamationmark.circle.fill")
+                                    .font(.caption).foregroundStyle(.orange)
+                                switch type {
+                                case .microsoftGraph:
+                                    Button(isSigningIn ? "Waiting for browser…" : "Sign in with Microsoft") {
+                                        Task { await signInGraph() }
+                                    }
+                                    .controlSize(.small)
+                                    .disabled(isSigningIn)
+                                case .eventKit:
+                                    Button("Grant calendar access") {
+                                        Task { _ = try? await calendarManager.eventKitProvider.requestAccess() }
+                                    }
+                                    .controlSize(.small)
+                                }
+                            }
+                            .padding(.top, 2)
+                        }
                     }
                 }
 
