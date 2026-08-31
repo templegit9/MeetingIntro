@@ -207,6 +207,10 @@ struct CalendarInfo: Identifiable, Hashable {
     let name: String
     let color: String  // Hex color string for UI display
     let source: String // e.g., "iCloud", "Exchange", "Google"
+    /// Which backend produced this calendar. With both sources readable at once, the
+    /// list mixes them, and a row must toggle **its own** provider's selection — the two
+    /// id spaces are unrelated, so applying an EventKit id to Graph selects nothing.
+    var providerType: CalendarProviderType = .eventKit
 }
 
 // MARK: - CalendarProviderError

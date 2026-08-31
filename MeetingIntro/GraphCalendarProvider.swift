@@ -319,7 +319,8 @@ final class GraphCalendarProvider: CalendarProvider {
                 name: cal.name,
                 color: graphColorToHex(cal.color),
                 source: "Microsoft 365"
-            )
+            ,
+                providerType: .microsoftGraph)
         }
     }
 

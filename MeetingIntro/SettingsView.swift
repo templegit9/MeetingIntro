@@ -235,6 +235,17 @@ struct SettingsView: View {
                         // It used to hang off the write picker only because that control
                         // was once the source selector too; writing and authenticating
                         // are unrelated.
+                        // Account details live behind a chevron on the source's own row,
+                        // rather than as a separate section further down the tab: the
+                        // account belongs to the source, not to the page.
+                        if type == .microsoftGraph, enabledProviders.contains(type),
+                           calendarManager.graphCalendarProvider.isAuthorized {
+                            DisclosureGroup("Account") {
+                                graphAccountDetails
+                            }
+                            .font(.caption)
+                        }
+
                         if enabledProviders.contains(type), !calendarManager.provider(for: type).isAuthorized {
                             HStack(spacing: 8) {
                                 Label("Not connected", systemImage: "exclamationmark.circle.fill")
@@ -273,7 +284,6 @@ struct SettingsView: View {
             }
 
             if selectedProvider == .microsoftGraph {
-                graphSettingsSection
                 graphVerifierSection
             }
 
@@ -285,14 +295,12 @@ struct SettingsView: View {
                 } else {
                     ForEach(availableCalendars) { calendar in
                         Toggle(isOn: Binding(
-                            get: { selectedCalendarIDs.contains(calendar.id) },
+                            get: { calendarManager.selectedCalendarIDs(for: calendar.providerType).contains(calendar.id) },
                             set: { isSelected in
-                                if isSelected {
-                                    selectedCalendarIDs.insert(calendar.id)
-                                } else {
-                                    selectedCalendarIDs.remove(calendar.id)
-                                }
-                                calendarManager.selectedCalendarIDs = selectedCalendarIDs
+                                var ids = calendarManager.selectedCalendarIDs(for: calendar.providerType)
+                                if isSelected { ids.insert(calendar.id) } else { ids.remove(calendar.id) }
+                                calendarManager.setSelectedCalendarIDs(ids, for: calendar.providerType)
+                                selectedCalendarIDs = calendarManager.selectedCalendarIDs
                             }
                         )) {
                             HStack {
@@ -398,8 +406,10 @@ struct SettingsView: View {
 
     // MARK: - Graph Settings Section
 
-    private var graphSettingsSection: some View {
-        Section("Microsoft Graph API") {
+    /// The Microsoft account panel, shown inside the "Account" disclosure on the
+    /// Microsoft Graph source row.
+    @ViewBuilder private var graphAccountDetails: some View {
+        Group {
             // The app ships its own registration, so this is an override, not a
             // requirement — asking every user to visit the Azure Portal is not a flow
             // anyone completes.
@@ -2563,7 +2573,7 @@ struct SettingsView: View {
 
     private func loadCalendars() async {
         do {
-            availableCalendars = try await calendarManager.activeProvider.availableCalendars()
+            availableCalendars = await calendarManager.availableCalendarsFromEnabledSources()
         } catch {
             availableCalendars = []
         }

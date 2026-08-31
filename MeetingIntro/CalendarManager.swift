@@ -1059,6 +1059,21 @@ final class CalendarManager: ObservableObject {
     }
 
     /// Available EventKit calendars for the Quick Add target picker.
+    /// Calendars from **every** enabled, authorized source. With both sources readable,
+    /// "Calendars to Monitor" listing only the primary meant half your calendars were
+    /// invisible and un-tickable.
+    func availableCalendarsFromEnabledSources() async -> [CalendarInfo] {
+        var all: [CalendarInfo] = []
+        for type in CalendarProviderType.allCases where enabledProviderTypes.contains(type) {
+            let source = provider(for: type)
+            guard source.isAuthorized else { continue }
+            if let calendars = try? await source.availableCalendars() {
+                all.append(contentsOf: calendars)
+            }
+        }
+        return all
+    }
+
     func eventKitCalendars() async -> [CalendarInfo] {
         (try? await eventKitProvider.availableCalendars()) ?? []
     }

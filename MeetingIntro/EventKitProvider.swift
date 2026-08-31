@@ -157,7 +157,8 @@ final class EventKitProvider: CalendarProvider {
                 name: cal.title,
                 color: cal.cgColor?.hexString ?? "#007AFF",
                 source: cal.source?.title ?? "Local"
-            )
+            ,
+                providerType: .eventKit)
         }
     }
 
