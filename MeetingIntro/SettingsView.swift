@@ -148,6 +148,7 @@ struct SettingsView: View {
     /// Set when a tenant refuses consent — drives the "send this to IT" affordance.
     @State private var graphAdminConsentURL: URL?
     @State private var graphAccountLabel: String?
+    @State private var enabledProviders: Set<CalendarProviderType> = [.eventKit]
     @State private var accountLookupFailed = false
     @State private var graphAuthMessage: String?
     @State private var isSigningIn: Bool = false
@@ -203,20 +204,46 @@ struct SettingsView: View {
 
     private var calendarTab: some View {
         Form {
-            Section("Calendar Source") {
-                Picker("Provider", selection: $selectedProvider) {
-                    ForEach(CalendarProviderType.allCases) { type in
-                        Text(type.displayName).tag(type)
+            Section {
+                // Sources are independent switches, not an either/or: Google and iCloud
+                // arrive through macOS Calendar while a work Outlook calendar may only
+                // be reachable through Graph, and choosing between them means losing one.
+                ForEach(CalendarProviderType.allCases) { type in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Toggle(isOn: Binding(
+                            get: { enabledProviders.contains(type) },
+                            set: { on in
+                                var next = enabledProviders
+                                if on { next.insert(type) } else { next.remove(type) }
+                                // Never leave the app with nothing to read.
+                                if next.isEmpty { next = [type] }
+                                enabledProviders = next
+                                calendarManager.enabledProviderTypes = next
+                                if !next.contains(selectedProvider), let first = next.first {
+                                    selectedProvider = first
+                                    calendarManager.activeProviderType = first
+                                }
+                            }
+                        )) {
+                            Text(type.displayName)
+                        }
+                        Text(type.description)
+                            .font(.caption).foregroundStyle(.secondary)
                     }
                 }
-                .pickerStyle(.segmented)
-                .onChange(of: selectedProvider) { _, newValue in
-                    calendarManager.activeProviderType = newValue
-                }
 
-                Text(selectedProvider.description)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if enabledProviders.count > 1 {
+                    Picker("Create new events in", selection: $selectedProvider) {
+                        ForEach(CalendarProviderType.allCases.filter { enabledProviders.contains($0) }) { type in
+                            Text(type.displayName).tag(type)
+                        }
+                    }
+                    .onChange(of: selectedProvider) { _, newValue in
+                        calendarManager.activeProviderType = newValue
+                    }
+                }
+            } header: {
+                SettingsSectionHeader("Calendar Sources", info: "Turn on both to see everything at once — Google, iCloud and anything else in macOS Calendar through EventKit, plus a work Outlook calendar through Microsoft 365.\n\nA meeting that appears in both (a work calendar synced into macOS *and* read from Microsoft 365) is shown once. If one source fails, the other still loads.\n\nWhen both are on, \"Create new events in\" decides where Quick Add writes.")
             }
 
             if selectedProvider == .microsoftGraph {
@@ -2501,6 +2528,7 @@ struct SettingsView: View {
 
     private func loadSettings() {
         selectedProvider = calendarManager.activeProviderType
+        enabledProviders = calendarManager.enabledProviderTypes
 
         graphClientId = calendarManager.graphCalendarProvider.clientId
         volume = audioManager.volume

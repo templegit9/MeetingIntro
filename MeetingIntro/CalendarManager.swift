@@ -190,6 +190,34 @@ final class CalendarManager: ObservableObject {
     let graphProvider = GraphCalendarProvider()
 
     /// The currently active provider type.
+    /// Which sources are read. Reading from BOTH is the point: Google and iCloud arrive
+    /// through macOS Calendar while a work Outlook calendar may only be reachable via
+    /// Graph, and forcing a choice between them means one of them is simply missing.
+    /// `activeProviderType` remains the **primary**: where Quick Add writes, and which
+    /// provider answers RSVP.
+    var enabledProviderTypes: Set<CalendarProviderType> {
+        get {
+            let raw = UserDefaults.standard.stringArray(forKey: "enabledProviderTypes")
+            guard let raw, !raw.isEmpty else { return [activeProviderType] }   // migration
+            let types = Set(raw.compactMap(CalendarProviderType.init(rawValue:)))
+            return types.isEmpty ? [activeProviderType] : types
+        }
+        set {
+            // Never end up reading nothing at all.
+            let value = newValue.isEmpty ? [activeProviderType] : newValue
+            UserDefaults.standard.set(value.map(\.rawValue), forKey: "enabledProviderTypes")
+            objectWillChange.send()
+            Task { await refreshEvents() }
+        }
+    }
+
+    func provider(for type: CalendarProviderType) -> CalendarProvider {
+        switch type {
+        case .eventKit: return eventKitProvider
+        case .microsoftGraph: return graphProvider
+        }
+    }
+
     var activeProviderType: CalendarProviderType {
         get {
             let raw = UserDefaults.standard.string(forKey: "activeProviderType") ?? CalendarProviderType.eventKit.rawValue
@@ -421,7 +449,9 @@ final class CalendarManager: ObservableObject {
 
         do {
             // Check authorization
-            if !activeProvider.isAuthorized {
+            // Authorization is checked per source inside the fetch; only block the whole
+            // refresh when the PRIMARY source can't be read at all.
+            if !activeProvider.isAuthorized, enabledProviderTypes == [activeProviderType] {
                 // Never authenticate from a poll when doing so shows UI: switching the
                 // provider would ambush the user with a browser sign-in before they'd
                 // asked for one (v2.20.1). Say what's needed and wait for them.
@@ -448,7 +478,7 @@ final class CalendarManager: ObservableObject {
             // as before, and only the browsing UI sees the extra days.
             let reminderWindow = lookAheadInterval
             let browseWindow = max(reminderWindow, TimeInterval(upcomingDaysAhead) * 86400)
-            let allEvents = try await activeProvider.fetchUpcomingEvents(within: browseWindow)
+            let allEvents = try await fetchFromEnabledSources(within: browseWindow)
             let now = Date()
             let reminderWindowEnd = now.addingTimeInterval(reminderWindow)
             let events = allEvents.filter { $0.startDate <= reminderWindowEnd }
@@ -909,6 +939,74 @@ final class CalendarManager: ObservableObject {
             joinedAutoJoinIDs = prunedJoined
             persistAutoJoinState()
         }
+    }
+
+    /// Read every enabled source and merge the results.
+    ///
+    /// **Failures are isolated.** A source that throws contributes nothing and is logged;
+    /// it must never take the others down with it, or a Graph hiccup would blank the
+    /// calendar you can actually see. Only a total failure (nothing readable anywhere)
+    /// rethrows.
+    ///
+    /// **De-duplication keeps the EventKit copy.** A work calendar synced into macOS
+    /// *and* read through Graph yields the same meeting twice. EventKit wins because
+    /// every piece of per-event state — armed auto-joins, dismissed reminders, notified
+    /// cancellations — is keyed by its id; preferring the Graph copy would silently
+    /// orphan all of it. Graph therefore contributes only what macOS can't see, which is
+    /// exactly the gap it exists to fill. (Graph remains the *authority* on cancellation
+    /// through `GraphVerifier` — this is about identity, not truth.)
+    private func fetchFromEnabledSources(within window: TimeInterval) async throws -> [MeetingEvent] {
+        let types = CalendarProviderType.allCases.filter { enabledProviderTypes.contains($0) }
+        var merged: [MeetingEvent] = []
+        var seen = Set<String>()
+        var counts: [String] = []
+        var duplicates = 0
+        var failures: [String] = []
+
+        for type in types {
+            let source = provider(for: type)
+            guard source.isAuthorized else {
+                if type != activeProviderType { continue }   // silent: not signed in yet
+                failures.append("\(type.rawValue): not authorized")
+                continue
+            }
+            do {
+                let events = try await source.fetchUpcomingEvents(within: window)
+                var added = 0
+                for event in events {
+                    let key = Self.duplicateKey(for: event)
+                    if seen.contains(key) { duplicates += 1; continue }
+                    seen.insert(key)
+                    merged.append(event)
+                    added += 1
+                }
+                counts.append("\(type.rawValue) \(added)")
+            } catch {
+                failures.append("\(type.rawValue): \(error.localizedDescription)")
+                diagnosticLog?.warn(.calendar, "Source \(type.rawValue) failed — \(error.localizedDescription); other sources still used")
+            }
+        }
+
+        if merged.isEmpty, !failures.isEmpty, counts.isEmpty {
+            throw CalendarProviderError.unknown(underlying: NSError(
+                domain: "MeetingIntro", code: 1,
+                userInfo: [NSLocalizedDescriptionKey: failures.joined(separator: "; ")]))
+        }
+        if types.count > 1 {
+            diagnosticLog?.debug(.calendar, "Merged sources: \(counts.joined(separator: " + "))\(duplicates > 0 ? ", \(duplicates) duplicate(s) dropped" : "")")
+        }
+        return merged.sorted { $0.startDate < $1.startDate }
+    }
+
+    /// Same shape as `GraphVerifier.matchKey`: normalised title + start minute, because
+    /// the two id spaces are unrelated.
+    private static func duplicateKey(for event: MeetingEvent) -> String {
+        var title = event.title.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        for prefix in ["canceled:", "cancelled:"] where title.hasPrefix(prefix) {
+            title = String(title.dropFirst(prefix.count)).trimmingCharacters(in: .whitespaces)
+        }
+        title = title.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        return "\(title)\u{1F}\(Int(event.startDate.timeIntervalSince1970 / 60))"
     }
 
     /// Order a group of simultaneous meetings for the overlay. The first is the "hero"
