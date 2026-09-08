@@ -250,6 +250,11 @@ final class OverlayWindowController: ObservableObject {
         panel.orderFrontRegardless()
         overlayWindow = panel
         isShowing = true
+        // The single-meeting path logs its panel size; the multi-meeting panels didn't,
+        // so a report of a blank conflict overlay arrived with no dimensions at all.
+        // Log the same facts plus what the content asked for, so a mismatch between the
+        // window and what SwiftUI laid out is visible in the log rather than inferred.
+        diagnosticLog?.debug(.overlay, "Overlay panel \(Int(width))×\(Int(height))\(corner ? " (corner)" : "") — content \(Int(host.fittingSize.width))×\(Int(host.fittingSize.height)), view \(Int(host.frame.width))×\(Int(host.frame.height)), screen \(visibleFrame.map { "\(Int($0.width))×\(Int($0.height))" } ?? "unknown")")
         audioManager?.play()
     }
 
