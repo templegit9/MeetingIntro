@@ -30,6 +30,7 @@ struct PopoverRootView: View {
     @AppStorage("popoverFitToContent") private var fitDropdownToContent: Bool = false
     @AppStorage("assistantEnabled") private var assistantEnabled: Bool = false
     @AppStorage("dictionaryEnabled") private var dictionaryEnabled: Bool = false
+    @AppStorage(ExecutiveAssistantConfig.enabledKey) private var executiveAssistantEnabled: Bool = false
 
     /// Hover-to-detail (Issue #16) — see CompactMenuView for the delay rationale.
     @State private var hoveredID: String?
@@ -1088,11 +1089,20 @@ struct PopoverRootView: View {
     @ViewBuilder private var pluginFooter: some View {
         let items: [(label: String, symbol: String, id: String, sc: String)] = {
             var a: [(String, String, String, String)] = []
+            if executiveAssistantEnabled { a.append(("Assistant", "sparkles", "executiveAssistant", "⌥⌘E")) }
             if assistantEnabled { a.append(("File Organizer", "folder.badge.gearshape", "assistant", "⌥⌘A")) }
             if dictionaryEnabled { a.append(("Dictionary", "character.book.closed", "dictionary", "⌥⌘D")) }
             return a.map { ($0.0, $0.1, $0.2, $0.3) }
         }()
-        if items.count == 1 {
+        if items.count >= 3 {
+            // Three plugins don't fit a split row legibly at 340pt; stack them.
+            ForEach(items.indices, id: \.self) { index in
+                footerRow(items[index].label, items[index].symbol, items[index].sc) {
+                    openWindow(id: items[index].id); NSApp.activate(ignoringOtherApps: true)
+                }
+                if index < items.count - 1 { footerDivider }
+            }
+        } else if items.count == 1 {
             footerRow(items[0].label, items[0].symbol, items[0].sc) { openWindow(id: items[0].id); NSApp.activate(ignoringOtherApps: true) }
         } else if items.count == 2 {
             GeometryReader { geo in

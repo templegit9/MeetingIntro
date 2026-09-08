@@ -148,6 +148,8 @@ struct MeetingIntroApp: App {
     @StateObject private var tickerConfig = TickerConfig()
     @StateObject private var tickerCoordinator = TickerCoordinator()
     @StateObject private var assistantConfig = AssistantConfig()
+    @StateObject private var eaConfig: ExecutiveAssistantConfig
+    @StateObject private var executiveAssistant: ExecutiveAssistant
     @StateObject private var fileOrganizer = FileOrganizer()
     @StateObject private var fileOrganizerCoordinator = FileOrganizerCoordinator()
     @StateObject private var notesConfig: MeetingNotesConfig
@@ -178,6 +180,12 @@ struct MeetingIntroApp: App {
         _quickAddConfig = StateObject(wrappedValue: qaConfig)
         _quickAddService = StateObject(wrappedValue: qaService)
 
+        // The assistant needs its config at construction, same reason as the handoff
+        // trio: the object it talks to has to exist before it does.
+        let ea = ExecutiveAssistantConfig()
+        _eaConfig = StateObject(wrappedValue: ea)
+        _executiveAssistant = StateObject(wrappedValue: ExecutiveAssistant(config: ea))
+
         let tConfig = TaskConfig()
         _taskConfig = StateObject(wrappedValue: tConfig)
         _taskManager = StateObject(wrappedValue: TaskManager(config: tConfig))
@@ -203,9 +211,13 @@ struct MeetingIntroApp: App {
             handoffCoordinator: handoffCoordinator,
             recordingCoordinator: recordingCoordinator,
             quickAddService: quickAddService,
+            quickAddConfig: quickAddConfig,
             taskManager: taskManager,
+            taskConfig: taskConfig,
             taskReminderCoordinator: taskReminderCoordinator,
             assistantConfig: assistantConfig,
+            executiveAssistant: executiveAssistant,
+            eaConfig: eaConfig,
             fileOrganizer: fileOrganizer,
             fileOrganizerCoordinator: fileOrganizerCoordinator,
             tickerConfig: tickerConfig,
@@ -322,6 +334,7 @@ struct MeetingIntroApp: App {
                 taskConfig: taskConfig,
                 taskManager: taskManager,
                 assistantConfig: assistantConfig,
+                eaConfig: eaConfig,
                 tickerConfig: tickerConfig,
                 tickerCoordinator: tickerCoordinator,
                 graphVerifierConfig: graphVerifierConfig,
@@ -345,6 +358,12 @@ struct MeetingIntroApp: App {
             )
         }
         .defaultSize(width: 920, height: 620)
+
+        // Executive Assistant plugin (Issue #24) — opt-in local-model command bar.
+        Window("Executive Assistant", id: "executiveAssistant") {
+            ExecutiveAssistantWindow(assistant: executiveAssistant, config: eaConfig)
+        }
+        .defaultSize(width: 520, height: 580)
 
         // File Organizer plugin (Issue #17) — opt-in AI file organizer.
         Window("File Organizer", id: "assistant") {
@@ -424,9 +443,13 @@ final class AppLifecycleManager: ObservableObject {
         handoffCoordinator: MeetingHandoffCoordinator,
         recordingCoordinator: MeetingRecordingCoordinator,
         quickAddService: QuickAddService,
+        quickAddConfig: QuickAddConfig,
         taskManager: TaskManager,
+        taskConfig: TaskConfig,
         taskReminderCoordinator: TaskReminderCoordinator,
         assistantConfig: AssistantConfig,
+        executiveAssistant: ExecutiveAssistant,
+        eaConfig: ExecutiveAssistantConfig,
         fileOrganizer: FileOrganizer,
         fileOrganizerCoordinator: FileOrganizerCoordinator,
         tickerConfig: TickerConfig,
@@ -472,7 +495,21 @@ final class AppLifecycleManager: ObservableObject {
         // fires task deadline reminders on its own 30s timer.
         overlayController.taskManager = taskManager
         overlayController.taskReminderCoordinator = taskReminderCoordinator
-        // Executive Assistant (Issue #17): wire the organizer to its config + log.
+        // Executive Assistant (Issue #24): the tool registry is built here, where every
+        // service already exists — the single wiring point, same as every other
+        // cross-service hookup. Registering the tools is what the model is allowed to do;
+        // anything not in this list, it must decline rather than improvise.
+        executiveAssistant.diagnosticLog = diagnosticLog
+        executiveAssistant.register([
+            CreateEventTool(calendarManager: calendarManager,
+                            defaultDurationMinutes: quickAddConfig.defaultDurationMinutes,
+                            calendarID: eaConfig.calendarID ?? quickAddConfig.defaultCalendarID),
+            CreateTaskTool(taskManager: taskManager, config: taskConfig),
+            TodayTool(calendarManager: calendarManager, taskManager: taskManager),
+            FindTimeTool(calendarManager: calendarManager)
+        ])
+
+        // File Organizer (Issue #17): wire the organizer to its config + log.
         fileOrganizer.attach(config: assistantConfig)
         fileOrganizer.diagnosticLog = diagnosticLog
         fileOrganizerCoordinator.attach(config: assistantConfig, organizer: fileOrganizer,
