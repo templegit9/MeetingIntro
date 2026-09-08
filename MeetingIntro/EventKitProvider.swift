@@ -192,6 +192,33 @@ final class EventKitProvider: CalendarProvider {
     }
 
     /// The synchronous body — also called directly by the mirror engine and tests.
+    /// `DraftRecurrence` → EventKit. Every case maps 1:1; that is why the draft set is
+    /// closed rather than a free-form rule builder.
+    static func recurrenceRule(for recurrence: DraftRecurrence?) -> EKRecurrenceRule? {
+        switch recurrence {
+        case .none:
+            return nil
+        case .daily:
+            return EKRecurrenceRule(recurrenceWith: .daily, interval: 1, end: nil)
+        case .weekly(let weekday):
+            return EKRecurrenceRule(
+                recurrenceWith: .weekly, interval: 1,
+                daysOfTheWeek: [EKRecurrenceDayOfWeek(EKWeekday(rawValue: weekday) ?? .monday)],
+                daysOfTheMonth: nil, monthsOfTheYear: nil, weeksOfTheYear: nil,
+                daysOfTheYear: nil, setPositions: nil, end: nil)
+        case .monthly(let day):
+            return EKRecurrenceRule(
+                recurrenceWith: .monthly, interval: 1, daysOfTheWeek: nil,
+                daysOfTheMonth: [NSNumber(value: day)], monthsOfTheYear: nil,
+                weeksOfTheYear: nil, daysOfTheYear: nil, setPositions: nil, end: nil)
+        case .yearly(let month, let day):
+            return EKRecurrenceRule(
+                recurrenceWith: .yearly, interval: 1, daysOfTheWeek: nil,
+                daysOfTheMonth: [NSNumber(value: day)], monthsOfTheYear: [NSNumber(value: month)],
+                weeksOfTheYear: nil, daysOfTheYear: nil, setPositions: nil, end: nil)
+        }
+    }
+
     func createEventSync(from draft: EventDraft, calendarID: String?) throws {
         guard isAuthorized else { throw CreateError.notAuthorized }
 
@@ -205,6 +232,10 @@ final class EventKitProvider: CalendarProvider {
         // auto-record pick it up (they read MeetingEvent.url ← EKEvent.url).
         if let urlString = draft.url, let url = URL(string: urlString) {
             event.url = url
+        }
+        event.isAllDay = draft.isAllDay
+        if let rule = Self.recurrenceRule(for: draft.recurrence) {
+            event.recurrenceRules = [rule]
         }
 
         if let calendarID, !calendarID.isEmpty {

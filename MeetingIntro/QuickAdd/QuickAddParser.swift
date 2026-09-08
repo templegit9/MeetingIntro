@@ -218,8 +218,21 @@ enum OpenRouterParser {
 final class QuickAddService: ObservableObject {
 
     @Published var inputText: String = "" {
-        didSet { scheduleParse() }
+        didSet {
+            guard !isRewritingInput else { return }
+            liftTokens()
+            scheduleParse()
+        }
     }
+
+    /// Attributes lifted out of the typed text into chips. Typing "all day for Labour
+    /// Day" leaves "Labour Day" in the field and an **All day** chip beside it — the
+    /// phrase is a modifier, not part of the title, and hoisting it is what stops it
+    /// ending up in the event's name.
+    @Published private(set) var tokens: [QuickAddToken] = []
+
+    /// Set while `liftTokens` rewrites the field, so the rewrite doesn't re-enter.
+    private var isRewritingInput = false
     @Published private(set) var draft: EventDraft?
     @Published private(set) var isParsing: Bool = false
     /// Titles of existing meetings that overlap the current draft's time (Issue #10).
@@ -264,6 +277,33 @@ final class QuickAddService: ObservableObject {
         activeTemplate = nil
         linkChoice = .auto
         isParsing = false
+    }
+
+    /// Pull modifier phrases out of the text and into chips. Runs on every keystroke,
+    /// but only rewrites the field when it actually finds one.
+    private func liftTokens() {
+        var text = inputText
+        var found = tokens
+        for token in QuickAddToken.allCases where !found.contains(token) {
+            guard let stripped = token.strip(from: text) else { continue }
+            text = stripped
+            found.append(token)
+        }
+        guard found != tokens || text != inputText else { return }
+        tokens = found
+        if text != inputText {
+            isRewritingInput = true
+            inputText = text
+            isRewritingInput = false
+        }
+    }
+
+    /// Remove a chip. The words are not put back: the chip replaced them, and
+    /// re-inserting text under someone's cursor is worse than leaving it out.
+    func removeToken(_ token: QuickAddToken) {
+        guard let index = tokens.firstIndex(of: token) else { return }
+        tokens.remove(at: index)
+        scheduleParse()
     }
 
     private func scheduleParse() {
@@ -340,7 +380,7 @@ final class QuickAddService: ObservableObject {
             draft = value
         }
         baseDraft = draft
-        self.draft = draft.map(applyingLink)
+        self.draft = draft.map(applyingLink).map(applyingTokens)
         // Overlap check keys off the draft's time window (unaffected by link choice).
         if let draft {
             conflicts = conflictProvider?(draft.startDate, draft.endDate) ?? []
@@ -362,6 +402,20 @@ final class QuickAddService: ObservableObject {
     /// - `.auto` → the active template's link if it has one; else the default link
     ///   when the phrase reads like a meeting (heuristic). A link the *parser* found
     ///   in the text is preserved and never overwritten.
+    /// Apply lifted chips to a parsed draft. All-day rewrites the bounds to midnight →
+    /// midnight and says so, because a silent 24-hour block is exactly the kind of
+    /// invented detail the assumptions list exists for.
+    private func applyingTokens(_ draft: EventDraft) -> EventDraft {
+        guard tokens.contains(.allDay) else { return draft }
+        var d = draft
+        let cal = Calendar.current
+        d.isAllDay = true
+        d.startDate = cal.startOfDay(for: d.startDate)
+        d.endDate = cal.date(byAdding: .day, value: 1, to: d.startDate) ?? d.endDate
+        d.assumptions.append("All-day event interpreted as 24 hours from midnight to midnight")
+        return d
+    }
+
     private func applyingLink(_ draft: EventDraft) -> EventDraft {
         var d = draft
         // Event vs task: user override, else auto-detect from the raw text (Issue #19).
@@ -388,5 +442,48 @@ final class QuickAddService: ObservableObject {
         d.url = chosen?.url
         d.attachedLinkName = chosen?.name
         return d
+    }
+}
+
+// MARK: - Input chips
+
+/// A modifier lifted out of the Quick Add text into a chip.
+///
+/// Kept deliberately small. A chip is only worth lifting when the phrase is a *setting*
+/// rather than part of what the event is called — "all day" is; "with Sam" is not.
+enum QuickAddToken: String, CaseIterable, Identifiable, Hashable {
+    case allDay
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .allDay: return "All day"
+        }
+    }
+
+    /// The phrases that produce this chip, longest first so "all-day" isn't matched as
+    /// "all" by a shorter pattern later.
+    private var phrases: [String] {
+        switch self {
+        case .allDay: return ["all day", "all-day", "allday"]
+        }
+    }
+
+    /// Remove this token's phrase from `text`, returning the remainder — or nil when the
+    /// phrase isn't there. Also eats a following "for"/"on" so "all day for Labour Day"
+    /// leaves "Labour Day" rather than "for Labour Day".
+    func strip(from text: String) -> String? {
+        for phrase in phrases {
+            let pattern = "\\b\(NSRegularExpression.escapedPattern(for: phrase))\\b(\\s+(for|on))?"
+            guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else { continue }
+            let range = NSRange(text.startIndex..., in: text)
+            guard let match = regex.firstMatch(in: text, options: [], range: range) else { continue }
+            let stripped = regex.stringByReplacingMatches(in: text, options: [], range: match.range, withTemplate: "")
+            return stripped
+                .replacingOccurrences(of: "\\s{2,}", with: " ", options: .regularExpression)
+                .trimmingCharacters(in: .whitespaces)
+        }
+        return nil
     }
 }

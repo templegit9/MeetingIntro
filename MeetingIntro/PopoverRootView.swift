@@ -43,6 +43,10 @@ struct PopoverRootView: View {
     /// calendar here also routes the write (and its invitations) to Microsoft 365.
     @State private var newEventCalendarID: String?
     @State private var newEventCalendars: [CalendarInfo] = []
+    @State private var showingDetails = false
+    @State private var showingConflicts = false
+    /// The draft after hand-editing in Details. nil means "whatever the parser says".
+    @State private var editedDraft: EventDraft?
 
     private enum Tab { case today, upcoming, tasks }
     @State private var tab: Tab = .today
@@ -169,98 +173,9 @@ struct PopoverRootView: View {
     // MARK: - New Event (Issue #13, embedded in the rich popover)
 
     private var newEventForm: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Button { showingNewEvent = false; quickAddService.reset() } label: {
-                    Image(systemName: "chevron.left").font(.system(size: 13, weight: .semibold))
-                }
-                .buttonStyle(.borderless).foregroundStyle(accent)
-                Text(quickAddService.draft?.kind == .task ? "New Task" : "New Event").font(.system(size: 15, weight: .semibold))
-                Spacer()
-            }
-            TextField("Lunch with Sam tomorrow 1pm  ·  Submit report by Fri 5pm", text: $quickAddService.inputText)
-                .textFieldStyle(.roundedBorder)
-                .focused($newEventFocused)
-                .onSubmit { create() }
-
-            if let draft = quickAddService.draft {
-                VStack(alignment: .leading, spacing: 5) {
-                    Picker("", selection: Binding(get: { draft.kind }, set: { quickAddService.kindOverride = $0 })) {
-                        Text("Event").tag(DraftKind.event)
-                        Text("Task").tag(DraftKind.task)
-                    }
-                    .pickerStyle(.segmented).labelsHidden()
-
-                    Text(draft.title).font(.system(.callout, weight: .semibold)).lineLimit(1)
-                    Label((draft.kind == .task ? "Due " : "") + draft.startDate.formatted(date: .abbreviated, time: .shortened),
-                          systemImage: draft.kind == .task ? "checkmark.circle" : "clock")
-                        .font(.caption).foregroundStyle(.secondary)
-                    if draft.kind == .task {
-                        // Task detected — extra fields (notes + reminder) inline. Title + due
-                        // come from the parsed text above; these are editable and persist.
-                        TextField("Notes (optional)", text: Binding(
-                            get: { newEventTask.notes ?? "" },
-                            set: { newEventTask.notes = $0.isEmpty ? nil : $0 }), axis: .vertical)
-                            .lineLimit(1...3).textFieldStyle(.roundedBorder).font(.caption)
-                        Stepper(value: $newEventTask.remindLeadMinutes, in: 0...1440, step: 5) {
-                            Text(newEventTask.remindLeadMinutes == 0 ? "Remind at due time" : "Remind \(newEventTask.remindLeadMinutes) min before")
-                                .font(.caption)
-                        }
-                        HStack(spacing: 12) {
-                            Toggle("Overlay", isOn: $newEventTask.showOverlay)
-                            Toggle("Notify", isOn: $newEventTask.sendNotification)
-                            Toggle("Voice", isOn: $newEventTask.playVoice)
-                        }
-                        .toggleStyle(.checkbox).font(.caption)
-                    }
-                    if draft.kind == .event {
-                        if let loc = draft.location, !loc.isEmpty {
-                            Label(loc, systemImage: "location").font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                        }
-                        newEventLinkControl(draft)
-                        newEventCalendarControl
-                    }
-                    ForEach(draft.assumptions, id: \.self) { a in
-                        Label(a, systemImage: "exclamationmark.triangle.fill").font(.caption2).foregroundStyle(.orange)
-                    }
-                    // Invitees, and the honest caveat: only Microsoft 365 can send the
-                    // invitations. EventKit has no API for attendees, so creating there
-                    // would put the meeting on your own calendar and nobody else's —
-                    // silently dropping the people you named is not acceptable.
-                    if draft.kind == .event, !draft.attendees.isEmpty {
-                        let canInvite = selectedCalendarProvider == .microsoftGraph
-                        Label(canInvite
-                              ? "Inviting \(draft.attendees.joined(separator: ", "))"
-                              : "\(draft.attendees.count) invitee\(draft.attendees.count == 1 ? "" : "s") won't be invited — macOS Calendar can't send invitations. Switch \"Create new events in\" to Microsoft Graph.",
-                              systemImage: canInvite ? "person.crop.circle.badge.plus" : "person.crop.circle.badge.exclamationmark")
-                            .font(.caption2)
-                            .foregroundStyle(canInvite ? Color.secondary : Color.orange)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-
-                    if draft.kind == .event, !quickAddService.conflicts.isEmpty {
-                        Label("Overlaps “\(quickAddService.conflicts[0])”" + (quickAddService.conflicts.count > 1 ? " + \(quickAddService.conflicts.count - 1) more" : ""),
-                              systemImage: "calendar.badge.exclamationmark")
-                            .font(.caption2).foregroundStyle(.orange).lineLimit(1)
-                    }
-                }
-                .padding(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-            } else if !quickAddService.inputText.isEmpty {
-                Text(quickAddService.isParsing ? "Parsing…" : "Keep typing…")
-                    .font(.caption).foregroundStyle(.tertiary)
-            }
-
-            HStack {
-                Text("↩ to create · esc to cancel").font(.caption2).foregroundStyle(.tertiary)
-                Spacer()
-                Button(creatingEvent ? "Creating…" : "Create") { create() }
-                    .disabled(quickAddService.draft == nil || creatingEvent)
-                    .keyboardShortcut(.defaultAction)
-            }
+        Group {
+            if showingDetails { eventDetailsEditor } else { quickAddForm }
         }
-        .padding(14)
         .frame(width: 340, alignment: .leading)
         .onAppear {
             newEventFocused = true
@@ -268,11 +183,355 @@ struct PopoverRootView: View {
             newEventCalendarID = quickAddConfig.defaultCalendarID
             Task { newEventCalendars = await calendarManager.writableCalendarsFromEnabledSources() }
         }
-        .onExitCommand { showingNewEvent = false; quickAddService.reset() }
+        .onExitCommand { closeNewEvent() }
+        // Typing again makes the text the source of truth once more, so hand edits from
+        // the Details screen are dropped rather than silently overriding what you typed.
+        .onChange(of: quickAddService.inputText) { _, _ in editedDraft = nil; showingConflicts = false }
+    }
+
+    private func closeNewEvent() {
+        showingNewEvent = false
+        showingDetails = false
+        editedDraft = nil
+        showingConflicts = false
+        quickAddService.reset()
+    }
+
+    /// The draft that will actually be created: the hand-edited one when the Details
+    /// screen has been used, otherwise whatever the parser last produced.
+    private var effectiveDraft: EventDraft? { editedDraft ?? quickAddService.draft }
+
+    // MARK: Quick add
+
+    private var quickAddForm: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Button { closeNewEvent() } label: {
+                    Image(systemName: "chevron.left").font(.system(size: 13, weight: .semibold))
+                }
+                .buttonStyle(.borderless).foregroundStyle(accent).help("Dismiss")
+                Text("New event").font(.system(size: 15, weight: .semibold))
+                Spacer()
+                if let draft = quickAddService.draft {
+                    Picker("", selection: Binding(get: { draft.kind }, set: { quickAddService.kindOverride = $0 })) {
+                        Text("Event").tag(DraftKind.event)
+                        Text("Task").tag(DraftKind.task)
+                    }
+                    .pickerStyle(.segmented).labelsHidden().frame(width: 116)
+                }
+            }
+
+            // The field carries the chips lifted out of the text, so a modifier like
+            // "all day" reads as a setting instead of ending up in the event's name.
+            HStack(spacing: 6) {
+                Image(systemName: "plus")
+                    .font(.system(size: 11, weight: .bold)).foregroundStyle(accent)
+                ForEach(quickAddService.tokens) { token in
+                    Button { quickAddService.removeToken(token) } label: {
+                        HStack(spacing: 3) {
+                            Text(token.label).font(.system(size: 11, weight: .semibold))
+                            Image(systemName: "xmark").font(.system(size: 7, weight: .bold))
+                        }
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(accent.opacity(0.22), in: RoundedRectangle(cornerRadius: 5))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Remove \(token.label)")
+                }
+                TextField("Month Meeting", text: $quickAddService.inputText)
+                    .textFieldStyle(.plain)
+                    .focused($newEventFocused)
+                    .onSubmit { create() }
+            }
+            .padding(.horizontal, 9).padding(.vertical, 7)
+            .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.05)))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(newEventFocused ? accent : Color.secondary.opacity(0.28),
+                            lineWidth: newEventFocused ? 2 : 1)
+            )
+
+            Text("Type naturally — “lunch with Sam tomorrow 1pm”")
+                .font(.caption2).foregroundStyle(.secondary)
+
+            if let draft = effectiveDraft {
+                previewCard(draft)
+                checksCard(draft)
+            } else if !quickAddService.inputText.isEmpty {
+                Text(quickAddService.isParsing ? "Parsing…" : "Keep typing…")
+                    .font(.caption).foregroundStyle(.tertiary)
+            }
+
+            HStack(spacing: 6) {
+                keycap("↩"); Text("create").font(.caption2).foregroundStyle(.tertiary)
+                keycap("esc"); Text("cancel").font(.caption2).foregroundStyle(.tertiary)
+                Spacer()
+                Button(creatingEvent ? "Creating…" : "Create") { create() }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(effectiveDraft == nil || creatingEvent)
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(14)
+    }
+
+    private func keycap(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 10, weight: .medium, design: .rounded))
+            .padding(.horizontal, 5).padding(.vertical, 1)
+            .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 4))
+            .foregroundStyle(.secondary)
+    }
+
+    /// What the event will be, with the two choices that decide where it lands and how
+    /// it is joined. Everything else lives behind Edit.
+    @ViewBuilder private func previewCard(_ draft: EventDraft) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 8) {
+                RoundedRectangle(cornerRadius: 2).fill(accent).frame(width: 3, height: 32)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(draft.title).font(.system(.callout, weight: .semibold)).lineLimit(1)
+                    Text(subtitle(for: draft))
+                        .font(.caption)
+                        .foregroundStyle(draft.assumptions.isEmpty ? Color.secondary : Color.orange)
+                        .lineLimit(1)
+                }
+                Spacer()
+                if draft.kind == .event {
+                    Button("Edit") { openDetails() }
+                        .buttonStyle(.plain).font(.caption).foregroundStyle(accent)
+                }
+            }
+
+            if draft.kind == .event {
+                newEventLinkControl(draft)
+                newEventCalendarControl
+                if !draft.attendees.isEmpty { inviteeNote(draft) }
+            } else {
+                taskExtras
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func subtitle(for draft: EventDraft) -> String {
+        let day = draft.startDate.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
+        let when = draft.isAllDay ? "all day" : draft.startDate.formatted(date: .omitted, time: .shortened)
+        let prefix = draft.kind == .task ? "Due " : ""
+        let assumed = draft.assumptions.isEmpty ? "" : " (assumed)"
+        return "\(prefix)\(day) · \(when)\(assumed)"
+    }
+
+    /// Assumptions and conflicts in one place. Loose orange labels scattered down the
+    /// form read as decoration; one counted box reads as something to answer.
+    @ViewBuilder private func checksCard(_ draft: EventDraft) -> some View {
+        let conflicts = draft.kind == .event ? quickAddService.conflicts : []
+        let count = draft.assumptions.count + (conflicts.isEmpty ? 0 : 1)
+        if count > 0 {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 11)).foregroundStyle(.orange)
+                    Text("\(count) thing\(count == 1 ? "" : "s") to check")
+                        .font(.system(size: 12, weight: .semibold)).foregroundStyle(.orange)
+                }
+                Text(checksSentence(draft, conflicts: conflicts))
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if showingConflicts, !conflicts.isEmpty {
+                    ForEach(conflicts, id: \.self) { title in
+                        Label(title, systemImage: "calendar.badge.exclamationmark")
+                            .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                }
+                HStack(spacing: 8) {
+                    if !draft.assumptions.isEmpty {
+                        Button("Pick a date") { openDetails() }
+                            .buttonStyle(.plain)
+                            .font(.caption.weight(.medium))
+                            .padding(.horizontal, 8).padding(.vertical, 3)
+                            .background(Color.orange.opacity(0.22), in: RoundedRectangle(cornerRadius: 5))
+                    }
+                    if !conflicts.isEmpty {
+                        Button(showingConflicts ? "Hide conflict" : "View conflict") {
+                            showingConflicts.toggle()
+                        }
+                        .buttonStyle(.plain).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.orange.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.orange.opacity(0.35), lineWidth: 1))
+        }
+    }
+
+    private func checksSentence(_ draft: EventDraft, conflicts: [String]) -> String {
+        var parts = draft.assumptions
+        if let first = conflicts.first {
+            let more = conflicts.count > 1 ? " and \(conflicts.count - 1) more" : ""
+            parts.append("It also overlaps \(first)\(more).")
+        }
+        return parts.joined(separator: " ")
+    }
+
+    /// Only Microsoft 365 can send invitations; say so against the calendar actually
+    /// picked, not the app-wide default.
+    @ViewBuilder private func inviteeNote(_ draft: EventDraft) -> some View {
+        let canInvite = selectedCalendarProvider == .microsoftGraph
+        Label(canInvite
+              ? "Inviting \(draft.attendees.joined(separator: ", "))"
+              : "\(draft.attendees.count) invitee\(draft.attendees.count == 1 ? "" : "s") won't be invited — macOS Calendar can't send invitations.",
+              systemImage: canInvite ? "person.crop.circle.badge.plus" : "person.crop.circle.badge.exclamationmark")
+            .font(.caption2)
+            .foregroundStyle(canInvite ? Color.secondary : Color.orange)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    @ViewBuilder private var taskExtras: some View {
+        TextField("Notes (optional)", text: Binding(
+            get: { newEventTask.notes ?? "" },
+            set: { newEventTask.notes = $0.isEmpty ? nil : $0 }), axis: .vertical)
+            .lineLimit(1...3).textFieldStyle(.roundedBorder).font(.caption)
+        Stepper(value: $newEventTask.remindLeadMinutes, in: 0...1440, step: 5) {
+            Text(newEventTask.remindLeadMinutes == 0 ? "Remind at due time" : "Remind \(newEventTask.remindLeadMinutes) min before")
+                .font(.caption)
+        }
+        HStack(spacing: 12) {
+            Toggle("Overlay", isOn: $newEventTask.showOverlay)
+            Toggle("Notify", isOn: $newEventTask.sendNotification)
+            Toggle("Voice", isOn: $newEventTask.playVoice)
+        }
+        .toggleStyle(.checkbox).font(.caption)
+    }
+
+    // MARK: Details
+
+    private func openDetails() {
+        editedDraft = effectiveDraft
+        showingDetails = true
+    }
+
+    /// Binding into the edited draft. Details is only reachable with a draft in hand,
+    /// so the fallback is never displayed — it exists to keep the bindings non-optional.
+    private var draftBinding: Binding<EventDraft> {
+        Binding(
+            get: { editedDraft ?? quickAddService.draft ?? EventDraft(title: "", startDate: Date(), endDate: Date(), parserUsed: .detector) },
+            set: { editedDraft = $0 }
+        )
+    }
+
+    private var eventDetailsEditor: some View {
+        let draft = draftBinding
+        return VStack(alignment: .leading, spacing: 10) {
+            ZStack {
+                HStack {
+                    Button { showingDetails = false } label: {
+                        HStack(spacing: 2) {
+                            Image(systemName: "chevron.left").font(.system(size: 11, weight: .semibold))
+                            Text("Quick add").font(.caption)
+                        }
+                    }
+                    .buttonStyle(.plain).foregroundStyle(accent)
+                    Spacer()
+                }
+                Text("Details").font(.system(size: 13, weight: .semibold))
+            }
+
+            TextField("Title", text: draft.title)
+                .textFieldStyle(.plain)
+                .font(.system(.body, weight: .semibold))
+                .padding(.horizontal, 9).padding(.vertical, 7)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.05)))
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(accent, lineWidth: 2))
+
+            VStack(spacing: 0) {
+                detailRow("Starts") {
+                    HStack {
+                        DatePicker("", selection: draft.startDate,
+                                   displayedComponents: draft.wrappedValue.isAllDay ? [.date] : [.date, .hourAndMinute])
+                            .labelsHidden().datePickerStyle(.field)
+                        Spacer()
+                        Toggle("all day", isOn: draft.isAllDay)
+                            .toggleStyle(.button).font(.caption)
+                    }
+                }
+                Divider().padding(.leading, 74)
+                detailRow("Ends") {
+                    DatePicker("", selection: draft.endDate,
+                               displayedComponents: draft.wrappedValue.isAllDay ? [.date] : [.date, .hourAndMinute])
+                        .labelsHidden().datePickerStyle(.field)
+                }
+                Divider().padding(.leading, 74)
+                detailRow("Repeat") {
+                    Menu {
+                        ForEach(DraftRecurrence.options(for: draft.wrappedValue.startDate), id: \.?.id) { option in
+                            Button(option?.label() ?? "Never") { editedDraft?.recurrence = option }
+                        }
+                    } label: {
+                        Text(draft.wrappedValue.recurrence?.label() ?? "Never").font(.callout)
+                    }
+                    .menuStyle(.borderlessButton)
+                }
+            }
+            .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+
+            VStack(spacing: 0) {
+                detailRow("Calendar") { newEventCalendarControl }
+                Divider().padding(.leading, 74)
+                detailRow("Meet") { newEventLinkControl(draft.wrappedValue) }
+                Divider().padding(.leading, 74)
+                detailRow("Guests") {
+                    TextField("Add people", text: Binding(
+                        get: { draft.wrappedValue.attendees.joined(separator: ", ") },
+                        set: { text in
+                            // Only addresses. A name is not an address, and inviting the
+                            // wrong person cannot be taken back.
+                            editedDraft?.attendees = text
+                                .split(whereSeparator: { ",; ".contains($0) })
+                                .map(String.init)
+                                .filter { $0.contains("@") }
+                        }))
+                        .textFieldStyle(.plain).font(.callout)
+                }
+                Divider().padding(.leading, 74)
+                detailRow("Notes") {
+                    TextField("Add a note", text: Binding(
+                        get: { draft.wrappedValue.notes ?? "" },
+                        set: { editedDraft?.notes = $0.isEmpty ? nil : $0 }), axis: .vertical)
+                        .lineLimit(1...4).textFieldStyle(.plain).font(.callout)
+                }
+            }
+            .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+
+            HStack(spacing: 6) {
+                keycap("⌘↩"); Text("create").font(.caption2).foregroundStyle(.tertiary)
+                Spacer()
+                Button("Cancel") { closeNewEvent() }.buttonStyle(.plain).font(.callout)
+                Button(creatingEvent ? "Creating…" : "Create") { create() }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(creatingEvent)
+                    .keyboardShortcut(.return, modifiers: .command)
+            }
+        }
+        .padding(14)
+    }
+
+    private func detailRow<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
+        HStack(alignment: .center, spacing: 8) {
+            Text(label).font(.callout).foregroundStyle(.secondary)
+                .frame(width: 58, alignment: .leading)
+            content()
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 10).padding(.vertical, 7)
     }
 
     private func create() {
-        guard let draft = quickAddService.draft, !creatingEvent else { return }
+        guard let draft = effectiveDraft, !creatingEvent else { return }
         creatingEvent = true
         Task {
             if draft.kind == .task {
@@ -285,8 +544,7 @@ struct PopoverRootView: View {
                 try? await calendarManager.createEvent(from: draft, calendarID: newEventCalendarID)
             }
             creatingEvent = false
-            showingNewEvent = false
-            quickAddService.reset()
+            closeNewEvent()
         }
     }
 

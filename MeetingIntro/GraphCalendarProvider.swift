@@ -508,6 +508,30 @@ final class GraphCalendarProvider: CalendarProvider {
     /// macOS Calendar reaches your own calendar and nobody else's. Attendees on the
     /// draft are sent here, and Exchange mails the invitations itself — no `Mail.Send`
     /// scope involved.
+    /// `DraftRecurrence` → Graph's `recurrence` object. The same closed set EventKit
+    /// gets, so an event repeats identically wherever it was created.
+    static func recurrenceBody(for recurrence: DraftRecurrence?, start: Date) -> [String: Any]? {
+        guard let recurrence else { return nil }
+        let days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
+        let pattern: [String: Any]
+        switch recurrence {
+        case .daily:
+            pattern = ["type": "daily", "interval": 1]
+        case .weekly(let weekday):
+            let name = days.indices.contains(weekday - 1) ? days[weekday - 1] : "monday"
+            pattern = ["type": "weekly", "interval": 1, "daysOfWeek": [name]]
+        case .monthly(let day):
+            pattern = ["type": "absoluteMonthly", "interval": 1, "dayOfMonth": day]
+        case .yearly(let month, let day):
+            pattern = ["type": "absoluteYearly", "interval": 1, "month": month, "dayOfMonth": day]
+        }
+        let dayFormatter = DateFormatter()
+        dayFormatter.dateFormat = "yyyy-MM-dd"
+        dayFormatter.locale = Locale(identifier: "en_US_POSIX")
+        return ["pattern": pattern,
+                "range": ["type": "noEnd", "startDate": dayFormatter.string(from: start)]]
+    }
+
     func createEvent(from draft: EventDraft, calendarID: String?) async throws {
         let token = try await validToken()
 
@@ -524,6 +548,19 @@ final class GraphCalendarProvider: CalendarProvider {
             "start": ["dateTime": formatter.string(from: draft.startDate), "timeZone": TimeZone.current.identifier],
             "end": ["dateTime": formatter.string(from: draft.endDate), "timeZone": TimeZone.current.identifier]
         ]
+        if draft.isAllDay {
+            // Graph rejects an all-day event whose bounds aren't midnight, and treats
+            // `end` as exclusive — so a single all-day event ends at the NEXT midnight.
+            let cal = Calendar.current
+            let startDay = cal.startOfDay(for: draft.startDate)
+            let endDay = max(cal.startOfDay(for: draft.endDate), cal.date(byAdding: .day, value: 1, to: startDay)!)
+            body["isAllDay"] = true
+            body["start"] = ["dateTime": formatter.string(from: startDay), "timeZone": TimeZone.current.identifier]
+            body["end"] = ["dateTime": formatter.string(from: endDay), "timeZone": TimeZone.current.identifier]
+        }
+        if let recurrence = Self.recurrenceBody(for: draft.recurrence, start: draft.startDate) {
+            body["recurrence"] = recurrence
+        }
         if let location = draft.location, !location.isEmpty {
             body["location"] = ["displayName": location]
         }
