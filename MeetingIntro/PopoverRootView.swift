@@ -39,6 +39,10 @@ struct PopoverRootView: View {
     @State private var editingTask: TaskItem?
     /// Working task for the New Event form's task branch (seeded from the parsed draft).
     @State private var newEventTask = TaskItem(title: "")
+    /// Where this one event goes. Defaults to the Settings choice; picking an Outlook
+    /// calendar here also routes the write (and its invitations) to Microsoft 365.
+    @State private var newEventCalendarID: String?
+    @State private var newEventCalendars: [CalendarInfo] = []
 
     private enum Tab { case today, upcoming, tasks }
     @State private var tab: Tab = .today
@@ -214,6 +218,7 @@ struct PopoverRootView: View {
                             Label(loc, systemImage: "location").font(.caption).foregroundStyle(.secondary).lineLimit(1)
                         }
                         newEventLinkControl(draft)
+                        newEventCalendarControl
                     }
                     ForEach(draft.assumptions, id: \.self) { a in
                         Label(a, systemImage: "exclamationmark.triangle.fill").font(.caption2).foregroundStyle(.orange)
@@ -223,7 +228,7 @@ struct PopoverRootView: View {
                     // would put the meeting on your own calendar and nobody else's —
                     // silently dropping the people you named is not acceptable.
                     if draft.kind == .event, !draft.attendees.isEmpty {
-                        let canInvite = calendarManager.eventCreationProvider == .microsoftGraph
+                        let canInvite = selectedCalendarProvider == .microsoftGraph
                         Label(canInvite
                               ? "Inviting \(draft.attendees.joined(separator: ", "))"
                               : "\(draft.attendees.count) invitee\(draft.attendees.count == 1 ? "" : "s") won't be invited — macOS Calendar can't send invitations. Switch \"Create new events in\" to Microsoft Graph.",
@@ -257,7 +262,12 @@ struct PopoverRootView: View {
         }
         .padding(14)
         .frame(width: 340, alignment: .leading)
-        .onAppear { newEventFocused = true; newEventTask = TaskItem(title: "") }
+        .onAppear {
+            newEventFocused = true
+            newEventTask = TaskItem(title: "")
+            newEventCalendarID = quickAddConfig.defaultCalendarID
+            Task { newEventCalendars = await calendarManager.writableCalendarsFromEnabledSources() }
+        }
         .onExitCommand { showingNewEvent = false; quickAddService.reset() }
     }
 
@@ -272,7 +282,7 @@ struct PopoverRootView: View {
                 if t.notes == nil { t.notes = draft.notes }
                 taskManager.add(t)
             } else {
-                try? await calendarManager.createEvent(from: draft, calendarID: quickAddConfig.defaultCalendarID)
+                try? await calendarManager.createEvent(from: draft, calendarID: newEventCalendarID)
             }
             creatingEvent = false
             showingNewEvent = false
@@ -282,6 +292,43 @@ struct PopoverRootView: View {
 
     /// Meeting-link attach/switch/remove (mirrors QuickAddView.linkControl) so the
     /// embedded form has the same link affordance as the old floating panel.
+    /// Which source will receive the event, derived from the picked calendar so the
+    /// invitee note below tells the truth about *this* event.
+    private var selectedCalendarProvider: CalendarProviderType {
+        newEventCalendars.first { $0.id == newEventCalendarID }?.providerType
+            ?? calendarManager.eventCreationProvider
+    }
+
+    /// Calendar picker. With two sources connected, "where does this land" is a real
+    /// question — and the answer decides whether invitations can be sent at all, so it
+    /// belongs in the form rather than only in Settings.
+    @ViewBuilder private var newEventCalendarControl: some View {
+        let selected = newEventCalendars.first { $0.id == newEventCalendarID }
+        Menu {
+            Button {
+                newEventCalendarID = nil
+            } label: {
+                Label("Default calendar", systemImage: newEventCalendarID == nil ? "checkmark" : "calendar")
+            }
+            if !newEventCalendars.isEmpty { Divider() }
+            ForEach(newEventCalendars) { cal in
+                Button {
+                    newEventCalendarID = cal.id
+                } label: {
+                    Label("\(cal.name) · \(cal.source)",
+                          systemImage: newEventCalendarID == cal.id ? "checkmark" : "calendar")
+                }
+            }
+        } label: {
+            Label(selected.map { "\($0.name) · \($0.source)" } ?? "Default calendar",
+                  systemImage: "calendar")
+                .font(.caption)
+                .lineLimit(1)
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+    }
+
     private func newEventLinkControl(_ draft: EventDraft) -> some View {
         Menu {
             Button { quickAddService.linkChoice = .none } label: {

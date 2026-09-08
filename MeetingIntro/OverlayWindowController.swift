@@ -150,6 +150,7 @@ final class OverlayWindowController: ObservableObject {
         )
 
         panel.contentView = hostingView
+        hostingView.autoresizingMask = [.width, .height]
         panel.isFloatingPanel = true
         panel.level = .floating
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
@@ -192,11 +193,11 @@ final class OverlayWindowController: ObservableObject {
             onJoin: { [weak self] in self?.join($0) },
             onArm: { [weak self] in self?.arm($0) }
         )
+        let measured = Self.fittingHeight(of: view, width: panelWidth)
+        let height = min(max(measured, Self.minPanelHeight), maxHeight)
         let host = NSHostingView(rootView: view)
-        host.frame = NSRect(x: 0, y: 0, width: panelWidth, height: 2000)
-        host.layoutSubtreeIfNeeded()
-        let height = min(max(host.fittingSize.height, Self.minPanelHeight), maxHeight)
-        present(host, width: panelWidth, height: height, in: visibleFrame, corner: false)
+        present(host, width: panelWidth, height: height, in: visibleFrame, corner: false,
+                measured: measured)
     }
 
     /// `cardStack` — a card per meeting, anchored top-right like the cancellation notice
@@ -212,23 +213,45 @@ final class OverlayWindowController: ObservableObject {
             onJoin: { [weak self] in self?.join($0) },
             onArm: { [weak self] in self?.arm($0) }
         )
+        let measured = Self.fittingHeight(of: view, width: width)
+        let height = min(measured, maxHeight)
         let host = NSHostingView(rootView: view)
-        host.frame = NSRect(x: 0, y: 0, width: width, height: 2000)
-        host.layoutSubtreeIfNeeded()
-        let height = min(host.fittingSize.height, maxHeight)
         cardStackMeetings = meetings
-        present(host, width: width, height: height, in: visibleFrame, corner: true)
+        present(host, width: width, height: height, in: visibleFrame, corner: true,
+                measured: measured)
     }
 
     /// Shared window plumbing for the multi-meeting panels.
+    /// Height the view needs **at the width it will actually be shown at**.
+    ///
+    /// The multi-meeting panels used to measure with `NSHostingView.fittingSize` after
+    /// forcing the view's frame to 2000pt tall. `fittingSize` ignores that frame and
+    /// reports the view's *ideal* size — measured here at 572pt wide for a panel 380pt
+    /// wide — so the number it returns is the height of a layout that never happens.
+    /// Pinning the width with `.frame(width:)` is what the single-meeting path does and
+    /// is the only measurement that matches what gets drawn.
+    private static func fittingHeight<V: View>(of view: V, width: CGFloat) -> CGFloat {
+        let probe = NSHostingView(rootView: view.frame(width: width))
+        probe.frame = NSRect(x: 0, y: 0, width: width, height: 2000)
+        probe.layoutSubtreeIfNeeded()
+        return probe.fittingSize.height
+    }
+
     private func present(_ host: NSView, width: CGFloat, height: CGFloat,
-                         in visibleFrame: NSRect?, corner: Bool) {
+                         in visibleFrame: NSRect?, corner: Bool, measured: CGFloat = 0) {
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: width, height: height),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered, defer: false
         )
         panel.contentView = host
+        // Pin the content to the window. A hosting view left at a size that disagrees
+        // with the window lays its content out beyond the visible area — in AppKit's
+        // bottom-left coordinates a too-tall view puts everything above the top edge,
+        // which draws as an empty panel with only the background showing. That is the
+        // reported "black overlay"; this makes it structurally impossible.
+        host.autoresizingMask = [.width, .height]
+        host.frame = NSRect(x: 0, y: 0, width: width, height: height)
         panel.isFloatingPanel = true
         panel.level = .floating
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
@@ -254,7 +277,10 @@ final class OverlayWindowController: ObservableObject {
         // so a report of a blank conflict overlay arrived with no dimensions at all.
         // Log the same facts plus what the content asked for, so a mismatch between the
         // window and what SwiftUI laid out is visible in the log rather than inferred.
-        diagnosticLog?.debug(.overlay, "Overlay panel \(Int(width))×\(Int(height))\(corner ? " (corner)" : "") — content \(Int(host.fittingSize.width))×\(Int(host.fittingSize.height)), view \(Int(host.frame.width))×\(Int(host.frame.height)), screen \(visibleFrame.map { "\(Int($0.width))×\(Int($0.height))" } ?? "unknown")")
+        diagnosticLog?.debug(.overlay, "Overlay panel \(Int(width))×\(Int(height))\(corner ? " (corner)" : "") — content wanted \(Int(measured)), view \(Int(host.frame.width))×\(Int(host.frame.height)), screen \(visibleFrame.map { "\(Int($0.width))×\(Int($0.height))" } ?? "unknown")")
+        if measured > height + 1 {
+            diagnosticLog?.warn(.overlay, "Overlay content (\(Int(measured))pt) is taller than the panel (\(Int(height))pt) — it is clamped to the screen, so the lower actions may be cut off")
+        }
         audioManager?.play()
     }
 

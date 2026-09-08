@@ -1094,7 +1094,10 @@ final class CalendarManager: ObservableObject {
     /// Routed rather than hardcoded to EventKit, because creating in Microsoft 365 is
     /// the only way to invite anyone — Apple gives EventKit no API for attendees.
     func createEvent(from draft: EventDraft, calendarID: String?) async throws {
-        let target = eventCreationProvider
+        // The picked calendar decides where the event lands. Choosing an Outlook
+        // calendar has to write to Outlook — otherwise picking it would be a lie, and
+        // the invitations attached to the event would never be sent.
+        let target = await providerOwning(calendarID) ?? eventCreationProvider
         // The saved "Create in calendar" id belongs to whichever source was the write
         // target when it was picked. Handing an EventKit id to Graph (or the reverse)
         // fails on an id space that doesn't exist there, so fall back to that source's
@@ -1111,6 +1114,36 @@ final class CalendarManager: ObservableObject {
         try await provider(for: target).createEvent(from: draft, calendarID: resolvedID)
         diagnosticLog?.info(.quickAdd, "Created \"\(draft.title)\" in \(target.rawValue)\(draft.attendees.isEmpty ? "" : " with \(draft.attendees.count) invitee(s)")")
         await refreshEvents()
+    }
+
+    /// Which enabled source owns this calendar id, if any. Calendar ids from the two
+    /// backends are unrelated strings, so ownership is settled by asking each source.
+    private func providerOwning(_ calendarID: String?) async -> CalendarProviderType? {
+        guard let calendarID, !calendarID.isEmpty else { return nil }
+        for type in CalendarProviderType.allCases where enabledProviderTypes.contains(type) {
+            let source = provider(for: type)
+            guard source.isAuthorized, source.canCreateEvents else { continue }
+            if let calendars = try? await source.availableCalendars(),
+               calendars.contains(where: { $0.id == calendarID }) {
+                return type
+            }
+        }
+        return nil
+    }
+
+    /// Every calendar that can receive a new event, across all enabled sources. Quick
+    /// Add offers the whole list so an Outlook calendar can be picked for one event
+    /// without changing the app-wide write target.
+    func writableCalendarsFromEnabledSources() async -> [CalendarInfo] {
+        var all: [CalendarInfo] = []
+        for type in CalendarProviderType.allCases where enabledProviderTypes.contains(type) {
+            let source = provider(for: type)
+            guard source.isAuthorized, source.canCreateEvents else { continue }
+            if let calendars = try? await source.availableCalendars() {
+                all.append(contentsOf: calendars)
+            }
+        }
+        return all
     }
 
     /// Calendars that can receive a new event — from the write target only, since that's
