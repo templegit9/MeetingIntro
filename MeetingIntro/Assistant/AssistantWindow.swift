@@ -22,14 +22,15 @@ struct AssistantWindow: View {
             VStack(alignment: .leading, spacing: 18) {
                 header
                 modelStatus
-                if proposals.isEmpty {
-                    foldersSection
-                    instructionsSection
-                    rulesSection
-                    if !config.undoBatches.isEmpty { undoSection }
-                } else {
-                    previewSection
-                }
+                // A pending review sits ABOVE the settings, it doesn't replace them.
+                // Swapping the whole window for the preview made the folders, the
+                // instructions and the rules vanish for as long as a proposal was on
+                // screen, which reads as "my settings are gone" — reported, and correct.
+                if !proposals.isEmpty { previewSection }
+                foldersSection
+                instructionsSection
+                rulesSection
+                if !config.undoBatches.isEmpty { undoSection }
             }
             .padding(20)
         }

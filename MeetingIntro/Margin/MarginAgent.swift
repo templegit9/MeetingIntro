@@ -93,8 +93,9 @@ final class MarginAgent: ObservableObject {
             }
             do {
                 let action = try await tool.prepare(call.arguments)
-                var turn = AssistantTurn(role: .assistant, text: action.kind == .answer ? "" : "Here's what I'll do:")
+                var turn = AssistantTurn(role: .assistant, text: "")
                 turn.action = action
+                turn.picked = action.defaultChoice
                 turns.append(turn)
                 diagnosticLog?.info(.assistant, "EA: \(call.name) proposed for \"\(prompt)\" (\(String(format: "%.1f", elapsed))s)")
             } catch {
@@ -112,7 +113,7 @@ final class MarginAgent: ObservableObject {
         guard let index = turns.firstIndex(where: { $0.id == turnID }),
               let action = turns[index].action, turns[index].outcome == nil else { return }
         do {
-            let result = try await action.run()
+            let result = try await action.run(turns[index].picked)
             turns[index].outcome = result
             recordTick(result, undo: action.undo)
             diagnosticLog?.info(.assistant, "EA: \(action.title) — \(result)")
@@ -133,6 +134,26 @@ final class MarginAgent: ObservableObject {
         } catch {
             turns[index].outcome = "Couldn't undo: \(error.localizedDescription)"
         }
+    }
+
+    /// The alternative action on a page. Two is the ceiling, so there is only ever this
+    /// one besides the primary.
+    func runSecondary(_ turnID: UUID) async {
+        guard let index = turns.firstIndex(where: { $0.id == turnID }),
+              let secondary = turns[index].action?.secondary, turns[index].outcome == nil else { return }
+        do {
+            let result = try await secondary.run(turns[index].picked)
+            turns[index].outcome = result
+            recordTick(result, undo: turns[index].action?.undo)
+        } catch {
+            turns[index].outcome = "Couldn't do it: \(error.localizedDescription)"
+        }
+    }
+
+    /// Pick a line on a page.
+    func pick(_ turnID: UUID, choice: String) {
+        guard let index = turns.firstIndex(where: { $0.id == turnID }) else { return }
+        turns[index].picked = choice
     }
 
     func dismissProposal(_ turnID: UUID) {

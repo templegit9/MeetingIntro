@@ -80,7 +80,7 @@ struct CreateEventTool: AgentTool {
         return ProposedAction(
             kind: .change, title: "Create event", details: details,
             assumptions: assumptions, warnings: warnings, confirmLabel: "Create",
-            run: {
+            run: { _ in
                 try await manager.createEvent(from: draft, calendarID: target)
                 return "Created “\(draft.title)”."
             })
@@ -143,7 +143,7 @@ struct CreateTaskTool: AgentTool {
         let saved = task
         return ProposedAction(
             kind: .change, title: "Add task", details: details, confirmLabel: "Add",
-            run: { manager.add(saved); return "Added “\(saved.title)”." },
+            run: { _ in manager.add(saved); return "Added “\(saved.title)”." },
             undo: { manager.delete(saved.id) })
     }
 }
@@ -201,16 +201,114 @@ struct FindTimeTool: AgentTool {
         let days = min(max(ToolArgs.int(arguments, "days_ahead") ?? 5, 1), 14)
         let earliest = ToolArgs.int(arguments, "earliest_hour") ?? 9
         let latest = ToolArgs.int(arguments, "latest_hour") ?? 18
-        let slots = Self.freeSlots(in: calendarManager.upcomingWeek,
-                                   minutes: minutes, days: days,
+        let events = calendarManager.upcomingWeek.filter { !$0.isCancelled }
+        let slots = Self.freeSlots(in: events, minutes: minutes, days: days,
                                    earliestHour: earliest, latestHour: latest)
+
         guard !slots.isEmpty else {
-            return .answer("No free time", ["Nothing \(minutes) minutes long between \(earliest):00 and \(latest):00 in the next \(days) days."])
+            return ProposedAction(
+                kind: .answer, title: "No free time",
+                details: ["Nothing \(minutes) minutes long between \(earliest):00 and \(latest):00 in the next \(days) days."],
+                provenance: Self.provenance(calendarManager, days: days, earliest: earliest, latest: latest),
+                run: { _ in "" })
         }
-        let lines = slots.prefix(6).map { slot in
-            "\(slot.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))  \(slot.formatted(date: .omitted, time: .shortened))"
+
+        // Fix 5: grouped by day and ranked, with the thing you'd otherwise have to work
+        // out written next to each slot. Every note below is derived from the calendar —
+        // none of it is decoration.
+        let calendar = Calendar.current
+        let byDay = Dictionary(grouping: slots) { calendar.startOfDay(for: $0) }
+        let lightestDay = byDay.keys.min { a, b in Self.busyHours(events, on: a) < Self.busyHours(events, on: b) }
+        var groups: [PageGroup] = []
+        for day in byDay.keys.sorted() {
+            let choices = (byDay[day] ?? []).sorted().enumerated().map { index, slot -> PageChoice in
+                let isBest = day == lightestDay && index == 0
+                return PageChoice(
+                    id: ISO8601DateFormatter().string(from: slot),
+                    label: slot.formatted(date: .omitted, time: .shortened),
+                    note: Self.note(for: slot, minutes: minutes, in: events, isBest: isBest,
+                                    lightestDay: day == lightestDay),
+                    tone: isBest ? .best : (Self.isAwkward(slot) ? .caution : .normal))
+            }
+            groups.append(PageGroup(id: ISO8601DateFormatter().string(from: day),
+                                    label: day.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)),
+                                    choices: choices))
         }
-        return .answer("Free for \(minutes) min", Array(lines))
+
+        let manager = calendarManager
+        return ProposedAction(
+            kind: .answer,
+            title: "\(minutes) min",
+            groups: groups,
+            provenance: Self.provenance(calendarManager, days: days, earliest: earliest, latest: latest),
+            confirmLabel: "Hold it",
+            secondary: ("Ask for a change", { _ in "Tell me what to change." }),
+            run: { picked in
+                // The action is a hold, not an invitation: Margin has nobody to send this
+                // to unless you named them, and claiming otherwise would be the "tear out"
+                // metaphor lying about what left the pad.
+                guard let picked, let start = ISO8601DateFormatter().date(from: picked) else {
+                    return "Pick a time first."
+                }
+                var draft = EventDraft(title: "Hold", startDate: start,
+                                       endDate: start.addingTimeInterval(TimeInterval(minutes * 60)),
+                                       parserUsed: .detector)
+                draft.notes = "Held by Margin."
+                try await manager.createEvent(from: draft, calendarID: nil)
+                return "Held \(minutes) min on \(start.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))) at \(start.formatted(date: .omitted, time: .shortened))."
+            })
+    }
+
+    /// Fix 4: the evidence line. Only claims what was actually done — the calendars read,
+    /// the range, the working hours honoured, and whose clock the times are on.
+    @MainActor static func provenance(_ manager: CalendarManager, days: Int, earliest: Int, latest: Int) -> String {
+        let sources = manager.enabledProviderTypes.count
+        let end = Date().addingTimeInterval(TimeInterval(days * 86_400))
+        let range = "\(Date().formatted(.dateTime.day().month(.abbreviated)))–\(end.formatted(.dateTime.day().month(.abbreviated)))"
+        return "Read \(sources) calendar source\(sources == 1 ? "" : "s"), \(range) · only \(earliest):00–\(latest):00 · times in \(TimeZone.current.localizedName(for: .shortStandard, locale: .current) ?? "your timezone")."
+    }
+
+    /// Hours of meetings on a given day — used to call one day lighter than another.
+    static func busyHours(_ events: [MeetingEvent], on day: Date, calendar: Calendar = .current) -> Double {
+        events.filter { !$0.isAllDay && calendar.isDate($0.startDate, inSameDayAs: day) }
+            .reduce(0) { $0 + $1.endDate.timeIntervalSince($1.startDate) } / 3600
+    }
+
+    /// The note beside a slot. Every branch is a fact about the calendar, not a flourish.
+    static func note(for slot: Date, minutes: Int, in events: [MeetingEvent],
+                     isBest: Bool, lightestDay: Bool, calendar: Calendar = .current) -> String? {
+        if isBest {
+            return lightestDay ? "best — lightest day of the three" : "best — earliest that fits"
+        }
+        // A slot that lands at the end of a long unbroken run is worth naming: it is the
+        // difference between "free" and "free but you've been in meetings since nine".
+        let sameDay = events.filter { !$0.isAllDay && calendar.isDate($0.startDate, inSameDayAs: slot) }
+            .sorted { $0.startDate < $1.startDate }
+        if let runStart = Self.runEnding(at: slot, in: sameDay) {
+            let hours = slot.timeIntervalSince(runStart) / 3600
+            if hours >= 2 { return "end of a \(Int(hours.rounded()))-hour stretch" }
+        }
+        if let next = sameDay.first(where: { $0.startDate >= slot }) {
+            let gap = next.startDate.timeIntervalSince(slot.addingTimeInterval(TimeInterval(minutes * 60))) / 60
+            if gap < 15 { return "only \(Int(gap)) min spare afterwards" }
+        }
+        if Self.isAwkward(slot) { return "odd start" }
+        return nil
+    }
+
+    /// Start of the unbroken run of meetings that ends exactly at this slot, if any.
+    static func runEnding(at slot: Date, in day: [MeetingEvent]) -> Date? {
+        let before = day.filter { $0.endDate <= slot }.sorted { $0.startDate < $1.startDate }
+        guard var start = before.last?.startDate, let last = before.last, last.endDate == slot else { return nil }
+        for meeting in before.dropLast().reversed() {
+            if start.timeIntervalSince(meeting.endDate) <= 600 { start = meeting.startDate } else { break }
+        }
+        return start
+    }
+
+    /// A start that isn't on a quarter hour reads as machine output — "1:35 PM".
+    static func isAwkward(_ slot: Date, calendar: Calendar = .current) -> Bool {
+        calendar.component(.minute, from: slot) % 15 != 0
     }
 
     /// Busy blocks are merged first, so back-to-back meetings don't produce a phantom

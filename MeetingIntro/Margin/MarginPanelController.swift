@@ -41,6 +41,16 @@ final class MarginPanelController: NSObject, ObservableObject {
 
         // A corner folds itself: the panel grows to show one page, WITHOUT taking focus
         // or activating the app. Whatever you were typing stays where it was.
+        // Re-fit the page when its content changes — an answer arriving, a tick added —
+        // and not on every publish.
+        agent.$turns
+            .map(\.count)
+            .removeDuplicates()
+            .sink { [weak self] _ in
+                Task { @MainActor in if self?.isOpen == true { self?.resize() } }
+            }
+            .store(in: &cancellables)
+
         nudges.$folded
             .sink { [weak self] nudge in
                 Task { @MainActor in self?.presentFold(nudge) }

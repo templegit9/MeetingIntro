@@ -1,14 +1,42 @@
 import Foundation
 
-/// What the assistant is about to do, in a form the user can read and approve.
+/// One selectable line on a page — a slot, an option, a candidate.
 ///
-/// The whole safety model of the plugin is that the model's output stops here. Nothing
-/// in this type executes; `run` is only called after an explicit confirmation, and
-/// `undo` exists for anything that isn't purely a read.
+/// **Fix 2 of the design review lives here.** An answer you can't act on makes the
+/// assistant a search box: six lines of text and no way to choose or send anything. A
+/// choice carries its own note, so the page shows the thing you would otherwise have to
+/// work out for yourself.
+struct PageChoice: Identifiable, Equatable {
+    enum Tone: Equatable {
+        case normal
+        /// The recommendation. Pre-selected, and it says why.
+        case best
+        /// Possible, but something is off about it.
+        case caution
+    }
+    let id: String
+    /// The line itself — "09:00".
+    let label: String
+    /// What you'd otherwise have to work out — "end of a 5-hour stretch".
+    var note: String?
+    var tone: Tone = .normal
+}
+
+/// Choices under a heading — a day, a category.
+struct PageGroup: Identifiable, Equatable {
+    let id: String
+    let label: String
+    var choices: [PageChoice]
+}
+
+/// What Margin is about to do, or what it found, in a form you can read and act on.
+///
+/// The rule the design review states plainly: **every page ends in at most two actions and
+/// says why it says what it says.** If a page has neither, it isn't finished.
 struct ProposedAction: Identifiable {
     enum Kind {
-        /// Answers a question. Nothing to confirm — there is nothing to undo about
-        /// reading your own calendar, so these present as an answer, not a card.
+        /// Answers a question. It may still carry choices and an action — an answer is
+        /// not the same as a dead end.
         case answer
         /// Changes something. Always confirmed first.
         case change
@@ -16,30 +44,36 @@ struct ProposedAction: Identifiable {
 
     let id = UUID()
     let kind: Kind
-    /// Verb + object, e.g. "Create event". Reads as a button label.
+    /// Uppercase kicker at the top of the page — "30 MIN", "CREATE EVENT".
     let title: String
-    /// The specifics, one line each: "Tue 8 Sep, 1:00 PM – 1:30 PM", "Personal · Google".
-    var details: [String]
-    /// Anything invented to fill a gap — the same contract Quick Add has. A guess that
-    /// isn't shown is a guess that lands on the calendar unnoticed.
+    /// Plain lines, for pages that have nothing to choose between.
+    var details: [String] = []
+    /// Selectable lines, grouped. Fix 5: grouped and ranked, never six flat rows.
+    var groups: [PageGroup] = []
+    /// Fix 4: which calendars were read, over what range, in whose timezone. Every answer
+    /// carries its evidence, and it is the line that makes the answer checkable.
+    var provenance: String?
+    /// Anything invented to fill a gap — the same contract Quick Add has.
     var assumptions: [String] = []
-    /// Reasons to look twice: an overlap, invitees that can't be invited on this
-    /// calendar, a folder with a lot of files.
     var warnings: [String] = []
-    /// Label for the confirm button. "Create", "Move", "Organize".
     var confirmLabel: String = "Do it"
     /// True when confirming sends something to another person — an invitation, a reply.
-    /// Only those get "Tear out & send": the page physically leaves the pad, which is
-    /// what sending means. A private calendar write stays in the notebook.
+    /// Only those get "Tear out & send": the page physically leaves the pad.
     var tearOut: Bool = false
-    /// Performs the change. Returns the sentence shown afterwards.
-    let run: @MainActor () async throws -> String
-    /// Reverses it, when that is possible. Nil means there is nothing to undo (a read),
-    /// or the action cannot be taken back — which the UI says out loud.
+    /// The one alternative. Two actions is the ceiling.
+    var secondary: (label: String, run: @MainActor (String?) async throws -> String)?
+    /// Performs the change, given the chosen line's id when there is one.
+    let run: @MainActor (String?) async throws -> String
     var undo: (@MainActor () async throws -> Void)?
 
+    /// The pre-selected line: the recommendation, or the first.
+    var defaultChoice: String? {
+        groups.flatMap(\.choices).first { $0.tone == .best }?.id
+            ?? groups.flatMap(\.choices).first?.id
+    }
+
     static func answer(_ title: String, _ details: [String]) -> ProposedAction {
-        ProposedAction(kind: .answer, title: title, details: details, run: { title })
+        ProposedAction(kind: .answer, title: title, details: details, run: { _ in title })
     }
 }
 
@@ -49,13 +83,12 @@ struct AssistantTurn: Identifiable {
     let id = UUID()
     let role: Role
     var text: String
-    /// Attached to an assistant turn when it proposed something.
     var action: ProposedAction?
-    /// Set once the user has acted on the proposal, so a card can't be run twice.
+    /// Which line is selected on this page.
+    var picked: String?
     var outcome: String?
     var undone: Bool = false
 }
-
 
 /// A line on today's page.
 struct MarginTick: Identifiable {
