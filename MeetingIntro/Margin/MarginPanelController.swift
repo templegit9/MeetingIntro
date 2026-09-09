@@ -21,14 +21,31 @@ final class MarginPanelController: NSObject, ObservableObject {
 
     private let agent: MarginAgent
     private let config: MarginConfig
+    let nudges: MarginNudgeEngine
 
     @Published private(set) var isOpen = false
     @Published private(set) var hovering = false
 
-    init(agent: MarginAgent, config: MarginConfig) {
+    /// A folded page that goes unanswered folds back down and counts as an ignore. Left
+    /// on screen forever it would be a notification, which is the thing it isn't.
+    private static let foldTimeout: TimeInterval = 180
+    private var foldTimer: Timer?
+
+    @Published var showingWatches = false
+
+    init(agent: MarginAgent, config: MarginConfig, nudges: MarginNudgeEngine) {
         self.agent = agent
         self.config = config
+        self.nudges = nudges
         super.init()
+
+        // A corner folds itself: the panel grows to show one page, WITHOUT taking focus
+        // or activating the app. Whatever you were typing stays where it was.
+        nudges.$folded
+            .sink { [weak self] nudge in
+                Task { @MainActor in self?.presentFold(nudge) }
+            }
+            .store(in: &cancellables)
 
         // Visibility follows the plugin switch, live.
         config.$isEnabled
@@ -41,11 +58,6 @@ final class MarginPanelController: NSObject, ObservableObject {
             .sink { [weak self] on in
                 Task { @MainActor in on ? self?.registerHotKey() : self?.hotKey?.unregister() }
             }
-            .store(in: &cancellables)
-
-        // The cover has to re-render when the agent's state changes — working, waiting.
-        agent.objectWillChange
-            .sink { [weak self] _ in Task { @MainActor in self?.refreshCover() } }
             .store(in: &cancellables)
 
         NotificationCenter.default.publisher(for: NSApplication.didChangeScreenParametersNotification)
@@ -67,6 +79,10 @@ final class MarginPanelController: NSObject, ObservableObject {
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = false
+        // Built ONCE. Replacing the hosting view on every published change is what made
+        // the page jump and swallowed both focus and clicks — the view under the pointer
+        // was a different view by the time the click landed. The SwiftUI tree observes
+        // the agent and the controller directly instead.
         panel.contentView = NSHostingView(rootView: rootView)
         self.panel = panel
         reposition()
@@ -99,7 +115,6 @@ final class MarginPanelController: NSObject, ObservableObject {
         guard config.isEnabled else { return }
         if panel == nil { show() }
         isOpen = true
-        refreshCover()
         resize()
         // Only while open does it take focus — a closed notebook must never steal a key
         // press from what you were doing.
@@ -113,7 +128,6 @@ final class MarginPanelController: NSObject, ObservableObject {
         isOpen = false
         panel?.acceptsKey = false
         panel?.resignKey()
-        refreshCover()
         resize()
     }
 
@@ -123,13 +137,55 @@ final class MarginPanelController: NSObject, ObservableObject {
         NSSize(width: MarginTheme.coverSize.width + 6, height: MarginTheme.coverSize.height + 14)
     }
 
+    /// A page is a fixed size. Re-measuring it as content arrives would make the panel
+    /// twitch under the pointer, which is exactly the jumpiness this replaced.
+    // MARK: Folded corners
+
+    private func presentFold(_ nudge: MarginNudge?) {
+        foldTimer?.invalidate()
+        guard panel != nil, !isOpen else { return }
+        resize()
+        guard let nudge else { return }
+        let timer = Timer(timeInterval: Self.foldTimeout, repeats: false) { [weak self] _ in
+            Task { @MainActor in self?.nudges.ignored(nudge) }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        foldTimer = timer
+    }
+
+    func actOnFold(_ nudge: MarginNudge) {
+        foldTimer?.invalidate()
+        guard let primary = nudge.primary else { nudges.accepted(nudge); return }
+        Task { @MainActor in
+            do {
+                let outcome = try await primary.action()
+                agent.recordTick(outcome, undo: nil)
+            } catch {
+                agent.recordTick("Couldn't: \(error.localizedDescription)", undo: nil)
+            }
+            nudges.accepted(nudge)
+        }
+    }
+
+    func dismissFold(_ nudge: MarginNudge) {
+        foldTimer?.invalidate()
+        nudges.ignored(nudge)
+    }
+
     private var openSize: NSSize {
-        NSSize(width: MarginTheme.openWidth, height: 520)
+        NSSize(width: MarginTheme.openWidth, height: 460)
     }
 
     private func resize() {
         guard let panel else { return }
-        let size = isOpen ? openSize : closedSize
+        let size: NSSize
+        if isOpen {
+            size = openSize
+        } else if nudges.folded != nil {
+            size = NSSize(width: MarginTheme.openWidth, height: 150)
+        } else {
+            size = closedSize
+        }
         panel.setContentSize(size)
         reposition()
     }
@@ -142,12 +198,8 @@ final class MarginPanelController: NSObject, ObservableObject {
                                      y: frame.minY + MarginTheme.inset))
     }
 
-    private func refreshCover() {
-        panel?.contentView = NSHostingView(rootView: rootView)
-    }
-
     private var rootView: some View {
-        MarginRootView(agent: agent, config: config, controller: self)
+        MarginRootView(agent: agent, config: config, nudges: nudges, controller: self)
     }
 
     // MARK: Cover state
@@ -156,6 +208,7 @@ final class MarginPanelController: NSObject, ObservableObject {
         if agent.problem != nil { return .offline }
         if agent.isThinking { return .working }
         let waiting = agent.turns.filter { $0.action?.kind == .change && $0.outcome == nil }.count
+            + nudges.onRibbon.count
         if waiting > 0 { return .needsYou(waiting) }
         if config.banded { return .banded }
         return .idle
@@ -176,14 +229,27 @@ final class KeyableMarginPanel: NSPanel {
 private struct MarginRootView: View {
     @ObservedObject var agent: MarginAgent
     @ObservedObject var config: MarginConfig
-    let controller: MarginPanelController
+    @ObservedObject var nudges: MarginNudgeEngine
+    @ObservedObject var controller: MarginPanelController
 
     @State private var hovering = false
 
     var body: some View {
         Group {
             if controller.isOpen {
-                MarginPageView(agent: agent, config: config) { controller.close() }
+                if controller.showingWatches {
+                    MarginWatchesView(engine: nudges, config: config) { controller.showingWatches = false }
+                } else {
+                    MarginPageView(agent: agent, config: config,
+                                   ribbon: nudges.onRibbon,
+                                   onWatches: { controller.showingWatches = true },
+                                   onClose: { controller.close() })
+                }
+            } else if let nudge = nudges.folded {
+                MarginFoldedCornerView(
+                    nudge: nudge,
+                    onPrimary: { controller.actOnFold(nudge) },
+                    onDismiss: { controller.dismissFold(nudge) })
             } else {
                 Button { controller.open() } label: {
                     MarginCoverView(state: controller.coverState, hovering: hovering)
@@ -203,6 +269,6 @@ private struct MarginRootView: View {
 
     private var isWaiting: Bool {
         if case .needsYou = controller.coverState { return true }
-        return false
+        return !nudges.onRibbon.isEmpty
     }
 }

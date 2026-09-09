@@ -151,6 +151,7 @@ struct MeetingIntroApp: App {
     @StateObject private var marginConfig: MarginConfig
     @StateObject private var margin: MarginAgent
     @StateObject private var marginPanel: MarginPanelController
+    @StateObject private var marginNudges: MarginNudgeEngine
     @StateObject private var fileOrganizer = FileOrganizer()
     @StateObject private var fileOrganizerCoordinator = FileOrganizerCoordinator()
     @StateObject private var notesConfig: MeetingNotesConfig
@@ -187,7 +188,10 @@ struct MeetingIntroApp: App {
         let marginAgent = MarginAgent(config: marginCfg)
         _marginConfig = StateObject(wrappedValue: marginCfg)
         _margin = StateObject(wrappedValue: marginAgent)
-        _marginPanel = StateObject(wrappedValue: MarginPanelController(agent: marginAgent, config: marginCfg))
+        let marginNudgeEngine = MarginNudgeEngine()
+        _marginNudges = StateObject(wrappedValue: marginNudgeEngine)
+        _marginPanel = StateObject(wrappedValue: MarginPanelController(agent: marginAgent, config: marginCfg,
+                                                                      nudges: marginNudgeEngine))
 
         let tConfig = TaskConfig()
         _taskConfig = StateObject(wrappedValue: tConfig)
@@ -221,6 +225,7 @@ struct MeetingIntroApp: App {
             assistantConfig: assistantConfig,
             margin: margin,
             marginConfig: marginConfig,
+            marginNudges: marginNudges,
             fileOrganizer: fileOrganizer,
             fileOrganizerCoordinator: fileOrganizerCoordinator,
             tickerConfig: tickerConfig,
@@ -448,6 +453,7 @@ final class AppLifecycleManager: ObservableObject {
         assistantConfig: AssistantConfig,
         margin: MarginAgent,
         marginConfig: MarginConfig,
+        marginNudges: MarginNudgeEngine,
         fileOrganizer: FileOrganizer,
         fileOrganizerCoordinator: FileOrganizerCoordinator,
         tickerConfig: TickerConfig,
@@ -506,6 +512,10 @@ final class AppLifecycleManager: ObservableObject {
             TodayTool(calendarManager: calendarManager, taskManager: taskManager),
             FindTimeTool(calendarManager: calendarManager)
         ])
+
+        // Margin's watches: what it may notice, and how loudly it may say so.
+        marginNudges.attach(config: marginConfig, calendarManager: calendarManager,
+                            taskManager: taskManager, log: diagnosticLog)
 
         // File Organizer (Issue #17): wire the organizer to its config + log.
         fileOrganizer.attach(config: assistantConfig)

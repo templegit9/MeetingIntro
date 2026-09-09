@@ -55,3 +55,16 @@ struct AssistantTurn: Identifiable {
     var outcome: String?
     var undone: Bool = false
 }
+
+
+/// A line on today's page.
+struct MarginTick: Identifiable {
+    let id = UUID()
+    let text: String
+    let at: Date
+    let undo: (@MainActor () async throws -> Void)?
+    var crossed = false
+
+    /// One hour, from the spec. After that it is history, not a decision.
+    var crossable: Bool { undo != nil && !crossed && Date().timeIntervalSince(at) < 3600 }
+}

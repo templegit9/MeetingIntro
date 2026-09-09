@@ -114,6 +114,7 @@ final class MarginAgent: ObservableObject {
         do {
             let result = try await action.run()
             turns[index].outcome = result
+            recordTick(result, undo: action.undo)
             diagnosticLog?.info(.assistant, "EA: \(action.title) — \(result)")
         } catch {
             turns[index].outcome = "Couldn't do it: \(error.localizedDescription)"
@@ -140,6 +141,30 @@ final class MarginAgent: ObservableObject {
     }
 
     func clear() { turns.removeAll(); problem = nil }
+
+    /// Today's page: what Margin actually did, in the order it did it.
+    ///
+    /// A silent action that leaves no receipt is the failure mode the whole spec is
+    /// arranged against — capability must never outrun the record.
+    @Published private(set) var ticks: [MarginTick] = []
+
+    /// Record something done — by a confirmed page, or by a folded corner you accepted.
+    func recordTick(_ text: String, undo: (@MainActor () async throws -> Void)?) {
+        ticks.append(MarginTick(text: text, at: Date(), undo: undo))
+    }
+
+    /// Cross a tick back out. Only within the hour: past that the world has moved on and
+    /// pretending otherwise would be a lie about what can be taken back.
+    func crossOut(_ id: UUID) async {
+        guard let index = ticks.firstIndex(where: { $0.id == id }),
+              ticks[index].crossable, let undo = ticks[index].undo else { return }
+        do {
+            try await undo()
+            ticks[index].crossed = true
+        } catch {
+            diagnosticLog?.warn(.assistant, "Margin: couldn't cross out — \(error.localizedDescription)")
+        }
+    }
 
     /// Check the local model before the user types into a dead box.
     func checkAvailability() async {

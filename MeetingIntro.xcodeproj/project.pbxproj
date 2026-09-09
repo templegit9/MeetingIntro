@@ -14,6 +14,7 @@
 		126B6A1FC0D0FF85779FE7C6 /* FilePreviewExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81286000F64FE87B65167C38 /* FilePreviewExtractor.swift */; };
 		13DB22F7D352761787331EE1 /* DictionaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9F6897888DDBB2A95264B8D /* DictionaryService.swift */; };
 		159AA5A9C571071C598623DA /* CancellationOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2918B368AF626877462E126 /* CancellationOverlayView.swift */; };
+		16B10226B819A3FF5656ADC3 /* MarginWatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 977CBE241EE86C8725A8F5CE /* MarginWatch.swift */; };
 		175F2E49C8587451AB910A93 /* MicrophoneDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B60DBB01A2C688FE793716C /* MicrophoneDetector.swift */; };
 		18C4BCEB05941BA1EB6257AF /* GraphBrowserAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0899A6EF46ABB7178E3CEFFC /* GraphBrowserAuth.swift */; };
 		1BF07E865B723FAC8E76B1A3 /* ProposedAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E158978673C867D87439206 /* ProposedAction.swift */; };
@@ -41,11 +42,13 @@
 		54651FB5DCD357B215372D92 /* MarginTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 725713BE0A4CE5902F46F4F0 /* MarginTheme.swift */; };
 		55EB514367D9E5379E8D3BC0 /* MarginAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E129396BFCF499DF44248F4 /* MarginAgent.swift */; };
 		58CA9A36991C9BE9D8D4541A /* TemplateEditSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 675F9C5FC04AEF4EF60B3806 /* TemplateEditSheet.swift */; };
+		603F8F996C0A98C1D462C8BF /* MarginNudgeEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0DB4763B0E5E389DFA1F0F0 /* MarginNudgeEngine.swift */; };
 		619706B6677E6431D5E126C4 /* TaskReminderCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7BD2399C4FDA17D3C26D848 /* TaskReminderCoordinator.swift */; };
 		644F9014457EA29379B4EDDC /* ConcurrentOverlayStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0A3C8188CBC74A7C99597C /* ConcurrentOverlayStyle.swift */; };
 		6776C67C91580A90FAF868AB /* MeetingNotesConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7C7F0E8190A10BB8431B931 /* MeetingNotesConfig.swift */; };
 		67B654CACB98A5BBE32C5FC4 /* AppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A779B106BB03584C7E64259 /* AppUpdater.swift */; };
 		68ED75073588DF9609623340 /* WhisperKitEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72275B905671FFA1F87F986C /* WhisperKitEngine.swift */; };
+		69AB8220FBDEB240F5B4678A /* MarginNudgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8580BFC547C82C569FD594E5 /* MarginNudgeView.swift */; };
 		6D165CF43230BB289017217D /* CalendarMirrorEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CAC212711667C92D4767C0F /* CalendarMirrorEngine.swift */; };
 		6D89F0F14CE5474AF8968E50 /* RecordingConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A3DCA2311169ED15B355E39 /* RecordingConfig.swift */; };
 		6F7F935A1286F166E6E55276 /* FileOrganizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5162BAF65FF7445D0AED9599 /* FileOrganizer.swift */; };
@@ -165,12 +168,14 @@
 		79AB0D1338EB2A471C1C13FD /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
 		7CF126086E7874E20D300E58 /* AgentTool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentTool.swift; sourceTree = "<group>"; };
 		81286000F64FE87B65167C38 /* FilePreviewExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilePreviewExtractor.swift; sourceTree = "<group>"; };
+		8580BFC547C82C569FD594E5 /* MarginNudgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarginNudgeView.swift; sourceTree = "<group>"; };
 		88FE80611C96045D0752ECE8 /* MeetingIntroApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingIntroApp.swift; sourceTree = "<group>"; };
 		89FCBBD6F8A0CE7B02ED0EBF /* TaskEditSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskEditSheet.swift; sourceTree = "<group>"; };
 		8A99A9D2EE9624DA582CD8D5 /* CalendarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarManager.swift; sourceTree = "<group>"; };
 		8B60DBB01A2C688FE793716C /* MicrophoneDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicrophoneDetector.swift; sourceTree = "<group>"; };
 		93BA7144AB68C66B4773F2A5 /* MarginPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarginPanelController.swift; sourceTree = "<group>"; };
 		93D500748FEC4E44DA52D880 /* MarginCoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarginCoverView.swift; sourceTree = "<group>"; };
+		977CBE241EE86C8725A8F5CE /* MarginWatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarginWatch.swift; sourceTree = "<group>"; };
 		9B33CEBB2784C6AFE2BB1379 /* ReminderEscalationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderEscalationPolicy.swift; sourceTree = "<group>"; };
 		9C58BE975466982E750F7FDA /* VoiceReminderManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceReminderManager.swift; sourceTree = "<group>"; };
 		9DA13D3684D8A428FE7348A9 /* PluginGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginGrid.swift; sourceTree = "<group>"; };
@@ -208,6 +213,7 @@
 		E87700DD78AEC8C2D6EC9429 /* AssistantWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantWindow.swift; sourceTree = "<group>"; };
 		E9F6897888DDBB2A95264B8D /* DictionaryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryService.swift; sourceTree = "<group>"; };
 		EF585F8BEF5487338065E75D /* ReleaseNotesManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseNotesManager.swift; sourceTree = "<group>"; };
+		F0DB4763B0E5E389DFA1F0F0 /* MarginNudgeEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarginNudgeEngine.swift; sourceTree = "<group>"; };
 		F2918B368AF626877462E126 /* CancellationOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CancellationOverlayView.swift; sourceTree = "<group>"; };
 		F3B08B967919790FF813AD95 /* DictionaryWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryWindow.swift; sourceTree = "<group>"; };
 		F511655BFB5D34D4CB69543A /* MarginPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarginPageView.swift; sourceTree = "<group>"; };
@@ -267,9 +273,12 @@
 				43AD8A211D8D5650F8B40CF3 /* MarginConfig.swift */,
 				93D500748FEC4E44DA52D880 /* MarginCoverView.swift */,
 				437664CC9B1165E53DB33AE1 /* MarginHotKey.swift */,
+				F0DB4763B0E5E389DFA1F0F0 /* MarginNudgeEngine.swift */,
+				8580BFC547C82C569FD594E5 /* MarginNudgeView.swift */,
 				F511655BFB5D34D4CB69543A /* MarginPageView.swift */,
 				93BA7144AB68C66B4773F2A5 /* MarginPanelController.swift */,
 				725713BE0A4CE5902F46F4F0 /* MarginTheme.swift */,
+				977CBE241EE86C8725A8F5CE /* MarginWatch.swift */,
 				1D0F9C906FA342B4B111A373 /* OllamaToolClient.swift */,
 				1E158978673C867D87439206 /* ProposedAction.swift */,
 			);
@@ -567,9 +576,12 @@
 				96A100830ABCDDF50E72E2A2 /* MarginConfig.swift in Sources */,
 				9332F595FDAC08396656A536 /* MarginCoverView.swift in Sources */,
 				A2541DC88A587DD61FB18EEB /* MarginHotKey.swift in Sources */,
+				603F8F996C0A98C1D462C8BF /* MarginNudgeEngine.swift in Sources */,
+				69AB8220FBDEB240F5B4678A /* MarginNudgeView.swift in Sources */,
 				042518CD80678D490722385E /* MarginPageView.swift in Sources */,
 				40B6232BF36B6C533CBC518A /* MarginPanelController.swift in Sources */,
 				54651FB5DCD357B215372D92 /* MarginTheme.swift in Sources */,
+				16B10226B819A3FF5656ADC3 /* MarginWatch.swift in Sources */,
 				EC5ECB498EC05BBEE61EFB34 /* MeetingContextMonitor.swift in Sources */,
 				AE9DE19805E2D21EC2D22F1D /* MeetingDetailsPanel.swift in Sources */,
 				B0CB597A37C8A1BDC0AFD335 /* MeetingHandoffCoordinator.swift in Sources */,

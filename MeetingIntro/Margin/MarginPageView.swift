@@ -11,6 +11,8 @@ struct MarginPageView: View {
 
     @ObservedObject var agent: MarginAgent
     @ObservedObject var config: MarginConfig
+    var ribbon: [MarginNudge] = []
+    var onWatches: () -> Void = {}
     let onClose: () -> Void
 
     @State private var input = ""
@@ -24,7 +26,7 @@ struct MarginPageView: View {
             Divider().overlay(MarginTheme.rule)
             writingLine
         }
-        .frame(width: MarginTheme.openWidth)
+        .frame(width: MarginTheme.openWidth, height: 460)
         .background(paperBackground)
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay(
@@ -34,10 +36,8 @@ struct MarginPageView: View {
         // Margin is its own brand: the page is always paper, whatever the host app or the
         // system appearance is doing.
         .environment(\.colorScheme, .light)
-        .task {
-            writing = true
-            await agent.checkAvailability()
-        }
+        .onAppear { writing = true }
+        .task { await agent.checkAvailability() }
         .onExitCommand { onClose() }
     }
 
@@ -48,6 +48,12 @@ struct MarginPageView: View {
                 .font(.system(size: 11, weight: .semibold, design: .serif))
                 .foregroundStyle(MarginTheme.inkSoft)
             Spacer()
+            Button(action: onWatches) {
+                Image(systemName: "list.bullet").font(.system(size: 9, weight: .semibold))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(MarginTheme.inkSoft)
+            .help("What it's watching")
             if agent.isThinking {
                 Text("looking…").font(.system(size: 10, design: .serif)).foregroundStyle(MarginTheme.inkSoft)
             }
@@ -65,14 +71,17 @@ struct MarginPageView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     if let problem = agent.problem { problemPage(problem) }
+                    // Opening the notebook always lands on what's marked.
+                    if !ribbon.isEmpty { ribbonPage }
                     if agent.turns.isEmpty && agent.problem == nil { blankPage }
                     ForEach(agent.turns) { turn in
                         turnPage(turn).id(turn.id)
                     }
+                    if !agent.ticks.isEmpty { todaysPage }
                 }
                 .padding(.horizontal, 14).padding(.vertical, 10)
             }
-            .frame(maxHeight: 380)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .onChange(of: agent.turns.count) { _, _ in
                 if let last = agent.turns.last { withAnimation { proxy.scrollTo(last.id, anchor: .bottom) } }
             }
@@ -96,6 +105,58 @@ struct MarginPageView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Anything marked and waiting, found the moment you open it.
+    private var ribbonPage: some View {
+        HStack(alignment: .top, spacing: 8) {
+            RoundedRectangle(cornerRadius: 1)
+                .fill(MarginTheme.ribbonAmber)
+                .frame(width: 3)
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(ribbon) { item in
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(item.kicker)
+                            .font(.system(size: 10, weight: .semibold, design: .serif))
+                            .foregroundStyle(MarginTheme.amberInk)
+                        Text(item.body)
+                            .font(.system(size: 12, design: .serif))
+                            .foregroundStyle(MarginTheme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+        }
+    }
+
+    /// A day's worth of jotted ticks, not a system audit log.
+    private var todaysPage: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Handled today")
+                .font(.system(size: 10, weight: .semibold, design: .serif))
+                .tracking(0.6)
+                .foregroundStyle(MarginTheme.inkSoft)
+            ForEach(agent.ticks) { tick in
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text("✓").font(.system(size: 10, design: .serif)).foregroundStyle(MarginTheme.cloth)
+                    Text(tick.text)
+                        .font(.system(size: 11.5, design: .serif))
+                        .foregroundStyle(MarginTheme.inkSoft)
+                        .strikethrough(tick.crossed)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 4)
+                    if tick.crossable {
+                        Button("cross out") { Task { await agent.crossOut(tick.id) } }
+                            .buttonStyle(.plain)
+                            .font(.system(size: 10, design: .serif))
+                            .foregroundStyle(MarginTheme.cloth)
+                    }
+                }
+            }
+            Text("Crossable for an hour.")
+                .font(.system(size: 9.5, design: .serif))
+                .foregroundStyle(MarginTheme.inkSoft.opacity(0.8))
+        }
     }
 
     private func problemPage(_ problem: String) -> some View {
