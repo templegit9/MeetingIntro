@@ -14,7 +14,7 @@ import Foundation
 ///    and "delete everything in Downloads" were all refused rather than mapped onto a
 ///    tool that happened to be nearby.
 @MainActor
-final class ExecutiveAssistant: ObservableObject {
+final class MarginAgent: ObservableObject {
 
     @Published private(set) var turns: [AssistantTurn] = []
     @Published private(set) var isThinking = false
@@ -23,11 +23,11 @@ final class ExecutiveAssistant: ObservableObject {
     /// into one shrug.
     @Published var problem: String?
 
-    private let config: ExecutiveAssistantConfig
+    private let config: MarginConfig
     private var tools: [AgentTool] = []
     var diagnosticLog: DiagnosticLog?
 
-    init(config: ExecutiveAssistantConfig) {
+    init(config: MarginConfig) {
         self.config = config
     }
 

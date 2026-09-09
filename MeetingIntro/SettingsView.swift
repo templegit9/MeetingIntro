@@ -66,7 +66,8 @@ struct SettingsView: View {
     @ObservedObject var taskConfig: TaskConfig
     @ObservedObject var taskManager: TaskManager
     @ObservedObject var assistantConfig: AssistantConfig
-    @ObservedObject var eaConfig: ExecutiveAssistantConfig
+    @ObservedObject var marginConfig: MarginConfig
+    @ObservedObject var marginPanel: MarginPanelController
     @ObservedObject var tickerConfig: TickerConfig
     @ObservedObject var tickerCoordinator: TickerCoordinator
     @ObservedObject var graphVerifierConfig: GraphVerifierConfig
@@ -1599,11 +1600,11 @@ struct SettingsView: View {
 
                     PluginTile(
                         symbol: "sparkles", tint: .pink,
-                        name: "Executive Assistant",
-                        blurb: "Ask for a meeting, a task or a free slot in plain words. Runs on a local model, so nothing you type leaves this Mac.",
-                        status: eaConfig.isEnabled ? .idle(eaConfig.model) : nil,
-                        isEnabled: $eaConfig.isEnabled,
-                        onOpen: { openWindow(id: "executiveAssistant"); NSApp.activate(ignoringOtherApps: true) }
+                        name: "Margin",
+                        blurb: "A notebook that sits on your desktop. Ask it for a meeting, a task or a free slot; it writes the answer on a page you approve before anything happens.",
+                        status: marginConfig.isEnabled ? .idle("⌥Space · \(marginConfig.model)") : nil,
+                        isEnabled: $marginConfig.isEnabled,
+                        onOpen: { marginPanel.open() }
                     )
                 }
                 .padding(.vertical, 2)

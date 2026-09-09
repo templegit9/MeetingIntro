@@ -30,7 +30,7 @@ struct PopoverRootView: View {
     @AppStorage("popoverFitToContent") private var fitDropdownToContent: Bool = false
     @AppStorage("assistantEnabled") private var assistantEnabled: Bool = false
     @AppStorage("dictionaryEnabled") private var dictionaryEnabled: Bool = false
-    @AppStorage(ExecutiveAssistantConfig.enabledKey) private var executiveAssistantEnabled: Bool = false
+    @AppStorage(MarginConfig.enabledKey) private var marginEnabled: Bool = false
 
     /// Hover-to-detail (Issue #16) — see CompactMenuView for the delay rationale.
     @State private var hoveredID: String?
@@ -1089,7 +1089,6 @@ struct PopoverRootView: View {
     @ViewBuilder private var pluginFooter: some View {
         let items: [(label: String, symbol: String, id: String, sc: String)] = {
             var a: [(String, String, String, String)] = []
-            if executiveAssistantEnabled { a.append(("Assistant", "sparkles", "executiveAssistant", "⌥⌘E")) }
             if assistantEnabled { a.append(("File Organizer", "folder.badge.gearshape", "assistant", "⌥⌘A")) }
             if dictionaryEnabled { a.append(("Dictionary", "character.book.closed", "dictionary", "⌥⌘D")) }
             return a.map { ($0.0, $0.1, $0.2, $0.3) }

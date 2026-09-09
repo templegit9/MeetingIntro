@@ -28,6 +28,10 @@ struct ProposedAction: Identifiable {
     var warnings: [String] = []
     /// Label for the confirm button. "Create", "Move", "Organize".
     var confirmLabel: String = "Do it"
+    /// True when confirming sends something to another person — an invitation, a reply.
+    /// Only those get "Tear out & send": the page physically leaves the pad, which is
+    /// what sending means. A private calendar write stays in the notebook.
+    var tearOut: Bool = false
     /// Performs the change. Returns the sentence shown afterwards.
     let run: @MainActor () async throws -> String
     /// Reverses it, when that is possible. Nil means there is nothing to undo (a read),

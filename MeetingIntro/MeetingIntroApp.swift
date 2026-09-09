@@ -148,8 +148,9 @@ struct MeetingIntroApp: App {
     @StateObject private var tickerConfig = TickerConfig()
     @StateObject private var tickerCoordinator = TickerCoordinator()
     @StateObject private var assistantConfig = AssistantConfig()
-    @StateObject private var eaConfig: ExecutiveAssistantConfig
-    @StateObject private var executiveAssistant: ExecutiveAssistant
+    @StateObject private var marginConfig: MarginConfig
+    @StateObject private var margin: MarginAgent
+    @StateObject private var marginPanel: MarginPanelController
     @StateObject private var fileOrganizer = FileOrganizer()
     @StateObject private var fileOrganizerCoordinator = FileOrganizerCoordinator()
     @StateObject private var notesConfig: MeetingNotesConfig
@@ -182,9 +183,11 @@ struct MeetingIntroApp: App {
 
         // The assistant needs its config at construction, same reason as the handoff
         // trio: the object it talks to has to exist before it does.
-        let ea = ExecutiveAssistantConfig()
-        _eaConfig = StateObject(wrappedValue: ea)
-        _executiveAssistant = StateObject(wrappedValue: ExecutiveAssistant(config: ea))
+        let marginCfg = MarginConfig()
+        let marginAgent = MarginAgent(config: marginCfg)
+        _marginConfig = StateObject(wrappedValue: marginCfg)
+        _margin = StateObject(wrappedValue: marginAgent)
+        _marginPanel = StateObject(wrappedValue: MarginPanelController(agent: marginAgent, config: marginCfg))
 
         let tConfig = TaskConfig()
         _taskConfig = StateObject(wrappedValue: tConfig)
@@ -216,8 +219,8 @@ struct MeetingIntroApp: App {
             taskConfig: taskConfig,
             taskReminderCoordinator: taskReminderCoordinator,
             assistantConfig: assistantConfig,
-            executiveAssistant: executiveAssistant,
-            eaConfig: eaConfig,
+            margin: margin,
+            marginConfig: marginConfig,
             fileOrganizer: fileOrganizer,
             fileOrganizerCoordinator: fileOrganizerCoordinator,
             tickerConfig: tickerConfig,
@@ -334,7 +337,8 @@ struct MeetingIntroApp: App {
                 taskConfig: taskConfig,
                 taskManager: taskManager,
                 assistantConfig: assistantConfig,
-                eaConfig: eaConfig,
+                marginConfig: marginConfig,
+                marginPanel: marginPanel,
                 tickerConfig: tickerConfig,
                 tickerCoordinator: tickerCoordinator,
                 graphVerifierConfig: graphVerifierConfig,
@@ -358,12 +362,6 @@ struct MeetingIntroApp: App {
             )
         }
         .defaultSize(width: 920, height: 620)
-
-        // Executive Assistant plugin (Issue #24) — opt-in local-model command bar.
-        Window("Executive Assistant", id: "executiveAssistant") {
-            ExecutiveAssistantWindow(assistant: executiveAssistant, config: eaConfig)
-        }
-        .defaultSize(width: 520, height: 580)
 
         // File Organizer plugin (Issue #17) — opt-in AI file organizer.
         Window("File Organizer", id: "assistant") {
@@ -448,8 +446,8 @@ final class AppLifecycleManager: ObservableObject {
         taskConfig: TaskConfig,
         taskReminderCoordinator: TaskReminderCoordinator,
         assistantConfig: AssistantConfig,
-        executiveAssistant: ExecutiveAssistant,
-        eaConfig: ExecutiveAssistantConfig,
+        margin: MarginAgent,
+        marginConfig: MarginConfig,
         fileOrganizer: FileOrganizer,
         fileOrganizerCoordinator: FileOrganizerCoordinator,
         tickerConfig: TickerConfig,
@@ -499,11 +497,11 @@ final class AppLifecycleManager: ObservableObject {
         // service already exists — the single wiring point, same as every other
         // cross-service hookup. Registering the tools is what the model is allowed to do;
         // anything not in this list, it must decline rather than improvise.
-        executiveAssistant.diagnosticLog = diagnosticLog
-        executiveAssistant.register([
+        margin.diagnosticLog = diagnosticLog
+        margin.register([
             CreateEventTool(calendarManager: calendarManager,
                             defaultDurationMinutes: quickAddConfig.defaultDurationMinutes,
-                            calendarID: eaConfig.calendarID ?? quickAddConfig.defaultCalendarID),
+                            calendarID: marginConfig.calendarID ?? quickAddConfig.defaultCalendarID),
             CreateTaskTool(taskManager: taskManager, config: taskConfig),
             TodayTool(calendarManager: calendarManager, taskManager: taskManager),
             FindTimeTool(calendarManager: calendarManager)
