@@ -124,7 +124,13 @@ struct MarginPageView: View {
                     .padding(.bottom, 10)
             }
             .onChange(of: agent.turns.count) { _, _ in
-                if let last = agent.turns.last { withAnimation { proxy.scrollTo(last.id, anchor: .bottom) } }
+                // Land on the TOP of the newest page. A written answer is read from its
+                // first line; scrolling to the bottom hid both the question and the
+                // kicker behind the fold.
+                // Land on the QUESTION, so the exchange reads from its first line. The
+                // newest turn is the answer; scrolling there hides what was asked.
+                let target = agent.turns.last(where: { $0.role == .user }) ?? agent.turns.last
+                if let target { withAnimation { proxy.scrollTo(target.id, anchor: .top) } }
             }
         }
     }
@@ -267,7 +273,9 @@ struct MarginPageView: View {
                     Text(note)
                         .font(.system(size: 11, design: .serif))
                         .foregroundStyle(choice.tone == .caution ? MarginTheme.amberInk : MarginTheme.inkSoft)
-                        .lineLimit(1)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.85)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
             }

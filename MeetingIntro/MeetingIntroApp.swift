@@ -226,6 +226,7 @@ struct MeetingIntroApp: App {
             margin: margin,
             marginConfig: marginConfig,
             marginNudges: marginNudges,
+            marginPanel: marginPanel,
             fileOrganizer: fileOrganizer,
             fileOrganizerCoordinator: fileOrganizerCoordinator,
             tickerConfig: tickerConfig,
@@ -454,6 +455,7 @@ final class AppLifecycleManager: ObservableObject {
         margin: MarginAgent,
         marginConfig: MarginConfig,
         marginNudges: MarginNudgeEngine,
+        marginPanel: MarginPanelController,
         fileOrganizer: FileOrganizer,
         fileOrganizerCoordinator: FileOrganizerCoordinator,
         tickerConfig: TickerConfig,
@@ -512,6 +514,17 @@ final class AppLifecycleManager: ObservableObject {
             TodayTool(calendarManager: calendarManager, taskManager: taskManager),
             FindTimeTool(calendarManager: calendarManager)
         ])
+
+        // Demo hook, same shape as MEETINGINTRO_SELFTEST: open Margin and ask it one
+        // question, so a page can be exercised and captured without synthesising
+        // keystrokes into someone's live session.
+        if let question = ProcessInfo.processInfo.environment["MARGIN_DEMO"], !question.isEmpty {
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 2_500_000_000)
+                marginPanel.open()
+                await margin.send(question)
+            }
+        }
 
         // Margin's watches: what it may notice, and how loudly it may say so.
         marginNudges.attach(config: marginConfig, calendarManager: calendarManager,

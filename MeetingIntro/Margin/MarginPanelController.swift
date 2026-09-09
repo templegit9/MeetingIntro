@@ -182,8 +182,15 @@ final class MarginPanelController: NSObject, ObservableObject {
         nudges.ignored(nudge)
     }
 
+    /// Fix 7: the page ends where the answer ends. Measured from the content at the real
+    /// page width — a width-pinned probe, because `fittingSize` on an unpinned view
+    /// reports the height of the view's *ideal* width, a layout that never happens.
+    ///
+    /// Recomputed only when the content changes, never on every publish: measuring on
+    /// each tick is what would make the panel twitch under the pointer.
     private var openSize: NSSize {
-        NSSize(width: MarginTheme.openWidth, height: 460)
+        let measured = MarginPageView.fittingHeight(agent: agent, config: config, ribbon: nudges.onRibbon)
+        return NSSize(width: MarginTheme.openWidth, height: min(max(measured, 170), 620))
     }
 
     private func resize() {

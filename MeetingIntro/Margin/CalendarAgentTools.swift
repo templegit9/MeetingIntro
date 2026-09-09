@@ -219,15 +219,16 @@ struct FindTimeTool: AgentTool {
         let calendar = Calendar.current
         let byDay = Dictionary(grouping: slots) { calendar.startOfDay(for: $0) }
         let lightestDay = byDay.keys.min { a, b in Self.busyHours(events, on: a) < Self.busyHours(events, on: b) }
+        let soonest = slots.min()
         var groups: [PageGroup] = []
         for day in byDay.keys.sorted() {
             let choices = (byDay[day] ?? []).sorted().enumerated().map { index, slot -> PageChoice in
-                let isBest = day == lightestDay && index == 0
+                let isBest = slot == soonest
                 return PageChoice(
                     id: ISO8601DateFormatter().string(from: slot),
                     label: slot.formatted(date: .omitted, time: .shortened),
                     note: Self.note(for: slot, minutes: minutes, in: events, isBest: isBest,
-                                    lightestDay: day == lightestDay),
+                                    lightestDay: day == lightestDay && index == 0),
                     tone: isBest ? .best : (Self.isAwkward(slot) ? .caution : .normal))
             }
             groups.append(PageGroup(id: ISO8601DateFormatter().string(from: day),
@@ -277,9 +278,8 @@ struct FindTimeTool: AgentTool {
     /// The note beside a slot. Every branch is a fact about the calendar, not a flourish.
     static func note(for slot: Date, minutes: Int, in events: [MeetingEvent],
                      isBest: Bool, lightestDay: Bool, calendar: Calendar = .current) -> String? {
-        if isBest {
-            return lightestDay ? "best — lightest day of the three" : "best — earliest that fits"
-        }
+        if isBest { return "soonest that fits" }
+        if lightestDay { return "lightest day" }
         // A slot that lands at the end of a long unbroken run is worth naming: it is the
         // difference between "free" and "free but you've been in meetings since nine".
         let sameDay = events.filter { !$0.isAllDay && calendar.isDate($0.startDate, inSameDayAs: slot) }
