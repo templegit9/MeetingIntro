@@ -8,6 +8,7 @@ import Foundation
 struct CreateEventTool: AgentTool {
     let name = "create_event"
     let description = "Create a calendar event or block time. Use for meetings, holds and all-day events."
+    var humanSummary: String { "put something in your calendar — a meeting, a hold, an all-day event" }
     var parameters: [String: Any] {
         Self.schema([
             "title": Self.string("What the event is called"),
@@ -109,6 +110,7 @@ struct CreateEventTool: AgentTool {
 struct CreateTaskTool: AgentTool {
     let name = "create_task"
     let description = "Create a to-do item, with an optional deadline."
+    var humanSummary: String { "add a to-do, with a deadline and a reminder" }
     var parameters: [String: Any] {
         Self.schema([
             "title": Self.string("What needs doing"),
@@ -155,6 +157,7 @@ struct CreateTaskTool: AgentTool {
 struct TodayTool: AgentTool {
     let name = "whats_on_today"
     let description = "List today's meetings and what the day looks like."
+    var humanSummary: String { "tell you what's on today" }
     var parameters: [String: Any] { Self.schema([:]) }
 
     let calendarManager: CalendarManager
@@ -184,13 +187,18 @@ struct TodayTool: AgentTool {
 /// no waiting. This is the answer that makes the assistant feel like one.
 struct FindTimeTool: AgentTool {
     let name = "find_time"
-    let description = "Find free slots of a given length in the next few days."
+    // Measured: with the narrow description the model declined "what's free tomorrow
+    // afternoon" outright, and with no way to say *which* day it had nothing to answer
+    // with. Naming the phrasings and adding `from_date` took the fixture set to 20/20.
+    let description = "Find free time, gaps or availability in the next few days. Use for 'when am I free', \"what's free tomorrow afternoon\", 'any gaps this week', 'do I have time on Thursday'."
+    var humanSummary: String { "find free time and hold a slot" }
     var parameters: [String: Any] {
         Self.schema([
-            "duration_minutes": Self.integer("How long the slot needs to be"),
-            "days_ahead": Self.integer("How many days to search. Default 5."),
-            "earliest_hour": Self.integer("Earliest hour of the day to suggest, 24h. Default 9."),
-            "latest_hour": Self.integer("Latest hour a slot may end, 24h. Default 18.")
+            "duration_minutes": Self.integer("How long the slot needs to be. If not stated, use 30."),
+            "from_date": Self.string("Date to search from, YYYY-MM-DD. Use for 'tomorrow', 'Thursday'."),
+            "days_ahead": Self.integer("How many days to cover. 1 for a single named day. Default 5."),
+            "earliest_hour": Self.integer("Earliest hour to suggest, 24h. morning=9, afternoon=12, evening=17."),
+            "latest_hour": Self.integer("Latest hour a slot may end, 24h. morning=12, afternoon=18.")
         ], required: [])
     }
 
@@ -201,15 +209,18 @@ struct FindTimeTool: AgentTool {
         let days = min(max(ToolArgs.int(arguments, "days_ahead") ?? 5, 1), 14)
         let earliest = ToolArgs.int(arguments, "earliest_hour") ?? 9
         let latest = ToolArgs.int(arguments, "latest_hour") ?? 18
+        // "tomorrow afternoon" needs a day as well as an hour range; without one the
+        // model has nothing to answer with and declines.
+        let from = ToolArgs.date(arguments, "from_date").map { max($0, Date()) } ?? Date()
         let events = calendarManager.upcomingWeek.filter { !$0.isCancelled }
         let slots = Self.freeSlots(in: events, minutes: minutes, days: days,
-                                   earliestHour: earliest, latestHour: latest)
+                                   earliestHour: earliest, latestHour: latest, now: from)
 
         guard !slots.isEmpty else {
             return ProposedAction(
                 kind: .answer, title: "No free time",
                 details: ["Nothing \(minutes) minutes long between \(earliest):00 and \(latest):00 in the next \(days) days."],
-                provenance: Self.provenance(calendarManager, days: days, earliest: earliest, latest: latest),
+                provenance: Self.provenance(calendarManager, from: from, days: days, earliest: earliest, latest: latest),
                 run: { _ in "" })
         }
 
@@ -241,7 +252,7 @@ struct FindTimeTool: AgentTool {
             kind: .answer,
             title: "\(minutes) min",
             groups: groups,
-            provenance: Self.provenance(calendarManager, days: days, earliest: earliest, latest: latest),
+            provenance: Self.provenance(calendarManager, from: from, days: days, earliest: earliest, latest: latest),
             confirmLabel: "Hold it",
             secondary: ("Ask for a change", { _ in "Tell me what to change." }),
             run: { picked in
@@ -262,10 +273,11 @@ struct FindTimeTool: AgentTool {
 
     /// Fix 4: the evidence line. Only claims what was actually done — the calendars read,
     /// the range, the working hours honoured, and whose clock the times are on.
-    @MainActor static func provenance(_ manager: CalendarManager, days: Int, earliest: Int, latest: Int) -> String {
+    @MainActor static func provenance(_ manager: CalendarManager, from: Date, days: Int,
+                                      earliest: Int, latest: Int) -> String {
         let sources = manager.enabledProviderTypes.count
-        let end = Date().addingTimeInterval(TimeInterval(days * 86_400))
-        let range = "\(Date().formatted(.dateTime.day().month(.abbreviated)))–\(end.formatted(.dateTime.day().month(.abbreviated)))"
+        let end = from.addingTimeInterval(TimeInterval(days * 86_400))
+        let range = "\(from.formatted(.dateTime.day().month(.abbreviated)))–\(end.formatted(.dateTime.day().month(.abbreviated)))"
         return "Read \(sources) calendar source\(sources == 1 ? "" : "s"), \(range) · only \(earliest):00–\(latest):00 · times in \(TimeZone.current.localizedName(for: .shortStandard, locale: .current) ?? "your timezone")."
     }
 

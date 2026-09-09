@@ -512,8 +512,18 @@ final class AppLifecycleManager: ObservableObject {
                             calendarID: marginConfig.calendarID ?? quickAddConfig.defaultCalendarID),
             CreateTaskTool(taskManager: taskManager, config: taskConfig),
             TodayTool(calendarManager: calendarManager, taskManager: taskManager),
-            FindTimeTool(calendarManager: calendarManager)
+            FindTimeTool(calendarManager: calendarManager),
+            CapabilitiesTool(summaries: { [weak margin] in margin?.capabilities ?? [] })
         ])
+
+        // Routing fixtures, run headless against the configured model.
+        if ProcessInfo.processInfo.environment["MARGIN_FIXTURES"] != nil {
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                let allPassed = await MarginFixtures.run(agent: margin, config: marginConfig)
+                exit(allPassed ? 0 : 1)
+            }
+        }
 
         // Demo hook, same shape as MEETINGINTRO_SELFTEST: open Margin and ask it one
         // question, so a page can be exercised and captured without synthesising

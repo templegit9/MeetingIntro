@@ -18,6 +18,11 @@ protocol AgentTool: Sendable {
     /// JSON Schema for the arguments, as the OpenAI/Ollama tool format expects.
     var parameters: [String: Any] { get }
 
+    /// How this reads to a person when Margin is asked what it can do. Separate from
+    /// `description`, which is written for the model — the two audiences want different
+    /// sentences, and conflating them makes one of them worse.
+    var humanSummary: String { get }
+
     /// Turn model arguments into something the user can read and approve. Throwing here
     /// is normal — a missing or nonsense argument becomes a plain sentence, never a
     /// silent no-op.
@@ -25,6 +30,9 @@ protocol AgentTool: Sendable {
 }
 
 extension AgentTool {
+    /// Falls back to the model-facing text rather than forcing every tool to write two.
+    var humanSummary: String { description }
+
     /// The tool as Ollama's `/api/chat` wants it.
     var wireFormat: [String: Any] {
         ["type": "function",

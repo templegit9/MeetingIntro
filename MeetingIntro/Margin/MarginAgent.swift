@@ -35,6 +35,12 @@ final class MarginAgent: ObservableObject {
 
     var toolNames: [String] { tools.map(\.name) }
 
+    /// Person-facing summary of the registry, for the capabilities answer. Derived, so a
+    /// new tool shows up here the moment it is registered.
+    var capabilities: [String] {
+        tools.filter { !($0 is CapabilitiesTool) }.map(\.humanSummary)
+    }
+
     /// Instructions. The date has to be stated: a local model has no clock, and every
     /// "tomorrow" depends on it.
     private var systemPrompt: String {
@@ -52,6 +58,12 @@ final class MarginAgent: ObservableObject {
 
         Only invite people whose email address the user actually typed. Never guess an address from \
         a name. Keep every reply to one or two sentences.
+
+        If the user asks what you can do, what you are, or for help, call list_capabilities. Never \
+        answer a question about your abilities by calling a tool that does something else.
+
+        You cannot move, reschedule, cancel or delete anything that already exists. If asked to, say \
+        so plainly — NEVER create a new event instead, as that would leave the user with two.
         """
     }
 
@@ -185,6 +197,18 @@ final class MarginAgent: ObservableObject {
         } catch {
             diagnosticLog?.warn(.assistant, "Margin: couldn't cross out — \(error.localizedDescription)")
         }
+    }
+
+    /// Which tool the model picks for an utterance, without preparing or running
+    /// anything. Exists for `MarginFixtures` — routing is measured, not assumed.
+    func routeForTesting(_ prompt: String) async -> String? {
+        let messages: [[String: Any]] = [["role": "system", "content": systemPrompt],
+                                         ["role": "user", "content": prompt]]
+        let reply = try? await OllamaToolClient.chat(
+            baseURL: config.baseURL, model: config.model,
+            messages: messages, tools: tools.map(\.wireFormat),
+            timeout: TimeInterval(config.timeoutSeconds))
+        return reply?.toolCalls.first?.name
     }
 
     /// Check the local model before the user types into a dead box.
