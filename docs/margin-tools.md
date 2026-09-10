@@ -4,6 +4,12 @@ Every capability Margin could have, what already backs it, and what it would cos
 registry is the *only* thing the model may do — anything not on this list it must decline,
 which is why the list is worth being exhaustive about.
 
+**Progress:** the file reads and the two writes are built, registered and tested —
+`find_files`, `find_files_by_content`, `folder_summary`, `where_is`, `move_files`,
+`trash_files`. Verification: 28/28 routing fixtures against the live registry, 4/4
+deterministic guards with no model involved, and a filesystem self-test covering
+collision renaming, exact undo, and restore-from-Trash.
+
 ## Three rails that apply to every tool below
 
 1. **Reads answer; writes propose.** A read (find, list, summarise) returns a page. A write
@@ -25,27 +31,27 @@ tool wrapper · **new**: real new work.
 
 | Tool | Does | Arguments | Status |
 |---|---|---|---|
-| `find_files` | Files by name, extension, size, age, folder | `query, ext[], folder?, newer_than?, older_than?, larger_than_mb?, limit` | wire — Spotlight `NSMetadataQuery`, or the existing directory walk in `FileOrganizer.gather` |
-| `find_files_by_content` | Files whose *text* matches, including scans and screenshots | `text, folder?, limit` | wire — `FilePreviewExtractor` already extracts text, PDF pages and Vision OCR |
+| `find_files` | Files by name, extension, size, age, folder | `query, ext[], folder?, newer_than_days?, older_than_days?, larger_than_mb?, recursive?, limit` | **BUILT** |
+| `find_files_by_content` | Files whose *text* matches, including scans and screenshots | `text, folder?, ext[], limit` | **BUILT** — reads at most 120 files and says how many it opened |
 | `find_duplicates` | Byte-identical copies, keeps the shortest path | `folder` | **built** — `FileOrganizer.findDuplicates`, size→SHA-256 |
-| `folder_summary` | What's in here: counts by kind, total size, oldest, biggest | `folder` | wire |
+| `folder_summary` | What's in here: counts by kind, total size, oldest, biggest | `folder, recursive?` | **BUILT** |
 | `disk_hogs` | Largest files or folders under a root | `folder, limit` | wire |
 | `recent_files` | Recently added or changed, e.g. "what did I download yesterday" | `folder?, since` | wire |
 | `read_file` | Text, PDF first page, or OCR of one file, to answer about it | `path` | **built** — `FilePreviewExtractor.extract` |
 | `compare_folders` | In A but not in B, and vice versa | `folder_a, folder_b` | new (small) |
-| `where_is` | Locate a named file anywhere granted | `name` | wire |
+| `where_is` | Locate a named file anywhere granted | `name` | **BUILT** — searches every granted root, subfolders included |
 
 ## B · Moving and tidying (writes — previewed, undoable)
 
 | Tool | Does | Arguments | Status |
 |---|---|---|---|
-| `move_files` | Move a matched set to a destination | `selector{query/ext/older_than/…}, destination` | **new** — reuses collision-safe move + `UndoBatch` |
+| `move_files` | Move a matched set to a destination | `selector…, destination` | **BUILT** — collision-safe, exact undo |
 | `copy_files` | Same, copying instead of moving | `selector, destination` | new |
 | `rename_files` | Pattern rename: date prefix, clean casing, strip junk | `selector, pattern` | wire — sanitiser and unique-name logic exist |
 | `organize_folder` | AI foldering of a folder, with a preview | `folder, rename?` | **built** — `FileOrganizer.plan` / `apply` |
 | `reorganize_folder` | Pull everything out of nested folders into a fresh structure | `folder` | **built** — `OrganizeMode.reorganize`, prunes emptied folders |
 | `create_folder` | Make a folder | `parent, name` | wire |
-| `trash_files` | Move to Trash. Never a permanent delete | `selector` | **built** — `FileProposal.action == .trash` |
+| `trash_files` | Move to Trash. Never a permanent delete | `selector…` | **BUILT** — refuses without a filter; undo restores from the Trash |
 | `archive_files` | Zip a set into one archive, optionally trashing the originals | `selector, archive_name` | new |
 | `flatten_folder` | Unnest one level, resolving name collisions | `folder` | wire |
 | `sort_by_date` | Into `YYYY/MM` folders | `folder, granularity` | wire |
@@ -114,12 +120,11 @@ tool wrapper · **new**: real new work.
 
 ---
 
-## Suggested order
+## Order
 
-1. `find_files`, `find_files_by_content`, `folder_summary`, `where_is` — reads first. They
-   are safe, they are instant, and they are what "search for files" actually means.
-2. `move_files`, `trash_files`, `create_folder`, `rename_files` — the mutation core, on the
-   preview-confirm-undo rail already proven by File Organizer.
+1. ~~`find_files`, `find_files_by_content`, `folder_summary`, `where_is`~~ — **done**.
+2. ~~`move_files`, `trash_files`~~ — **done**. `create_folder` and `rename_files` are the
+   next two on the same rail and are small now that the matcher and the undo shape exist.
 3. `list_tasks`, `complete_task`, `day_briefing`, `rsvp` — cheap wires over existing state.
 4. `move_event` / `cancel_event` — the one piece of genuinely new provider work, and the
    thing most often asked for.
