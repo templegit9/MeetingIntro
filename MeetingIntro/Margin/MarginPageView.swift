@@ -18,6 +18,7 @@ struct MarginPageView: View {
     @ObservedObject var agent: MarginAgent
     @ObservedObject var config: MarginConfig
     var ribbon: [MarginNudge] = []
+    var roots: MarginRoots?
     var onWatches: () -> Void = {}
     let onClose: () -> Void
     /// Probe mode: the same stack, laid out unbounded so its true height can be measured.
@@ -162,14 +163,43 @@ struct MarginPageView: View {
     private var blankPage: some View {
         VStack(alignment: .leading, spacing: 8) {
             kicker(Date().formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
-            ForEach(["What's on today?", "When am I free for 30 minutes?", "Lunch with Sam tomorrow 1pm"], id: \.self) { line in
+            ForEach(suggestions, id: \.self) { line in
                 Button {
                     input = line
                     Task { await ask() }
                 } label: { body(line, color: MarginTheme.inkSoft) }
                 .buttonStyle(.plain)
             }
+            // Half the registry is file tools, and they can't see anything until a folder
+            // is granted. Saying so on the first page is the difference between "it can't
+            // do files" and "it hasn't been allowed to yet".
+            if let roots, roots.roots.isEmpty {
+                Divider().overlay(MarginTheme.rule).padding(.vertical, 2)
+                Text("I can't see any of your files yet.")
+                    .font(.system(size: 11.5, design: .serif))
+                    .foregroundStyle(MarginTheme.inkSoft)
+                Button("Grant a folder…") { roots.grant() }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 11.5, weight: .semibold, design: .serif))
+                    .foregroundStyle(MarginTheme.cloth)
+            }
         }
+    }
+
+    /// What it can do, shown as things you can actually press. Drawn from **both halves**
+    /// of the registry — a calendar-only list was quietly telling people files weren't
+    /// supported. The file examples only appear once a folder is granted, because
+    /// suggesting something that will answer "not granted" is a worse first impression
+    /// than not suggesting it.
+    private var suggestions: [String] {
+        var lines = ["What's on today?", "When am I free for 30 minutes?"]
+        if let roots, !roots.roots.isEmpty {
+            let folder = roots.roots[0].name
+            lines.append("What's in my \(folder) folder?")
+            lines.append("Find the PDFs in \(folder)")
+        }
+        lines.append("Lunch with Sam tomorrow 1pm")
+        return lines
     }
 
     private func problemPage(_ problem: String) -> some View {
@@ -365,7 +395,9 @@ struct MarginPageView: View {
             Image(systemName: "pencil")
                 .font(.system(size: 10))
                 .foregroundStyle(MarginTheme.inkSoft.opacity(0.8))
-            TextField("", text: $input, prompt: Text("Ask for a change…").foregroundColor(MarginTheme.inkSoft))
+            TextField("", text: $input,
+                      prompt: Text(agent.turns.isEmpty ? "Write here…" : "Ask for a change…")
+                        .foregroundColor(MarginTheme.inkSoft))
                 .textFieldStyle(.plain)
                 .font(.system(size: 13, design: .serif))
                 .foregroundStyle(MarginTheme.ink)

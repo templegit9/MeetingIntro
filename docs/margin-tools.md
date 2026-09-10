@@ -4,11 +4,11 @@ Every capability Margin could have, what already backs it, and what it would cos
 registry is the *only* thing the model may do — anything not on this list it must decline,
 which is why the list is worth being exhaustive about.
 
-**Progress:** the file reads and the two writes are built, registered and tested —
-`find_files`, `find_files_by_content`, `folder_summary`, `where_is`, `move_files`,
-`trash_files`. Verification: 28/28 routing fixtures against the live registry, 4/4
-deterministic guards with no model involved, and a filesystem self-test covering
-collision renaming, exact undo, and restore-from-Trash.
+**Progress:** eight file tools built, registered and tested — `find_files`,
+`find_files_by_content`, `folder_summary`, `where_is`, `move_files`, `trash_files`,
+`create_folder`, `rename_files`. Verification: **31/31** routing fixtures against the live
+registry, **6/6** deterministic guards with no model involved, and a filesystem self-test
+covering collision renaming, exact undo, and restore-from-Trash.
 
 ## Three rails that apply to every tool below
 
@@ -47,10 +47,10 @@ tool wrapper · **new**: real new work.
 |---|---|---|---|
 | `move_files` | Move a matched set to a destination | `selector…, destination` | **BUILT** — collision-safe, exact undo |
 | `copy_files` | Same, copying instead of moving | `selector, destination` | new |
-| `rename_files` | Pattern rename: date prefix, clean casing, strip junk | `selector, pattern` | wire — sanitiser and unique-name logic exist |
+| `rename_files` | Pattern rename: date prefix, lowercase, kebab-case, find/replace | `selector…, style, find?, replace_with?` | **BUILT** — extension never touched, undo restores names |
 | `organize_folder` | AI foldering of a folder, with a preview | `folder, rename?` | **built** — `FileOrganizer.plan` / `apply` |
 | `reorganize_folder` | Pull everything out of nested folders into a fresh structure | `folder` | **built** — `OrganizeMode.reorganize`, prunes emptied folders |
-| `create_folder` | Make a folder | `parent, name` | wire |
+| `create_folder` | Make a folder | `parent, name` | **BUILT** — undo removes it only if still empty |
 | `trash_files` | Move to Trash. Never a permanent delete | `selector…` | **BUILT** — refuses without a filter; undo restores from the Trash |
 | `archive_files` | Zip a set into one archive, optionally trashing the originals | `selector, archive_name` | new |
 | `flatten_folder` | Unnest one level, resolving name collisions | `folder` | wire |
@@ -123,8 +123,7 @@ tool wrapper · **new**: real new work.
 ## Order
 
 1. ~~`find_files`, `find_files_by_content`, `folder_summary`, `where_is`~~ — **done**.
-2. ~~`move_files`, `trash_files`~~ — **done**. `create_folder` and `rename_files` are the
-   next two on the same rail and are small now that the matcher and the undo shape exist.
+2. ~~`move_files`, `trash_files`, `create_folder`, `rename_files`~~ — **done**.
 3. `list_tasks`, `complete_task`, `day_briefing`, `rsvp` — cheap wires over existing state.
 4. `move_event` / `cancel_event` — the one piece of genuinely new provider work, and the
    thing most often asked for.

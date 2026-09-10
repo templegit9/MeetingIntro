@@ -263,6 +263,7 @@ private struct MarginRootView: View {
                 } else {
                     MarginPageView(agent: agent, config: config,
                                    ribbon: nudges.onRibbon,
+                                   roots: controller.roots,
                                    onWatches: { controller.showingWatches = true },
                                    onClose: { controller.close() })
                 }

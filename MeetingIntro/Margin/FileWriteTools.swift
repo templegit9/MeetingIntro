@@ -223,3 +223,223 @@ struct TrashFilesTool: AgentTool {
         return done
     }
 }
+
+/// Make a folder.
+///
+/// Trivial next to the others, and worth having as its own tool anyway: "make me an
+/// Invoices folder" shouldn't have to be expressed as a move of zero files.
+struct CreateFolderTool: AgentTool {
+    let name = "create_folder"
+    let description = "Create a new folder. Use for 'make an Invoices folder in Downloads', 'create a 2026 folder'."
+    var humanSummary: String { "make a folder" }
+    var parameters: [String: Any] {
+        Self.schema([
+            "name": Self.string("Name of the folder to create"),
+            "parent": Self.string("Folder to create it inside")
+        ], required: ["name"])
+    }
+
+    let roots: MarginRoots
+
+    @MainActor func prepare(_ arguments: [String: Any]) async throws -> ProposedAction {
+        guard let rawName = ToolArgs.string(arguments, "name") else {
+            throw ToolArgumentError(message: "What should the folder be called?")
+        }
+        let named = ToolArgs.string(arguments, "parent")
+        guard let parent = roots.resolve(named) else {
+            return FilePages.notGranted(named ?? "", roots: roots)
+        }
+        // A name with a slash in it would silently create a nested path — or escape the
+        // parent entirely with "..". Sanitise to a single component.
+        let folderName = FileNames.sanitizeComponent(rawName)
+        guard !folderName.isEmpty else {
+            throw ToolArgumentError(message: "“\(rawName)” isn't a usable folder name.")
+        }
+        let target = parent.appendingPathComponent(folderName, isDirectory: true)
+
+        if FileManager.default.fileExists(atPath: target.path) {
+            return ProposedAction(
+                kind: .answer, title: "Already there",
+                details: ["\(folderName) already exists in \(parent.lastPathComponent)."],
+                provenance: "Nothing was created.", run: { _ in "" })
+        }
+        return ProposedAction(
+            kind: .change,
+            title: "Create folder",
+            details: ["\(folderName) in \(parent.lastPathComponent)"],
+            confirmLabel: "Create",
+            run: { _ in
+                try FileManager.default.createDirectory(at: target, withIntermediateDirectories: false)
+                return "Created \(folderName)."
+            },
+            undo: {
+                // Only if it's still empty — undo must never take something away that was
+                // put there after the fact.
+                let contents = try? FileManager.default.contentsOfDirectory(atPath: target.path)
+                if contents?.isEmpty ?? false { try? FileManager.default.removeItem(at: target) }
+            })
+    }
+}
+
+/// Rename a matched set by a pattern.
+struct RenameFilesTool: AgentTool {
+    let name = "rename_files"
+    let description = "Rename files by a pattern. Use for 'prefix these with the date', 'replace IMG_ with Holiday', 'make these names lowercase'. Renames only — never moves or deletes."
+    var humanSummary: String { "rename files by a pattern" }
+    var parameters: [String: Any] {
+        Self.schema([
+            "query": Self.string("Text the file name should contain"),
+            "ext": Self.stringArray("Extensions, without the dot"),
+            "folder": Self.string("Folder the files are in"),
+            "older_than_days": Self.integer("Only files older than this many days"),
+            "newer_than_days": Self.integer("Only files changed within this many days"),
+            "style": Self.string("One of: date_prefix, lowercase, kebab, replace"),
+            "find": Self.string("Text to replace, when style is replace"),
+            "replace_with": Self.string("Replacement text, when style is replace"),
+            "limit": Self.integer("Cap on how many to rename. Default 100.")
+        ], required: ["style"])
+    }
+
+    let roots: MarginRoots
+
+    @MainActor func prepare(_ arguments: [String: Any]) async throws -> ProposedAction {
+        var (match, folder, missing) = FileFinder.selector(from: arguments, roots: roots)
+        if let missing { return FilePages.notGranted(missing, roots: roots) }
+        guard let folder else { return FilePages.notGranted("", roots: roots) }
+        match.limit = min(max(ToolArgs.int(arguments, "limit") ?? 100, 1), 500)
+
+        guard let style = RenameStyle(arguments: arguments) else {
+            throw ToolArgumentError(message: "I don't know that renaming style. I can add a date prefix, lowercase, kebab-case, or replace one piece of text with another.")
+        }
+
+        let files = FileFinder.find(match, in: [folder])
+        // Only the ones the pattern actually changes. Listing files whose name would be
+        // identical afterwards pads the page and overstates what is happening.
+        let renames = files.compactMap { file -> (FoundFile, String)? in
+            let proposed = style.apply(to: file)
+            return proposed == file.name ? nil : (file, proposed)
+        }
+        guard !renames.isEmpty else {
+            return ProposedAction(
+                kind: .answer, title: "Nothing to rename",
+                details: files.isEmpty
+                    ? ["No files in \(folder.lastPathComponent) match that."]
+                    : ["All \(files.count) matching file\(files.count == 1 ? "" : "s") already read that way."],
+                provenance: FindFilesTool.provenance(folder: folder, match: match, count: files.count),
+                run: { _ in "" })
+        }
+
+        var details = renames.prefix(MoveFilesTool.listCap).map { "\($0.0.name) → \($0.1)" }
+        if renames.count > MoveFilesTool.listCap {
+            details.append("+ \(renames.count - MoveFilesTool.listCap) more")
+        }
+
+        return ProposedAction(
+            kind: .change,
+            title: "Rename \(renames.count) file\(renames.count == 1 ? "" : "s") · \(style.label)",
+            details: details,
+            confirmLabel: "Rename \(renames.count)",
+            run: { _ in
+                var done: [MoveRecord] = []
+                for (file, newName) in renames {
+                    let target = MoveFilesTool.uniqueURL(in: file.url.deletingLastPathComponent(),
+                                                         fileName: newName)
+                    do {
+                        try FileManager.default.moveItem(at: file.url, to: target)
+                        done.append(MoveRecord(from: file.url, to: target))
+                    } catch { continue }
+                }
+                Self.lastBatch = done
+                return "Renamed \(done.count) file\(done.count == 1 ? "" : "s")."
+            },
+            undo: {
+                let batch = Self.lastBatch
+                Self.lastBatch = []
+                for record in batch.reversed() {
+                    try? FileManager.default.moveItem(at: record.to, to: record.from)
+                }
+            })
+    }
+
+    @MainActor private static var lastBatch: [MoveRecord] = []
+}
+
+/// The renaming patterns Margin offers.
+///
+/// A closed set, for the same reason `DraftRecurrence` is: a free-form pattern language
+/// would be impossible to preview honestly, and the preview is the whole safety model.
+enum RenameStyle {
+    case datePrefix
+    case lowercase
+    case kebab
+    case replace(find: String, with: String)
+
+    init?(arguments: [String: Any]) {
+        switch ToolArgs.string(arguments, "style")?.lowercased() {
+        case "date_prefix", "dateprefix", "date": self = .datePrefix
+        case "lowercase", "lower": self = .lowercase
+        case "kebab", "kebab_case", "slug": self = .kebab
+        case "replace":
+            guard let find = ToolArgs.string(arguments, "find"), !find.isEmpty else { return nil }
+            self = .replace(find: find, with: ToolArgs.string(arguments, "replace_with") ?? "")
+        default: return nil
+        }
+    }
+
+    var label: String {
+        switch self {
+        case .datePrefix: return "date prefix"
+        case .lowercase: return "lowercase"
+        case .kebab: return "kebab-case"
+        case .replace(let find, let with): return with.isEmpty ? "remove “\(find)”" : "“\(find)” → “\(with)”"
+        }
+    }
+
+    /// The extension is never touched — renaming `report.pdf` to `report.PDF` or losing
+    /// the suffix entirely would change what opens the file.
+    func apply(to file: FoundFile) -> String {
+        let base = (file.name as NSString).deletingPathExtension
+        let ext = (file.name as NSString).pathExtension
+        var renamed: String
+        switch self {
+        case .datePrefix:
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.dateFormat = "yyyy-MM-dd"
+            let stamp = formatter.string(from: file.modified ?? Date())
+            renamed = base.hasPrefix(stamp) ? base : "\(stamp) \(base)"
+        case .lowercase:
+            renamed = base.lowercased()
+        case .kebab:
+            renamed = base.lowercased()
+                .replacingOccurrences(of: "[^a-z0-9]+", with: "-", options: .regularExpression)
+                .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+        case .replace(let find, let with):
+            renamed = base.replacingOccurrences(of: find, with: with, options: .caseInsensitive)
+        }
+        renamed = FileNames.sanitizeComponent(renamed)
+        if renamed.isEmpty { return file.name }
+        return ext.isEmpty ? renamed : "\(renamed).\(ext)"
+    }
+}
+
+/// Name hygiene shared by the tools that produce names.
+enum FileNames {
+    /// One path component, with everything that could escape it removed. `/` would create
+    /// a nested path and `..` would climb out of the granted root entirely.
+    static func sanitizeComponent(_ raw: String) -> String {
+        raw.replacingOccurrences(of: "/", with: "-")
+            .replacingOccurrences(of: ":", with: "-")
+            .replacingOccurrences(of: "\\", with: "-")
+            .replacingOccurrences(of: "\u{0}", with: "")
+            // Path-ish debris, collapsed rather than merely made harmless: "../../etc"
+            // has no business surviving as "-..-etc" in a file name either.
+            .replacingOccurrences(of: "\\.{2,}", with: "", options: .regularExpression)
+            .replacingOccurrences(of: "^[.\\-\\s]+", with: "", options: .regularExpression)
+            .replacingOccurrences(of: "-{2,}", with: "-", options: .regularExpression)
+            .replacingOccurrences(of: "\\s{2,}", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespaces)
+            .prefix(120)
+            .description
+    }
+}

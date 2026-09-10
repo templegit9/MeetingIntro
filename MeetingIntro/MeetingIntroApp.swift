@@ -526,7 +526,9 @@ final class AppLifecycleManager: ObservableObject {
             FolderSummaryTool(roots: marginRoots),
             WhereIsTool(roots: marginRoots),
             MoveFilesTool(roots: marginRoots),
-            TrashFilesTool(roots: marginRoots)
+            TrashFilesTool(roots: marginRoots),
+            CreateFolderTool(roots: marginRoots),
+            RenameFilesTool(roots: marginRoots)
         ])
 
         // Routing fixtures, run headless against the configured model.
