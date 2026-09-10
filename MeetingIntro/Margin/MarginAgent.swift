@@ -18,6 +18,14 @@ final class MarginAgent: ObservableObject {
 
     @Published private(set) var turns: [AssistantTurn] = []
     @Published private(set) var isThinking = false
+    /// What it is doing **right now**, in words — "choosing what to do…", then the tool's
+    /// own phrase ("looking for .pdf in Downloads…"). A local model takes 3–20 seconds,
+    /// and a wait you can read is a wait you can judge: it tells you whether it
+    /// understood the question long before the answer lands.
+    @Published private(set) var activity: String?
+    /// When the current activity started, so a long wait can show its age rather than
+    /// looking hung.
+    @Published private(set) var activitySince: Date?
     /// Set when the local model can't be reached, with the fix in the message. Three
     /// different problems (not running / not pulled / no tool support) must not collapse
     /// into one shrug.
@@ -70,10 +78,14 @@ final class MarginAgent: ObservableObject {
     func send(_ text: String) async {
         let prompt = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prompt.isEmpty, !isThinking else { return }
+        // Set before the turn is appended: the panel re-measures its height when the turn
+        // count changes, and the working line has to be part of what it measures or the
+        // page jumps a moment later.
+        beginActivity("choosing what to do…")
         turns.append(AssistantTurn(role: .user, text: prompt))
         isThinking = true
         problem = nil
-        defer { isThinking = false }
+        defer { isThinking = false; endActivity() }
 
         var messages: [[String: Any]] = [["role": "system", "content": systemPrompt]]
         // Carry the recent conversation so "no, tomorrow instead" works. Bounded: a
@@ -104,6 +116,8 @@ final class MarginAgent: ObservableObject {
                 return
             }
             do {
+                // Now it can say what it is actually doing, not just that it is busy.
+                beginActivity(tool.workingPhrase(call.arguments))
                 let action = try await tool.prepare(call.arguments)
                 var turn = AssistantTurn(role: .assistant, text: "")
                 turn.action = action
@@ -197,6 +211,16 @@ final class MarginAgent: ObservableObject {
         } catch {
             diagnosticLog?.warn(.assistant, "Margin: couldn't cross out — \(error.localizedDescription)")
         }
+    }
+
+    private func beginActivity(_ text: String) {
+        activity = text
+        activitySince = Date()
+    }
+
+    private func endActivity() {
+        activity = nil
+        activitySince = nil
     }
 
     /// Which tool the model picks for an utterance, without preparing or running

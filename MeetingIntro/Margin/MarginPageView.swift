@@ -27,6 +27,7 @@ struct MarginPageView: View {
     var measuring = false
 
     @State private var input = ""
+    @State private var sheen = false
     @FocusState private var writing: Bool
 
     /// Rule pitch. Fix 8: text is laid out on this rhythm, so ink sits *on* the line
@@ -85,6 +86,23 @@ struct MarginPageView: View {
         LinearGradient(colors: [MarginTheme.cloth, MarginTheme.clothDark],
                        startPoint: .top, endPoint: .bottom)
             .frame(width: 11)
+            // State lives on the cloth, never on the paper — the spec's rule. A slow
+            // sheen travels the spine while it works, and nothing moves where you read.
+            .overlay(alignment: .top) {
+                if agent.isThinking {
+                    LinearGradient(colors: [.clear, MarginTheme.paper.opacity(0.42), .clear],
+                                   startPoint: .top, endPoint: .bottom)
+                        .frame(height: 70)
+                        .offset(y: sheen ? 420 : -80)
+                        .animation(.linear(duration: 1.7).repeatForever(autoreverses: false), value: sheen)
+                        .allowsHitTesting(false)
+                }
+            }
+            .clipped()
+            .onChange(of: agent.isThinking) { _, working in
+                sheen = false
+                if working { DispatchQueue.main.async { sheen = true } }
+            }
             .contextMenu {
                 // Fix 3's other half: the controls that used to sit on the paper.
                 Button("What it's watching") { onWatches() }
@@ -111,6 +129,7 @@ struct MarginPageView: View {
             ForEach(agent.turns) { turn in
                 turnPage(turn).id(turn.id)
             }
+            if let activity = agent.activity { workingLine(activity) }
             if !agent.ticks.isEmpty { todaysPage }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -200,6 +219,27 @@ struct MarginPageView: View {
         }
         lines.append("Lunch with Sam tomorrow 1pm")
         return lines
+    }
+
+    /// What it is doing, on the line the answer will appear on. The elapsed count starts
+    /// at 5 seconds — early enough that a slow local model reads as slow rather than
+    /// broken, late enough that a quick answer never shows a stopwatch.
+    @ViewBuilder private func workingLine(_ activity: String) -> some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let elapsed = agent.activitySince.map { context.date.timeIntervalSince($0) } ?? 0
+            HStack(spacing: 6) {
+                Text(activity)
+                    .font(.system(size: 12.5, design: .serif))
+                    .foregroundStyle(MarginTheme.inkSoft)
+                    .fixedSize(horizontal: false, vertical: true)
+                if elapsed >= 5 {
+                    Text("\(Int(elapsed))s")
+                        .font(.system(size: 10.5, design: .serif))
+                        .foregroundStyle(MarginTheme.inkSoft.opacity(0.7))
+                        .monospacedDigit()
+                }
+            }
+        }
     }
 
     private func problemPage(_ problem: String) -> some View {
@@ -299,18 +339,25 @@ struct MarginPageView: View {
                 Text(choice.label)
                     .font(.system(size: 13.5, weight: picked || choice.tone == .best ? .semibold : .regular, design: .serif))
                     .foregroundStyle(choice.tone == .caution ? MarginTheme.inkSoft : MarginTheme.ink)
+                    // File names are long and their **end** is the informative part — the
+                    // extension, the date, the version. Tail truncation hid exactly that,
+                    // so long names truncate in the middle instead.
+                    .lineLimit(2)
+                    .truncationMode(.middle)
+                Spacer(minLength: 6)
                 if let note = choice.note {
                     Text(note)
                         .font(.system(size: 11, design: .serif))
                         .foregroundStyle(choice.tone == .caution ? MarginTheme.amberInk : MarginTheme.inkSoft)
                         .lineLimit(2)
-                        .minimumScaleFactor(0.85)
+                        .multilineTextAlignment(.trailing)
                         .fixedSize(horizontal: false, vertical: true)
+                        .layoutPriority(-1)
                 }
-                Spacer(minLength: 0)
             }
             .padding(.horizontal, 9)
-            .frame(height: 44)
+            .padding(.vertical, 6)
+            .frame(minHeight: 44)
             .background(picked ? MarginTheme.cloth.opacity(0.13) : Color.clear,
                         in: RoundedRectangle(cornerRadius: 8))
             .overlay(RoundedRectangle(cornerRadius: 8)

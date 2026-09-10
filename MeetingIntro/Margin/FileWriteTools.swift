@@ -17,6 +17,7 @@ private struct MoveRecord {
 /// Move a matched set into a folder.
 struct MoveFilesTool: AgentTool {
     let name = "move_files"
+    func workingPhrase(_ a: [String: Any]) -> String { "working out what to move…" }
     let description = "Move files into a folder. Use for 'move the dmgs into Installers', 'put last month's invoices in Archive'. Never deletes anything."
     var humanSummary: String { "move files into a folder" }
     var parameters: [String: Any] {
@@ -135,6 +136,7 @@ struct MoveFilesTool: AgentTool {
 /// Move a matched set to the Trash.
 struct TrashFilesTool: AgentTool {
     let name = "trash_files"
+    func workingPhrase(_ a: [String: Any]) -> String { "working out what to Trash…" }
     let description = "Move files to the Trash. Use for 'bin the old installers', 'clear out screenshots from last year'. This is the Trash, not a permanent delete — the user can restore them."
     var humanSummary: String { "move files to the Trash (never a permanent delete)" }
     var parameters: [String: Any] {
@@ -230,6 +232,7 @@ struct TrashFilesTool: AgentTool {
 /// Invoices folder" shouldn't have to be expressed as a move of zero files.
 struct CreateFolderTool: AgentTool {
     let name = "create_folder"
+    func workingPhrase(_ a: [String: Any]) -> String { "checking that folder doesn't exist…" }
     let description = "Create a new folder. Use for 'make an Invoices folder in Downloads', 'create a 2026 folder'."
     var humanSummary: String { "make a folder" }
     var parameters: [String: Any] {
@@ -284,6 +287,7 @@ struct CreateFolderTool: AgentTool {
 /// Rename a matched set by a pattern.
 struct RenameFilesTool: AgentTool {
     let name = "rename_files"
+    func workingPhrase(_ a: [String: Any]) -> String { "working out the new names…" }
     let description = "Rename files by a pattern. Use for 'prefix these with the date', 'replace IMG_ with Holiday', 'make these names lowercase'. Renames only — never moves or deletes."
     var humanSummary: String { "rename files by a pattern" }
     var parameters: [String: Any] {

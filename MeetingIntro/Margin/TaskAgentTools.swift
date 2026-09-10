@@ -9,6 +9,7 @@ import Foundation
 /// What's outstanding. An answer you can act on: pick a line and tick it.
 struct ListTasksTool: AgentTool {
     let name = "list_tasks"
+    func workingPhrase(_ a: [String: Any]) -> String { "reading your list…" }
     let description = "List outstanding to-dos, optionally only the ones due soon or overdue. Use for 'what's on my list', 'what's overdue', 'what's due this week'."
     var humanSummary: String { "list what's outstanding, and tick things off" }
     var parameters: [String: Any] {
@@ -103,6 +104,7 @@ struct ListTasksTool: AgentTool {
 /// Tick something off by name.
 struct CompleteTaskTool: AgentTool {
     let name = "complete_task"
+    func workingPhrase(_ a: [String: Any]) -> String { "finding that task…" }
     let description = "Mark a to-do as done, found by its name. Use for 'mark the expense report done', 'I've sent the deck'."
     var humanSummary: String { "tick a to-do off" }
     var parameters: [String: Any] {
@@ -187,6 +189,7 @@ struct CompleteTaskTool: AgentTool {
 /// The shape of the day, in the order you'd want to hear it.
 struct DayBriefingTool: AgentTool {
     let name = "day_briefing"
+    func workingPhrase(_ a: [String: Any]) -> String { "reading your calendar…" }
     let description = "Summarise the day: how many meetings, when the first and last are, the longest gap, back-to-back runs, and what's due. Use for 'how does my day look', 'brief me', 'what am I in for today'."
     var humanSummary: String { "brief you on the shape of your day" }
     var parameters: [String: Any] {
@@ -284,6 +287,7 @@ struct DayBriefingTool: AgentTool {
 /// Answer an invitation.
 struct RSVPTool: AgentTool {
     let name = "rsvp"
+    func workingPhrase(_ a: [String: Any]) -> String { "finding that invitation…" }
     let description = "Accept, decline or tentatively accept a meeting invitation, found by its name. Use for 'accept the standup', 'decline the Friday review'."
     var humanSummary: String { "accept or decline an invitation" }
     var parameters: [String: Any] {

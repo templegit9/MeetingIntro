@@ -18,6 +18,11 @@ protocol AgentTool: Sendable {
     /// JSON Schema for the arguments, as the OpenAI/Ollama tool format expects.
     var parameters: [String: Any] { get }
 
+    /// What to say while this tool is working, given the arguments the model chose —
+    /// "looking in Downloads", not "thinking". A wait you can read is a wait you can
+    /// judge; a spinner tells you nothing about whether it is doing the right thing.
+    func workingPhrase(_ arguments: [String: Any]) -> String
+
     /// How this reads to a person when Margin is asked what it can do. Separate from
     /// `description`, which is written for the model — the two audiences want different
     /// sentences, and conflating them makes one of them worse.
@@ -32,6 +37,9 @@ protocol AgentTool: Sendable {
 extension AgentTool {
     /// Falls back to the model-facing text rather than forcing every tool to write two.
     var humanSummary: String { description }
+
+    /// Generic fallback, so a new tool is never silent while it works.
+    func workingPhrase(_ arguments: [String: Any]) -> String { "working…" }
 
     /// The tool as Ollama's `/api/chat` wants it.
     var wireFormat: [String: Any] {

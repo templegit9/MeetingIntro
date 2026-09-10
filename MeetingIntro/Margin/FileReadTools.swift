@@ -62,6 +62,13 @@ struct FindFilesTool: AgentTool {
 
     let roots: MarginRoots
 
+    func workingPhrase(_ arguments: [String: Any]) -> String {
+        let folder = ToolArgs.string(arguments, "folder")
+        let kinds = ToolArgs.strings(arguments, "ext").map { ".\($0)" }.joined(separator: ", ")
+        let what = kinds.isEmpty ? "files" : kinds
+        return folder.map { "looking for \(what) in \($0)…" } ?? "looking for \(what)…"
+    }
+
     @MainActor func prepare(_ arguments: [String: Any]) async throws -> ProposedAction {
         let (match, folder, missing) = FileFinder.selector(from: arguments, roots: roots)
         if let missing { return FilePages.notGranted(missing, roots: roots) }
@@ -114,6 +121,13 @@ struct FindByContentTool: AgentTool {
     }
 
     let roots: MarginRoots
+
+    func workingPhrase(_ arguments: [String: Any]) -> String {
+        let text = ToolArgs.string(arguments, "text") ?? "that"
+        let folder = ToolArgs.string(arguments, "folder")
+        return folder.map { "reading files in \($0) for “\(text)”…" } ?? "reading files for “\(text)”…"
+    }
+
     /// Reading files is slow next to listing them, so the number opened is capped and the
     /// page says what the cap was. A search that silently stopped early is a lie.
     static let scanCap = 120
@@ -173,6 +187,10 @@ struct FolderSummaryTool: AgentTool {
 
     let roots: MarginRoots
 
+    func workingPhrase(_ arguments: [String: Any]) -> String {
+        "counting what's in \(ToolArgs.string(arguments, "folder") ?? "the folder")…"
+    }
+
     @MainActor func prepare(_ arguments: [String: Any]) async throws -> ProposedAction {
         var (match, folder, missing) = FileFinder.selector(from: arguments, roots: roots)
         if let missing { return FilePages.notGranted(missing, roots: roots) }
@@ -217,6 +235,10 @@ struct WhereIsTool: AgentTool {
     }
 
     let roots: MarginRoots
+
+    func workingPhrase(_ arguments: [String: Any]) -> String {
+        "searching every folder for “\(ToolArgs.string(arguments, "name") ?? "it")”…"
+    }
 
     @MainActor func prepare(_ arguments: [String: Any]) async throws -> ProposedAction {
         guard let needle = ToolArgs.string(arguments, "name") else {

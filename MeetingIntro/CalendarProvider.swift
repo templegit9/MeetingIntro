@@ -190,6 +190,27 @@ protocol CalendarProvider {
     /// Respond to an invitation (accept / decline / tentativelyAccept). Throws
     /// `.notSupported` on backends that can't write the response.
     func respond(to eventID: String, status: ResponseStatus) async throws
+
+    /// Whether this backend can change an event that already exists.
+    ///
+    /// **A protocol requirement, not an extension member** — extension-only members are
+    /// statically dispatched, so a default in an extension would be read from the
+    /// protocol type and every provider would answer the same thing. That bug shipped
+    /// once already with `requiresInteractiveSignIn`; don't recreate it here.
+    var canModifyEvents: Bool { get }
+
+    /// Move an existing event. `occurrenceDate` identifies which occurrence of a
+    /// recurring series is meant — EventKit gives every occurrence the same identifier,
+    /// so without it "move my 3pm" could move the wrong week.
+    func moveEvent(id: String, occurrenceDate: Date?, to start: Date, end: Date) async throws
+
+    /// Cancel or remove an existing event.
+    ///
+    /// **The two backends do genuinely different things here**, and the UI says which:
+    /// Graph can *cancel* a meeting you organise (attendees are told); EventKit can only
+    /// *remove it from your calendar* — Apple exposes no cancellation API — so nobody
+    /// else finds out.
+    func cancelEvent(id: String, occurrenceDate: Date?) async throws
 }
 
 // MARK: - CalendarInfo
@@ -199,6 +220,16 @@ protocol CalendarProvider {
 /// the cancellation via the structured status field — common with older Exchange
 /// servers that forward invites with a rewritten title.
 extension CalendarProvider {
+    /// Modifying isn't supported unless a provider says so, and the default throws rather
+    /// than succeeding quietly.
+    var canModifyEvents: Bool { false }
+    func moveEvent(id: String, occurrenceDate: Date?, to start: Date, end: Date) async throws {
+        throw CalendarProviderError.notSupported
+    }
+    func cancelEvent(id: String, occurrenceDate: Date?) async throws {
+        throw CalendarProviderError.notSupported
+    }
+
     /// Default: authorizing is silent or a one-time system prompt. EventKit's
     /// `requestAccess` is a macOS permission dialog shown once, so a poll may trigger
     /// it; a Graph sign-in opens a browser plus a consent sheet and must be started by

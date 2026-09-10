@@ -11,6 +11,7 @@ import Foundation
 /// added and not mentioned here would be a lie the first time someone asked.
 struct CapabilitiesTool: AgentTool {
     let name = "list_capabilities"
+    func workingPhrase(_ a: [String: Any]) -> String { "checking what I can do…" }
     let description = "Answer what you are able to do. Use for 'what can you do', 'help', 'what do you do'."
     var humanSummary: String { "tell you what I can do" }
     var parameters: [String: Any] { Self.schema([:]) }

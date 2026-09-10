@@ -7,6 +7,7 @@ import Foundation
 /// event came from typing a sentence or from asking the assistant.
 struct CreateEventTool: AgentTool {
     let name = "create_event"
+    func workingPhrase(_ a: [String: Any]) -> String { "checking for clashes…" }
     let description = "Create a calendar event or block time. Use for meetings, holds and all-day events."
     var humanSummary: String { "put something in your calendar — a meeting, a hold, an all-day event" }
     var parameters: [String: Any] {
@@ -109,6 +110,7 @@ struct CreateEventTool: AgentTool {
 /// Create a to-do. Undoable, unlike a calendar write, so it carries an undo.
 struct CreateTaskTool: AgentTool {
     let name = "create_task"
+    func workingPhrase(_ a: [String: Any]) -> String { "writing that down…" }
     let description = "Create a to-do item, with an optional deadline."
     var humanSummary: String { "add a to-do, with a deadline and a reminder" }
     var parameters: [String: Any] {
@@ -156,6 +158,7 @@ struct CreateTaskTool: AgentTool {
 /// confirm and nothing to undo.
 struct TodayTool: AgentTool {
     let name = "whats_on_today"
+    func workingPhrase(_ a: [String: Any]) -> String { "reading today…" }
     let description = "List today's meetings and what the day looks like."
     var humanSummary: String { "tell you what's on today" }
     var parameters: [String: Any] { Self.schema([:]) }
@@ -187,6 +190,7 @@ struct TodayTool: AgentTool {
 /// no waiting. This is the answer that makes the assistant feel like one.
 struct FindTimeTool: AgentTool {
     let name = "find_time"
+    func workingPhrase(_ a: [String: Any]) -> String { "reading your calendar for gaps…" }
     // Measured: with the narrow description the model declined "what's free tomorrow
     // afternoon" outright, and with no way to say *which* day it had nothing to answer
     // with. Naming the phrasings and adding `from_date` took the fixture set to 20/20.
