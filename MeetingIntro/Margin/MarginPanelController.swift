@@ -22,6 +22,7 @@ final class MarginPanelController: NSObject, ObservableObject {
     private let agent: MarginAgent
     private let config: MarginConfig
     let nudges: MarginNudgeEngine
+    let roots: MarginRoots
 
     @Published private(set) var isOpen = false
     @Published private(set) var hovering = false
@@ -33,10 +34,11 @@ final class MarginPanelController: NSObject, ObservableObject {
 
     @Published var showingWatches = false
 
-    init(agent: MarginAgent, config: MarginConfig, nudges: MarginNudgeEngine) {
+    init(agent: MarginAgent, config: MarginConfig, nudges: MarginNudgeEngine, roots: MarginRoots) {
         self.agent = agent
         self.config = config
         self.nudges = nudges
+        self.roots = roots
         super.init()
 
         // A corner folds itself: the panel grows to show one page, WITHOUT taking focus
@@ -255,7 +257,9 @@ private struct MarginRootView: View {
         Group {
             if controller.isOpen {
                 if controller.showingWatches {
-                    MarginWatchesView(engine: nudges, config: config) { controller.showingWatches = false }
+                    MarginWatchesView(engine: nudges, config: config, roots: controller.roots) {
+                        controller.showingWatches = false
+                    }
                 } else {
                     MarginPageView(agent: agent, config: config,
                                    ribbon: nudges.onRibbon,

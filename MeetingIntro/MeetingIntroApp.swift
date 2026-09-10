@@ -152,6 +152,7 @@ struct MeetingIntroApp: App {
     @StateObject private var margin: MarginAgent
     @StateObject private var marginPanel: MarginPanelController
     @StateObject private var marginNudges: MarginNudgeEngine
+    @StateObject private var marginRoots: MarginRoots
     @StateObject private var fileOrganizer = FileOrganizer()
     @StateObject private var fileOrganizerCoordinator = FileOrganizerCoordinator()
     @StateObject private var notesConfig: MeetingNotesConfig
@@ -190,8 +191,11 @@ struct MeetingIntroApp: App {
         _margin = StateObject(wrappedValue: marginAgent)
         let marginNudgeEngine = MarginNudgeEngine()
         _marginNudges = StateObject(wrappedValue: marginNudgeEngine)
+        let marginRootStore = MarginRoots()
+        _marginRoots = StateObject(wrappedValue: marginRootStore)
         _marginPanel = StateObject(wrappedValue: MarginPanelController(agent: marginAgent, config: marginCfg,
-                                                                      nudges: marginNudgeEngine))
+                                                                      nudges: marginNudgeEngine,
+                                                                      roots: marginRootStore))
 
         let tConfig = TaskConfig()
         _taskConfig = StateObject(wrappedValue: tConfig)
@@ -227,6 +231,7 @@ struct MeetingIntroApp: App {
             marginConfig: marginConfig,
             marginNudges: marginNudges,
             marginPanel: marginPanel,
+            marginRoots: marginRoots,
             fileOrganizer: fileOrganizer,
             fileOrganizerCoordinator: fileOrganizerCoordinator,
             tickerConfig: tickerConfig,
@@ -456,6 +461,7 @@ final class AppLifecycleManager: ObservableObject {
         marginConfig: MarginConfig,
         marginNudges: MarginNudgeEngine,
         marginPanel: MarginPanelController,
+        marginRoots: MarginRoots,
         fileOrganizer: FileOrganizer,
         fileOrganizerCoordinator: FileOrganizerCoordinator,
         tickerConfig: TickerConfig,
@@ -513,15 +519,23 @@ final class AppLifecycleManager: ObservableObject {
             CreateTaskTool(taskManager: taskManager, config: taskConfig),
             TodayTool(calendarManager: calendarManager, taskManager: taskManager),
             FindTimeTool(calendarManager: calendarManager),
-            CapabilitiesTool(summaries: { [weak margin] in margin?.capabilities ?? [] })
+            CapabilitiesTool(summaries: { [weak margin] in margin?.capabilities ?? [] }),
+            // Files. Every one of these refuses to act outside a granted root.
+            FindFilesTool(roots: marginRoots),
+            FindByContentTool(roots: marginRoots),
+            FolderSummaryTool(roots: marginRoots),
+            WhereIsTool(roots: marginRoots),
+            MoveFilesTool(roots: marginRoots),
+            TrashFilesTool(roots: marginRoots)
         ])
 
         // Routing fixtures, run headless against the configured model.
         if ProcessInfo.processInfo.environment["MARGIN_FIXTURES"] != nil {
             Task { @MainActor in
                 try? await Task.sleep(nanoseconds: 1_500_000_000)
-                let allPassed = await MarginFixtures.run(agent: margin, config: marginConfig)
-                exit(allPassed ? 0 : 1)
+                let guardsHeld = await MarginFixtures.guardRails()
+                let routingPassed = await MarginFixtures.run(agent: margin, config: marginConfig)
+                exit(guardsHeld && routingPassed ? 0 : 1)
             }
         }
 

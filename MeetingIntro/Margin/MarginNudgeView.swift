@@ -79,6 +79,7 @@ private struct FoldedPrimary: ButtonStyle {
 struct MarginWatchesView: View {
     @ObservedObject var engine: MarginNudgeEngine
     @ObservedObject var config: MarginConfig
+    @ObservedObject var roots: MarginRoots
     let onBack: () -> Void
 
     var body: some View {
@@ -92,7 +93,7 @@ struct MarginWatchesView: View {
                 }
                 .buttonStyle(.plain).foregroundStyle(MarginTheme.cloth)
                 Spacer()
-                Text("Standing watches")
+                Text("Inside cover")
                     .font(.system(size: 11, weight: .semibold, design: .serif))
                     .foregroundStyle(MarginTheme.inkSoft)
             }
@@ -102,6 +103,47 @@ struct MarginWatchesView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
+                        // What it may touch. A file assistant without this list is one you
+                    // cannot reason about.
+                    Text("FOLDERS I MAY WORK IN")
+                        .font(.system(size: 10, weight: .bold, design: .serif))
+                        .tracking(1.1)
+                        .foregroundStyle(MarginTheme.inkSoft)
+                    if roots.roots.isEmpty {
+                        Text("None yet. I can't see any of your files until you grant a folder.")
+                            .font(.system(size: 11, design: .serif))
+                            .foregroundStyle(MarginTheme.inkSoft)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    ForEach(roots.roots) { root in
+                        HStack(spacing: 8) {
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(root.name)
+                                    .font(.system(size: 12, design: .serif))
+                                    .foregroundStyle(MarginTheme.ink)
+                                Text(root.path)
+                                    .font(.system(size: 9.5, design: .serif))
+                                    .foregroundStyle(MarginTheme.inkSoft)
+                                    .lineLimit(1).truncationMode(.head)
+                            }
+                            Spacer(minLength: 6)
+                            Button("Revoke") { roots.remove(root) }
+                                .buttonStyle(.plain)
+                                .font(.system(size: 10, design: .serif))
+                                .foregroundStyle(MarginTheme.amberInk)
+                        }
+                    }
+                    Button("Grant a folder…") { roots.grant() }
+                        .buttonStyle(.plain)
+                        .font(.system(size: 11, weight: .semibold, design: .serif))
+                        .foregroundStyle(MarginTheme.cloth)
+
+                    Divider().overlay(MarginTheme.rule).padding(.vertical, 2)
+
+                    Text("STANDING WATCHES")
+                        .font(.system(size: 10, weight: .bold, design: .serif))
+                        .tracking(1.1)
+                        .foregroundStyle(MarginTheme.inkSoft)
                     ForEach(engine.watches) { watch in
                         HStack(alignment: .top, spacing: 8) {
                             VStack(alignment: .leading, spacing: 1) {
