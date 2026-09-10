@@ -97,7 +97,20 @@ enum MarginFixtures {
         .init(utterance: "make an Invoices folder in Downloads", expected: "create_folder", note: "create"),
         .init(utterance: "prefix the screenshots with their date", expected: "rename_files", note: "rename pattern"),
         .init(utterance: "replace IMG_ with Holiday in those file names", expected: "rename_files",
-              note: "MUST NOT route to move_files — renaming is not moving")
+              note: "MUST NOT route to move_files — renaming is not moving"),
+
+        // Tasks and the day.
+        .init(utterance: "what's on my list", expected: "list_tasks", note: "outstanding"),
+        .init(utterance: "what's overdue", expected: "list_tasks", note: "scoped list"),
+        .init(utterance: "mark the expense report done", expected: "complete_task", note: "tick off"),
+        .init(utterance: "how does my day look", expected: "day_briefing", note: "shape of the day"),
+        .init(utterance: "brief me on today", expected: "day_briefing", note: "phrasing"),
+        .init(utterance: "decline the Friday review", expected: "rsvp", note: "RSVP"),
+        .init(utterance: "accept the standup invite", expected: "rsvp", note: "RSVP"),
+        // The pair most likely to be confused: one asks what is on, the other what the day
+        // is shaped like. Either is defensible, so both are accepted — nothing else is.
+        .init(utterance: "what meetings do I have today", eitherOf: ["whats_on_today", "day_briefing"],
+              note: "both read today; neither may be a write")
     ]
 
     /// Deterministic guards, run against the tools directly with no model involved.

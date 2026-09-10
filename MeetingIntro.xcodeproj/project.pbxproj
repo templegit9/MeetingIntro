@@ -103,6 +103,7 @@
 		D1D8F3654A6020E2B6709C80 /* MenuBarCountdownModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57ADDD7395104BDD5BE47459 /* MenuBarCountdownModel.swift */; };
 		D3349B049ED441C4588F1DD7 /* AssistantModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C24E33006373415A238AD640 /* AssistantModels.swift */; };
 		D4554F0088C332A486F4EACA /* FileOrganizerCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5C3E13EDDC199D47D5F9DFB /* FileOrganizerCoordinator.swift */; };
+		D8A59E151CF934BAB2B884C1 /* TaskAgentTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16A20720AEA632C3FA6D5C56 /* TaskAgentTools.swift */; };
 		DD8A1A680768E76BFD44F679 /* MixkitSoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C252C77AB45CB10DE5063A4E /* MixkitSoundManager.swift */; };
 		DF34F6437529E629568391AC /* TranscriptModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 021E3CACD81AFC8B3CDCB8FC /* TranscriptModels.swift */; };
 		E6BC699DC42179C53C65FDAB /* FocusModeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01D2DF78FFB46B55D8FBA3A4 /* FocusModeController.swift */; };
@@ -129,6 +130,7 @@
 		0A5247E977C9C28BF96B334C /* TickerSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TickerSettingsSheet.swift; sourceTree = "<group>"; };
 		0DD250C84523C24862974C5D /* CalendarProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarProvider.swift; sourceTree = "<group>"; };
 		14B4D39A7A32C15CF3C1E9B7 /* Mirror.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mirror.swift; sourceTree = "<group>"; };
+		16A20720AEA632C3FA6D5C56 /* TaskAgentTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskAgentTools.swift; sourceTree = "<group>"; };
 		18EB6DCA64E48B0F98D0A9F4 /* TickerCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TickerCoordinator.swift; sourceTree = "<group>"; };
 		19096DC06CF5FF900A5FD61D /* FileMatching.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileMatching.swift; sourceTree = "<group>"; };
 		1A3DCA2311169ED15B355E39 /* RecordingConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingConfig.swift; sourceTree = "<group>"; };
@@ -299,6 +301,7 @@
 				977CBE241EE86C8725A8F5CE /* MarginWatch.swift */,
 				1D0F9C906FA342B4B111A373 /* OllamaToolClient.swift */,
 				1E158978673C867D87439206 /* ProposedAction.swift */,
+				16A20720AEA632C3FA6D5C56 /* TaskAgentTools.swift */,
 			);
 			path = Margin;
 			sourceTree = "<group>";
@@ -638,6 +641,7 @@
 				CCDB3EE0B029EDAD042EF8CF /* RuleEditSheet.swift in Sources */,
 				AD26A100B4AF3676FD59CBC9 /* ScreenCaptureDetector.swift in Sources */,
 				FCE9B7AB56FB291DB7BEDD1F /* SettingsView.swift in Sources */,
+				D8A59E151CF934BAB2B884C1 /* TaskAgentTools.swift in Sources */,
 				CF6868BE11C313E4FDED3FD6 /* TaskDeadlineOverlayView.swift in Sources */,
 				FE74C4FF6F6EBC66E2F627AE /* TaskEditSheet.swift in Sources */,
 				77BC54FBB62CDF7888C5F952 /* TaskModels.swift in Sources */,

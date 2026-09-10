@@ -528,7 +528,12 @@ final class AppLifecycleManager: ObservableObject {
             MoveFilesTool(roots: marginRoots),
             TrashFilesTool(roots: marginRoots),
             CreateFolderTool(roots: marginRoots),
-            RenameFilesTool(roots: marginRoots)
+            RenameFilesTool(roots: marginRoots),
+            // Wires over state the app already publishes — no network, no disk.
+            ListTasksTool(taskManager: taskManager),
+            CompleteTaskTool(taskManager: taskManager),
+            DayBriefingTool(calendarManager: calendarManager, taskManager: taskManager),
+            RSVPTool(calendarManager: calendarManager)
         ])
 
         // Routing fixtures, run headless against the configured model.

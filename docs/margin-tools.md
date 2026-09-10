@@ -4,11 +4,12 @@ Every capability Margin could have, what already backs it, and what it would cos
 registry is the *only* thing the model may do — anything not on this list it must decline,
 which is why the list is worth being exhaustive about.
 
-**Progress:** eight file tools built, registered and tested — `find_files`,
+**Progress:** twelve tools built, registered and tested — eight for files — `find_files`,
 `find_files_by_content`, `folder_summary`, `where_is`, `move_files`, `trash_files`,
-`create_folder`, `rename_files`. Verification: **31/31** routing fixtures against the live
-registry, **6/6** deterministic guards with no model involved, and a filesystem self-test
-covering collision renaming, exact undo, and restore-from-Trash.
+`create_folder`, `rename_files` — plus `list_tasks`, `complete_task`, `day_briefing` and
+`rsvp` over state the app already publishes. Verification: **39/39** routing fixtures
+against the live registry, **6/6** deterministic guards with no model involved, and a
+filesystem self-test covering collision renaming, exact undo, and restore-from-Trash.
 
 ## Three rails that apply to every tool below
 
@@ -74,10 +75,10 @@ tool wrapper · **new**: real new work.
 | `create_event` | Meeting, hold, all-day, repeating, with invitees | **built** |
 | `find_time` | Free slots, grouped and ranked, hold one | **built** |
 | `whats_on_today` | Today at a glance | **built** |
-| `day_briefing` | First, last, back-to-backs, gaps, conflicts, tasks due | wire |
+| `day_briefing` | First, last, back-to-backs, longest gap, overlaps, unanswered, no-link, tasks due | **BUILT** |
 | `week_report` | Hours in meetings this week | wire |
 | `meeting_hygiene` | No join link, no agenda, unanswered invitations | wire |
-| `rsvp` | Accept, decline, tentative | wire — Graph only; EventKit cannot RSVP |
+| `rsvp` | Accept, decline, tentative | **BUILT** — a tear-out (it reaches the organiser); says plainly that macOS Calendar can't RSVP |
 | `move_event` / `cancel_event` | Reschedule or cancel | **new** — issue #22. Both models correctly refuse today because it doesn't exist |
 | `add_link_to_event` | Attach a join link to an existing meeting | new — needs the same modify path |
 
@@ -86,8 +87,9 @@ tool wrapper · **new**: real new work.
 | Tool | Does | Status |
 |---|---|---|
 | `create_task` | To-do with deadline, reminder and channels | **built** |
-| `list_tasks` / `due_soon` | What's outstanding | wire |
-| `complete_task` / `snooze_task` | Tick it, push it | wire |
+| `list_tasks` | What's outstanding, scoped all/overdue/today/week — pick a line and tick it | **BUILT** |
+| `complete_task` | Tick one off by name; more than one match asks rather than guesses | **BUILT** |
+| `snooze_task` | Push a deadline | wire |
 | `extract_tasks` | Action items out of a transcript or notes into tasks | new — the most executive-assistant thing on this page |
 
 ## F · Meetings, recordings, notes
@@ -124,7 +126,7 @@ tool wrapper · **new**: real new work.
 
 1. ~~`find_files`, `find_files_by_content`, `folder_summary`, `where_is`~~ — **done**.
 2. ~~`move_files`, `trash_files`, `create_folder`, `rename_files`~~ — **done**.
-3. `list_tasks`, `complete_task`, `day_briefing`, `rsvp` — cheap wires over existing state.
+3. ~~`list_tasks`, `complete_task`, `day_briefing`, `rsvp`~~ — **done**.
 4. `move_event` / `cancel_event` — the one piece of genuinely new provider work, and the
    thing most often asked for.
 
