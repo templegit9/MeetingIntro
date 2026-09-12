@@ -44,6 +44,25 @@ could not spawn `brew` in any case.
 | `device.audio-input` | The microphone track of a recording |
 | `assets.movies.read-write` | Recordings default to `~/Movies/MeetingIntro/`, outside the container |
 
+## Certificates: what the first export attempt proved
+
+A Mac App Store submission needs **two** certificates, and neither is the Developer ID one
+already on this Mac:
+
+| Certificate | Signs |
+|---|---|
+| **Apple Distribution** | the `.app` |
+| **Mac Installer Distribution** | the `.pkg` that wraps it |
+
+Cloud signing (letting `xcodebuild -allowProvisioningUpdates` mint them) needs an App Store
+Connect API key with **Admin** access. A key created with **App Manager** can upload builds
+but cannot create certificates, and a key's role cannot be changed after it is generated —
+it has to be replaced.
+
+The alternative, which needs no new key: create both in Xcode → Settings → Accounts →
+Manage Certificates → **+**. Xcode registers them in the account and installs them into the
+login keychain, and the existing App Manager key still handles the upload.
+
 ## Still to do — and what each needs
 
 1. **Apple Distribution certificate + Mac App Store provisioning profile.** Only a
