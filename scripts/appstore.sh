@@ -64,7 +64,8 @@ cat > "$BUILD_DIR/ExportOptions.plist" <<PLIST
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>method</key><string>app-store</string>
+  <!-- "app-store" is deprecated in Xcode 26; the current name is app-store-connect. -->
+  <key>method</key><string>app-store-connect</string>
   <key>teamID</key><string>$TEAM_ID</string>
   <key>destination</key><string>export</string>
   <key>signingStyle</key><string>automatic</string>
