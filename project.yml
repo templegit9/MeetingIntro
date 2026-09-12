@@ -87,6 +87,7 @@ targets:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         ITSAppUsesNonExemptEncryption: false
+        LSApplicationCategoryType: public.app-category.productivity
         NSCalendarsFullAccessUsageDescription: "MeetingIntro needs access to your calendars to monitor upcoming meetings and trigger countdown reminders."
         NSCalendarsUsageDescription: "MeetingIntro needs access to your calendars to monitor upcoming meetings and trigger countdown reminders."
         NSFocusStatusUsageDescription: "MeetingIntro uses your Focus status to silence voice reminders and audio alerts while you're in Do Not Disturb."

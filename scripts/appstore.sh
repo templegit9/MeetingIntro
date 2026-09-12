@@ -34,15 +34,11 @@ command -v xcodegen >/dev/null && xcodegen generate >/dev/null
 # rejected submission — so the build number is a timestamp, never a hand-typed integer.
 BUILD_NUMBER="$(date +%Y%m%d%H%M)"
 
-AUTH=()
-if [ -n "${ASC_KEY_ID:-}" ] && [ -n "${ASC_ISSUER_ID:-}" ]; then
-  echo "▶ Authenticating with App Store Connect API key $ASC_KEY_ID"
-  AUTH=(-authenticationKeyPath "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
-        -authenticationKeyID "$ASC_KEY_ID"
-        -authenticationKeyIssuerID "$ASC_ISSUER_ID")
-else
-  echo "▶ No API key set — signing will use whatever Xcode account is configured"
-fi
+# Signing deliberately uses the Xcode account rather than the API key. An App Manager key
+# cannot create certificates or profiles — passing it makes xcodebuild fail with "Cloud
+# signing permission error" instead of falling back to the account that can. The key is
+# still used for the upload below, which is all it is needed for.
+echo "▶ Signing via the signed-in Xcode account"
 
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
@@ -56,7 +52,7 @@ xcodebuild -project MeetingIntro.xcodeproj \
   CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
   CODE_SIGN_STYLE=Automatic \
   DEVELOPMENT_TEAM="$TEAM_ID" \
-  -allowProvisioningUpdates "${AUTH[@]}" \
+  -allowProvisioningUpdates \
   archive
 
 cat > "$BUILD_DIR/ExportOptions.plist" <<PLIST
@@ -78,7 +74,7 @@ xcodebuild -exportArchive \
   -archivePath "$ARCHIVE" \
   -exportPath "$EXPORT_DIR" \
   -exportOptionsPlist "$BUILD_DIR/ExportOptions.plist" \
-  -allowProvisioningUpdates "${AUTH[@]}"
+  -allowProvisioningUpdates
 
 PKG="$(find "$EXPORT_DIR" -name "*.pkg" | head -1)"
 [ -z "$PKG" ] && { echo "✗ No .pkg produced — export failed"; exit 1; }
