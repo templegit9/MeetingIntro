@@ -473,6 +473,34 @@ final class AppLifecycleManager: ObservableObject {
         // fires task deadline reminders on its own 30s timer.
         overlayController.taskManager = taskManager
         overlayController.taskReminderCoordinator = taskReminderCoordinator
+        // Showcase hook: put the countdown overlay on screen with a realistic meeting so
+        // store screenshots can be captured without waiting for a real one, and without
+        // anybody clicking through Settings. Same shape as MEETINGINTRO_SELFTEST.
+        if ProcessInfo.processInfo.environment["MEETINGINTRO_SHOWCASE"] != nil {
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 2_500_000_000)
+                let meeting = MeetingEvent(
+                    id: "showcase",
+                    title: "Quarterly Roadmap Review",
+                    startDate: Date().addingTimeInterval(125),
+                    endDate: Date().addingTimeInterval(125 + 2700),
+                    calendarName: "Work",
+                    location: "Zoom",
+                    isAllDay: false,
+                    url: URL(string: "https://zoom.us/j/0000000000"),
+                    notes: "Walk through the Q3 roadmap, then open the floor for blockers.",
+                    attendeeNames: ["Alice Wong", "Ben Patel", "Chiamaka Eze", "Diego Ortiz",
+                                    "Emma Schultz", "Fatima Bello"],
+                    attendeeCount: 6,
+                    organizerName: "Alice Wong",
+                    isCancelled: false,
+                    myResponse: .accepted,
+                    responseCounts: ResponseCounts(accepted: 4, declined: 0, tentative: 1, noResponse: 1)
+                )
+                overlayController.show(for: meeting)
+            }
+        }
+
         // Executive Assistant (Issue #17): wire the organizer to its config + log.
         fileOrganizer.attach(config: assistantConfig)
         fileOrganizer.diagnosticLog = diagnosticLog
