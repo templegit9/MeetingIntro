@@ -2151,8 +2151,20 @@ struct SettingsView: View {
     }
 
     /// Icon button beside the version: check for / install updates via Homebrew.
+    ///
+    /// Absent entirely in the App Store build — updates come from the store there, and an
+    /// "install update" control that cannot install anything is worse than none.
     @ViewBuilder
     private var updateControl: some View {
+        if !AppUpdater.selfUpdateAvailable {
+            EmptyView()
+        } else {
+            updateStates
+        }
+    }
+
+    @ViewBuilder
+    private var updateStates: some View {
         switch updater.state {
         case .checking, .updating:
             ProgressView().controlSize(.small)
@@ -2191,6 +2203,15 @@ struct SettingsView: View {
     /// One-line status under the version for the states worth spelling out.
     @ViewBuilder
     private var updateStatusLine: some View {
+        if !AppUpdater.selfUpdateAvailable {
+            EmptyView()
+        } else {
+            updateStatusStates
+        }
+    }
+
+    @ViewBuilder
+    private var updateStatusStates: some View {
         switch updater.state {
         case .available(let v):
             Button("Update available — install v\(v)") { Task { await updater.update() } }
@@ -2454,12 +2475,18 @@ struct SettingsView: View {
 
                 updateStatusLine
 
-                Toggle("Check for updates automatically", isOn: $autoUpdateEnabled)
-                    .toggleStyle(.checkbox)
-                    .font(.caption)
-                    .fixedSize()
-                    .onChange(of: autoUpdateEnabled) { _, _ in updater.refreshAutoChecks() }
-                    .padding(.top, 2)
+                if AppUpdater.selfUpdateAvailable {
+                    Toggle("Check for updates automatically", isOn: $autoUpdateEnabled)
+                        .toggleStyle(.checkbox)
+                        .font(.caption)
+                        .fixedSize()
+                        .onChange(of: autoUpdateEnabled) { _, _ in updater.refreshAutoChecks() }
+                        .padding(.top, 2)
+                } else {
+                    Text("Updates arrive through the App Store.")
+                        .font(.caption2).foregroundStyle(.secondary)
+                        .padding(.top, 2)
+                }
             }
 
             Text("Never be late to a meeting again.\nGet countdown overlays and voice reminders\nbefore your meetings start.")
@@ -2504,6 +2531,7 @@ struct SettingsView: View {
             // leave a stale `.upToDate` from before a newer release shipped; opening
             // About is an explicit "is there an update?" so it should hit GitHub fresh
             // (unless an update is already in flight).
+            guard AppUpdater.selfUpdateAvailable else { return }
             if case .updating = updater.state {} else { await updater.check() }
         }
     }

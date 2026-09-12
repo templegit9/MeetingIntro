@@ -227,6 +227,7 @@ struct MeetingIntroApp: App {
     /// The always-present status-bar label. observe() (the single wiring point) runs on
     /// its onAppear so it fires in both menu and popover styles. Red while recording.
     private var isUpdateAvailable: Bool {
+        guard AppUpdater.selfUpdateAvailable else { return false }
         if case .available = updater.state { return true }
         return false
     }
