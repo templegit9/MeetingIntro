@@ -2520,7 +2520,9 @@ struct SettingsView: View {
 
             Spacer()
 
-            Text("© \(Calendar.current.component(.year, from: Date())) TempleGit · MIT License")
+            // String(year), not the bare Int — SwiftUI's Text interpolation formats an
+            // Int with the locale's grouping separator, which shipped "© 2,026".
+            Text("© \(String(Calendar.current.component(.year, from: Date()))) TempleGit · MIT License")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
                 .padding(.bottom, 12)
