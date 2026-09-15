@@ -32,8 +32,10 @@
     <key>com.apple.security.device.audio-input</key>
     <true/>
 
-    <!-- Recordings default to ~/Movies/MeetingIntro/, which is outside the container. -->
-    <key>com.apple.security.assets.movies.read-write</key>
-    <true/>
+    <!-- NOT declared: com.apple.security.assets.movies.read-write.
+         App Review rejected 2.20.6 under 2.4.5(i) for an entitlement with no matching
+         functionality. It was never reachable: under the sandbox the recording folder is
+         always one the user picked in an NSOpenPanel, which is covered by
+         files.user-selected.read-write above. Do not add it back. -->
 </dict>
 </plist>

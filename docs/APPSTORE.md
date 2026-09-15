@@ -94,3 +94,59 @@ MEETINGINTRO_TEAM_ID=PVRL9W627Q \
 MEETINGINTRO_MAS_PROFILE="MeetingIntro App Store" \
 xcodebuild -project MeetingIntro.xcodeproj -scheme MeetingIntroMAS -configuration Release archive
 ```
+
+---
+
+## Review rejection — 2.20.6 build 202609112321 (15 September 2026)
+
+Submission `ee7a8be6-2fda-4d0f-a77e-f94e505bc00b`. Two issues, both **guideline 2.4.5(i)**,
+both in the recording feature. Fixed together; notes here so neither recurs.
+
+### 1. User files were written into the app container
+
+> "The app saves user data to the app's container, which is not user accessible… the
+> container is not for user documents."
+
+**Cause.** `RecordingConfig.resolveSaveDirectory()` fell back to
+`FileManager.urls(for: .moviesDirectory)` when the user hadn't picked a folder. That is
+`~/Movies/MeetingIntro/` in the Developer ID build — a real, visible folder — but under
+the sandbox it resolves to `~/Library/Containers/com.oluyinka.MeetingIntro/Data/Movies`,
+which no user will ever find in Finder. Recordings, transcripts and notes all landed
+there, because the `.transcript.md` / `.notes.md` sidecars are written next to the `.m4a`.
+
+**Fix.** `resolveSaveDirectory()` now returns `URL?`, and
+`RecordingConfig.requiresChosenDirectory` is true under `#if MAS`. In the sandboxed build
+there is **no implicit default** — recording refuses to start and says why, Settings shows
+an orange "No folder chosen yet" with a prominent **Choose Folder…**, and the picked
+folder arrives through the existing `NSOpenPanel` + security-scoped bookmark path that
+`files.user-selected.read-write` and `files.bookmarks.app-scope` already cover.
+
+The Developer ID build is **unchanged** and keeps its `~/Movies/MeetingIntro/` default,
+which is correct there precisely because that build isn't sandboxed.
+
+**Do not reintroduce a fallback directory in the MAS build.** A default that the user
+cannot see is the rejection.
+
+### 2. An entitlement with no matching functionality
+
+> `com.apple.security.assets.movies.read-write`
+
+**Cause.** Added on the assumption the sandboxed build would write to the real
+`~/Movies`. It never did — see above — so the entitlement was dead weight, and Apple
+checks for exactly that.
+
+**Fix.** Removed. Every recording path now goes through a user-selected folder, which is
+covered by `files.user-selected.read-write`. The entitlements file carries a comment
+saying not to add it back.
+
+### Entitlements after the fix
+
+`app-sandbox`, `personal-information.calendars`, `network.client`,
+`files.user-selected.read-write`, `files.bookmarks.app-scope`, `device.audio-input`.
+Six, each with a live call path.
+
+### Note for testers
+
+A TestFlight tester who recorded with the rejected build has those files inside the old
+container. Nothing migrates them — the fix changes where *new* recordings go. Only
+internal testers ever ran that build, so no shipped user is affected.

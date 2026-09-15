@@ -1709,28 +1709,46 @@ struct SettingsView: View {
             }
 
             Section("Save Location") {
-                HStack {
-                    Image(systemName: "folder")
-                    Text(recordingConfig.resolveSaveDirectory().path)
-                        .font(.system(.caption, design: .monospaced))
-                        .truncationMode(.middle)
-                        .lineLimit(1)
-                    Spacer()
-                }
-                HStack(spacing: 12) {
-                    Button("Show in Finder") {
-                        let url = recordingConfig.resolveSaveDirectory()
-                        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-                        NSWorkspace.shared.activateFileViewerSelecting([url])
+                if let dir = recordingConfig.resolveSaveDirectory() {
+                    HStack {
+                        Image(systemName: "folder")
+                        Text(dir.path)
+                            .font(.system(.caption, design: .monospaced))
+                            .truncationMode(.middle)
+                            .lineLimit(1)
+                        Spacer()
                     }
-                    Button("Change…") { pickSaveLocation() }
-                    if recordingConfig.saveDirectoryBookmark != nil {
-                        Button("Reset to default") { recordingConfig.saveDirectoryBookmark = nil }
+                    HStack(spacing: 12) {
+                        Button("Show in Finder") {
+                            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+                            NSWorkspace.shared.activateFileViewerSelecting([dir])
+                        }
+                        Button("Change…") { pickSaveLocation() }
+                        // No "Reset to default" in the sandboxed build — there is no
+                        // default to go back to, only a folder the user picked.
+                        if recordingConfig.saveDirectoryBookmark != nil,
+                           !RecordingConfig.requiresChosenDirectory {
+                            Button("Reset to default") { recordingConfig.saveDirectoryBookmark = nil }
+                        }
                     }
+                    Text("\(recordingStats.count) recording\(recordingStats.count == 1 ? "" : "s"), \(formatBytes(recordingStats.sizeBytes))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    // Sandboxed build, nothing chosen yet. Stated inline rather than
+                    // behind the section ⓘ — recording cannot run until this is answered.
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Text("No folder chosen yet")
+                            .foregroundStyle(.orange)
+                    }
+                    Text("Recordings are saved wherever you choose, so you can find them in Finder. Nothing is recorded until you pick a folder.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button("Choose Folder…") { pickSaveLocation() }
+                        .buttonStyle(.borderedProminent)
                 }
-                Text("\(recordingStats.count) recording\(recordingStats.count == 1 ? "" : "s"), \(formatBytes(recordingStats.sizeBytes))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
 
             Section("Transcription & Notes") {
@@ -1885,6 +1903,7 @@ struct SettingsView: View {
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false
         panel.prompt = "Choose"
+        panel.message = "Choose where MeetingIntro saves recordings, transcripts and notes."
         if panel.runModal() == .OK, let url = panel.url {
             recordingConfig.saveDirectoryBookmark = try? url.bookmarkData(
                 options: [.withSecurityScope],
@@ -1896,7 +1915,10 @@ struct SettingsView: View {
     }
 
     private func refreshRecordingStats() {
-        let dir = recordingConfig.resolveSaveDirectory()
+        guard let dir = recordingConfig.resolveSaveDirectory() else {
+            recordingStats = (0, 0)
+            return
+        }
         guard let items = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.fileSizeKey], options: [.skipsHiddenFiles]) else {
             recordingStats = (0, 0)
             return
