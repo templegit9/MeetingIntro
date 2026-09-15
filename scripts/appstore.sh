@@ -13,7 +13,27 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
-[ -f .env.release ] && { set -a; source .env.release; set +a; }
+# .env.release is gitignored, so it exists in the primary checkout but NOT in a git
+# worktree — where this script is most likely to be run, since App Store work is kept on
+# its own branch. Fall back to the main checkout's copy, then to ~/.meetingintro.env,
+# rather than building for ten minutes and only then discovering there are no credentials.
+for env_file in \
+  "$REPO_ROOT/.env.release" \
+  "$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null | sed 's|/\.git$||')/.env.release" \
+  "$HOME/.meetingintro.env"
+do
+  [ -f "$env_file" ] && { set -a; source "$env_file"; set +a; break; }
+done
+
+# Fail on missing credentials NOW, not after the archive.
+if [ -z "${ASC_KEY_ID:-}" ] || [ -z "${ASC_ISSUER_ID:-}" ]; then
+  if [ -z "${APPLE_ID:-}" ] || [ -z "${APPLE_APP_PASSWORD:-}" ]; then
+    echo "✗ No upload credentials found."
+    echo "  Set ASC_KEY_ID + ASC_ISSUER_ID (preferred; .p8 in ~/.appstoreconnect/private_keys/),"
+    echo "  or APPLE_ID + APPLE_APP_PASSWORD, in .env.release or ~/.meetingintro.env."
+    exit 1
+  fi
+fi
 
 VERSION="${1:-}"
 [ -z "$VERSION" ] && { echo "usage: $0 <version>   e.g. $0 2.20.6"; exit 1; }
