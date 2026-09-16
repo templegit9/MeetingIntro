@@ -155,6 +155,7 @@ struct PopoverRootView: View {
             || recordingController.isRecording
             || !calendarManager.armedAutoJoinMeetings.isEmpty
             || !calendarManager.pendingCancellations.isEmpty
+            || !calendarManager.pendingReschedules.isEmpty
             || isUpdateAvailable
             || remindersMutedByCall
             || calendarManager.errorMessage != nil
@@ -725,6 +726,15 @@ struct PopoverRootView: View {
                 calendarManager.dismissCancellation(m.id)
             }
         }
+        // Reschedules (#28). Cancellations already persisted and surfaced here; a moved
+        // meeting fired one notification and left no trace, so missing the banner meant
+        // missing the move. Same treatment, same dismiss gesture.
+        ForEach(calendarManager.pendingReschedules) { change in
+            calloutCard(icon: "calendar.badge.clock", tint: .orange,
+                        title: "\(change.title) · \(change.summary)", actionLabel: "Dismiss") {
+                calendarManager.acknowledgeScheduleChange(change.id)
+            }
+        }
         if remindersMutedByCall {
             calloutCard(icon: "bell.slash.fill", tint: .orange, title: "Reminders paused — you're on a call")
         }
@@ -1005,11 +1015,22 @@ struct PopoverRootView: View {
                     .foregroundStyle(meeting.myResponse == .declined ? .red : .secondary)
             }
             if let url = meeting.url, !meeting.isCancelled {
-                Button { NSWorkspace.shared.open(url) } label: { Image(systemName: "video.fill").foregroundStyle(.green) }
+                Button { calendarManager.markJoined(meeting.id); NSWorkspace.shared.open(url) } label: { Image(systemName: "video.fill").foregroundStyle(.green) }
                     .buttonStyle(.borderless).help("Join")
             }
             if !meeting.isCancelled {
                 Menu {
+                    // Copy actions (#31 copy link, #25 copy details). Each is hidden
+                    // when the meeting has nothing of that kind, so no item ever
+                    // silently copies an empty string.
+                    if MeetingClipboard.has(.link, meeting) {
+                        Button("Copy Join Link") { MeetingClipboard.copy(.link, of: meeting) }
+                    }
+                    Button("Copy Details") { MeetingClipboard.copy(.details, of: meeting) }
+                    if MeetingClipboard.has(.notes, meeting) {
+                        Button("Copy Notes") { MeetingClipboard.copy(.notes, of: meeting) }
+                    }
+                    Divider()
                     if calendarManager.canRespond(to: meeting),
                        [.accepted, .declined, .tentative, .noResponse].contains(meeting.myResponse) {
                         Button("Accept") { Task { try? await calendarManager.respond(to: meeting.id, status: .accepted) } }

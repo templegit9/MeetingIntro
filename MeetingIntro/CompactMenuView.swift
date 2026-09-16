@@ -193,6 +193,19 @@ struct CompactMenuView: View {
                 Divider()
             }
 
+            // Moved meetings (#28) — same persistent, dismissable treatment that
+            // cancellations have had since v2.2.0.
+            if !calendarManager.pendingReschedules.isEmpty {
+                sectionHeader("Moved — click to dismiss", color: .orange)
+                ForEach(calendarManager.pendingReschedules) { change in
+                    glyphRow(icon: "calendar.badge.clock", tint: .orange,
+                             time: "", title: "\(change.title) · \(change.summary)") {
+                        calendarManager.acknowledgeScheduleChange(change.id)
+                    }
+                }
+                Divider()
+            }
+
             if !calendarManager.armedAutoJoinMeetings.isEmpty {
                 sectionHeader("Auto-join armed — click to cancel", color: accent)
                 ForEach(calendarManager.armedAutoJoinMeetings) { m in
@@ -317,13 +330,23 @@ struct CompactMenuView: View {
                     .foregroundStyle(meeting.myResponse == .declined ? .red : .secondary)
             }
             if let url = meeting.url, !meeting.isCancelled {
-                Button { NSWorkspace.shared.open(url) } label: {
+                Button { calendarManager.markJoined(meeting.id); NSWorkspace.shared.open(url) } label: {
                     Image(systemName: "video.fill").foregroundStyle(.green)
                 }
                 .buttonStyle(.borderless).help("Join")
             }
             if !meeting.isCancelled {
                 Menu {
+                    // Copy actions (#31 copy link, #25 copy details). Hidden when the
+                    // meeting has nothing of that kind — see MeetingClipboard.
+                    if MeetingClipboard.has(.link, meeting) {
+                        Button("Copy Join Link") { MeetingClipboard.copy(.link, of: meeting) }
+                    }
+                    Button("Copy Details") { MeetingClipboard.copy(.details, of: meeting) }
+                    if MeetingClipboard.has(.notes, meeting) {
+                        Button("Copy Notes") { MeetingClipboard.copy(.notes, of: meeting) }
+                    }
+                    Divider()
                     if calendarManager.canRespond(to: meeting),
                        [.accepted, .declined, .tentative, .noResponse].contains(meeting.myResponse) {
                         Button("Accept") { Task { try? await calendarManager.respond(to: meeting.id, status: .accepted) } }

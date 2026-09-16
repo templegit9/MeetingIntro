@@ -156,6 +156,9 @@ struct MeetingIntroApp: App {
     @StateObject private var mirrorConfig = MirrorConfigManager()
     @StateObject private var mirrorEngine = CalendarMirrorEngine()
     @StateObject private var menuBarCountdown = MenuBarCountdownModel()
+    /// Meeting state in its own status item (#26/#27/#30). Off by default; see
+    /// MeetingStatusItem for why this is a separate item and not a badge on the app icon.
+    @StateObject private var meetingStatusItem = MeetingStatusItem()
     @StateObject private var lifecycleManager = AppLifecycleManager()
     @StateObject private var updater = AppUpdater()
 
@@ -220,7 +223,8 @@ struct MeetingIntroApp: App {
             diagnosticLog: diagnosticLog,
             mirrorConfig: mirrorConfig,
             mirrorEngine: mirrorEngine,
-            menuBarCountdown: menuBarCountdown
+            menuBarCountdown: menuBarCountdown,
+            meetingStatusItem: meetingStatusItem
         )
     }
 
@@ -332,7 +336,8 @@ struct MeetingIntroApp: App {
                 diagnosticLog: diagnosticLog,
                 mirrorConfig: mirrorConfig,
                 mirrorEngine: mirrorEngine,
-                updater: updater
+                updater: updater,
+                meetingStatusItem: meetingStatusItem
             )
         }
 
@@ -441,7 +446,8 @@ final class AppLifecycleManager: ObservableObject {
         diagnosticLog: DiagnosticLog,
         mirrorConfig: MirrorConfigManager,
         mirrorEngine: CalendarMirrorEngine,
-        menuBarCountdown: MenuBarCountdownModel
+        menuBarCountdown: MenuBarCountdownModel,
+        meetingStatusItem: MeetingStatusItem
     ) {
         guard !hasObserved else { return }
         hasObserved = true
@@ -449,6 +455,7 @@ final class AppLifecycleManager: ObservableObject {
         // Wire the config manager into CalendarManager
         calendarManager.countdownConfigs = countdownConfig
         menuBarCountdown.configure(calendarManager: calendarManager, countdownConfig: countdownConfig)
+        meetingStatusItem.attach(calendarManager: calendarManager)
         calendarManager.diagnosticLog = diagnosticLog
         calendarManager.eventKitProvider.diagnosticLog = diagnosticLog
         calendarManager.graphProvider.diagnosticLog = diagnosticLog
