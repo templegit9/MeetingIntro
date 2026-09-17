@@ -134,7 +134,9 @@ A section pinned above Today's rows listing invitations still awaiting a reply, 
 
 **The section reads the browse window, throttled.** An invitation three weeks out lives only in `browseEvents`, so the popover calls `loadBrowseWindowIfStale()` (10-minute floor) on open — a 45-day fetch per dropdown open would be absurd. It renders **outside the `TimelineView`**: nothing here counts down, and inside it every card would re-render once a second. `CalendarManager.respond(to:eventID:)` also now searches `browseEvents` as well as `upcomingWeek` when routing, or a far-out invitation's id went to whichever provider happened to be primary.
 
-**Known gap:** `CompactMenuView` (the non-default dropdown) has no invitations section and keeps `.noResponse` RSVP in its `⋯` menu with `try? await`, so failures there are still silent in the UI (they do reach the diagnostic log). Recurring series are untested — Graph treats series vs occurrence differently and a wrong answer on a series is loud.
+**Both dropdowns share ONE card (`InvitationCardView`, v2.22.1).** The two presentations are otherwise deliberately separate view trees, and this is the exception: the rules on the card — decline confirms and names the organizer, failure says the organizer wasn't notified, an unavailable action is absent rather than disabled — are the design, not the chrome. Two copies would drift, and **drift here means one presentation quietly lying about whether a reply was sent**. Only `titleSize`/`bodySize`/`pad` differ (`compact: Bool`, the same pattern as `CountdownOverlayView`); every state branch is common. Confirm and propose state lives *inside* the card, so neither parent juggles it; only `proposingID` is bound out, purely so siblings can dim. `CompactMenuView` puts the section above Cancelled and drops `.noResponse` from its `⋯` menu for the same disjoint-sets reason.
+
+**Known gap:** recurring series are untested — Graph treats series vs occurrence differently and a wrong answer on a weekly meeting is loud.
 
 ### Cancellation handling (v2.2.0)
 
