@@ -76,6 +76,17 @@ struct MeetingEvent: Identifiable, Equatable {
     /// Graph boundary can ever set it true — EventKit exposes nothing equivalent.
     var allowsNewTimeProposals: Bool = false
 
+    /// The Microsoft 365 id for this same meeting, when it reached us from **both**
+    /// sources and the EventKit copy won the merge.
+    ///
+    /// EventKit winning is deliberate — armed auto-joins, dismissed reminders and
+    /// notified cancellations are all keyed to its id, and preferring the Graph copy
+    /// would orphan every one of them. But the EventKit copy **cannot RSVP**, so without
+    /// carrying its Graph twin's id a dual-synced work account loses the ability to
+    /// answer invitations entirely. Identity stays EventKit; only the reply takes the
+    /// capable path.
+    var graphCounterpartID: String? = nil
+
     /// Time remaining until the meeting starts, relative to now.
     var timeUntilStart: TimeInterval {
         startDate.timeIntervalSinceNow

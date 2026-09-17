@@ -1127,7 +1127,9 @@ final class CalendarManager: ObservableObject {
     private func fetchFromEnabledSources(within window: TimeInterval) async throws -> [MeetingEvent] {
         let types = CalendarProviderType.allCases.filter { enabledProviderTypes.contains($0) }
         var merged: [MeetingEvent] = []
-        var seen = Set<String>()
+        // Index rather than a bare Set: a dropped duplicate still has something to give
+        // the copy that beat it — see `graphCounterpartID`.
+        var indexByKey: [String: Int] = [:]
         var counts: [String] = []
         var duplicates = 0
         var failures: [String] = []
@@ -1170,8 +1172,18 @@ final class CalendarManager: ObservableObject {
                 var added = 0
                 for event in events {
                     let key = Self.duplicateKey(for: event)
-                    if seen.contains(key) { duplicates += 1; continue }
-                    seen.insert(key)
+                    if let idx = indexByKey[key] {
+                        duplicates += 1
+                        // The Graph twin of an EventKit event is the only copy that can
+                        // send an RSVP, and the only one that knows whether the organizer
+                        // allows a counter-proposal. Hand both to the copy that won.
+                        if event.sourceProvider == .microsoftGraph, merged[idx].sourceProvider == .eventKit {
+                            merged[idx].graphCounterpartID = event.id
+                            merged[idx].allowsNewTimeProposals = event.allowsNewTimeProposals
+                        }
+                        continue
+                    }
+                    indexByKey[key] = merged.count
                     merged.append(event)
                     added += 1
                 }
@@ -1349,9 +1361,25 @@ final class CalendarManager: ObservableObject {
         CalendarProviderType.allCases.contains { enabledProviderTypes.contains($0) && provider(for: $0).supportsResponding }
     }
 
-    /// Whether THIS meeting can be responded to — routed by where it came from.
+    /// Whether THIS meeting can be responded to — routed by where it came from, or by
+    /// its Graph twin when a dual-synced account left us holding the EventKit copy.
     func canRespond(to meeting: MeetingEvent) -> Bool {
-        provider(for: meeting.sourceProvider).supportsResponding
+        if provider(for: meeting.sourceProvider).supportsResponding { return true }
+        return meeting.graphCounterpartID != nil && provider(for: .microsoftGraph).supportsResponding
+    }
+
+    /// Where a reply for this meeting must actually be sent.
+    ///
+    /// The event's own source, unless that source can't reply and a Graph twin exists —
+    /// the dual-sync case, where the EventKit copy is the identity for everything else
+    /// but is incapable of the one thing being asked of it here.
+    private func responseRoute(for meeting: MeetingEvent) -> (CalendarProviderType, String) {
+        if !provider(for: meeting.sourceProvider).supportsResponding,
+           let graphID = meeting.graphCounterpartID,
+           provider(for: .microsoftGraph).supportsResponding {
+            return (.microsoftGraph, graphID)
+        }
+        return (meeting.sourceProvider, meeting.id)
     }
 
     /// Where a Quick Add event will actually be created: the primary source when it can
@@ -1365,7 +1393,8 @@ final class CalendarManager: ObservableObject {
     /// misses every invitation beyond the reminder window, which is exactly the far-out
     /// ones the invitations section exists to surface.
     func respond(to meeting: MeetingEvent, status: ResponseStatus) async throws {
-        try await send(status, eventID: meeting.id, origin: meeting.sourceProvider)
+        let (origin, id) = responseRoute(for: meeting)
+        try await send(status, eventID: id, origin: origin)
     }
 
     /// Respond to an invitation, then refresh so the new status shows immediately.
@@ -1382,7 +1411,8 @@ final class CalendarManager: ObservableObject {
     /// Respond while proposing a different time, routed to the event's own source.
     func propose(_ status: ResponseStatus, to meeting: MeetingEvent, start: Date, end: Date) async throws {
         do {
-            try await provider(for: meeting.sourceProvider).propose(status, to: meeting.id, start: start, end: end)
+            let (origin, id) = responseRoute(for: meeting)
+            try await provider(for: origin).propose(status, to: id, start: start, end: end)
             diagnosticLog?.info(.calendar, "Proposed \(start) for \"\(meeting.title)\"")
         } catch {
             diagnosticLog?.error(.calendar, "Propose failed for \"\(meeting.title)\": \(error.localizedDescription)")
