@@ -36,6 +36,59 @@ final class CalendarManager: ObservableObject {
     /// in UserDefaults — exactly the "someone cancelled overnight" case in Jon's doc.
     @Published var pendingCancellations: [MeetingEvent] = []
 
+    /// Every cancellation and reschedule seen recently, acknowledged or not (#28, #29).
+    /// This is the reviewable log; the cancellation sets below remain the thing that
+    /// drives reminder suppression. Persisted, so a change detected while you were away
+    /// is still here when you come back — which is the whole point of the request.
+    @Published private(set) var scheduleChanges: [ScheduleChange] = []
+
+    /// A wider window than the 30s poll keeps, loaded on demand for the expanded
+    /// calendar (#32). The regular poll fetches `upcomingDaysAhead` (default 7), which
+    /// is right for reminders and far too narrow for a month grid — three weeks of it
+    /// would read as empty. Nothing subscribes to this except the expanded view, and it
+    /// is only ever fetched while that view is open, so the polling path is untouched.
+    ///
+    /// **Forward-looking only.** `CalendarProvider.fetchUpcomingEvents(within:)` takes an
+    /// interval from now, so days earlier in the current month come back empty. That is
+    /// a real limit of the provider protocol, not an oversight — widening it means
+    /// changing the protocol and both implementations.
+    @Published private(set) var browseEvents: [MeetingEvent] = []
+    @Published private(set) var isLoadingBrowse = false
+
+    /// Loads `days` ahead into `browseEvents`. Safe to call repeatedly; overlapping
+    /// calls are collapsed.
+    func loadBrowseWindow(days: Int = 45) async {
+        guard !isLoadingBrowse else { return }
+        isLoadingBrowse = true
+        defer { isLoadingBrowse = false }
+        do {
+            let events = try await fetchFromEnabledSources(within: TimeInterval(days * 86_400))
+            browseEvents = events
+            diagnosticLog?.debug(.calendar, "Expanded calendar loaded \(events.count) event(s) over \(days) days")
+        } catch {
+            // Fall back to what the poll already has rather than emptying the grid — a
+            // narrower month is far better than a blank one.
+            browseEvents = upcomingWeek
+            diagnosticLog?.warn(.calendar, "Expanded calendar fetch failed (\(error.localizedDescription)); showing the \(upcomingDaysAhead)-day window instead")
+        }
+    }
+
+    /// Events on a given day from the expanded window, falling back to the poll's
+    /// window before the wider load lands so the grid is never blank on open.
+    func browseEvents(on day: Date) -> [MeetingEvent] {
+        let cal = Calendar.current
+        let source = browseEvents.isEmpty ? upcomingWeek : browseEvents
+        return source
+            .filter { cal.isDate($0.startDate, inSameDayAs: day) }
+            .sorted { $0.startDate < $1.startDate }
+    }
+
+    /// Reschedules still awaiting acknowledgment. Cancellations have their own
+    /// `pendingCancellations` and keep it — only reschedules were previously invisible.
+    var pendingReschedules: [ScheduleChange] {
+        scheduleChanges.filter { $0.kind == .rescheduled && !$0.acknowledged }
+    }
+
     /// The next meeting that hasn't been triggered yet.
     @Published var nextMeeting: MeetingEvent?
 
@@ -341,6 +394,8 @@ final class CalendarManager: ObservableObject {
     private var notifiedTimeChanges: Set<String> = []
     private static let k_knownStartTimes = "knownStartTimes"
     private static let k_notifiedTimeChanges = "notifiedTimeChanges"
+    private static let k_scheduleChanges = "scheduleChanges"
+    private static let k_joinedMeetings = "joinedMeetingIDs"
     /// Ignore sub-minute jitter; only a real reschedule should notify.
     private static let timeChangeMinDelta: TimeInterval = 60
 
@@ -364,6 +419,11 @@ final class CalendarManager: ObservableObject {
             self.knownStartTimes = decoded
         }
         self.notifiedTimeChanges = Set(d.stringArray(forKey: Self.k_notifiedTimeChanges) ?? [])
+        self.joinedMeetingIDs = Set(d.stringArray(forKey: Self.k_joinedMeetings) ?? [])
+        if let data = d.data(forKey: Self.k_scheduleChanges),
+           let decoded = try? JSONDecoder().decode([ScheduleChange].self, from: data) {
+            self.scheduleChanges = decoded
+        }
     }
 
     /// Start polling for calendar events.
@@ -647,12 +707,76 @@ final class CalendarManager: ObservableObject {
 
     /// Mark a cancellation as notified so the next refresh doesn't re-fire the
     /// system notification. Persisted to UserDefaults.
+    /// Meetings the user opened *through MeetingIntro*. Backs the late-meeting
+    /// indicator (#27): a meeting that has started and hasn't been joined is the thing
+    /// worth flagging.
+    ///
+    /// **This can only ever know about joins that went through the app.** Someone who
+    /// clicked the link in Calendar.app, or dialled in from a phone, is invisible here
+    /// and would be flagged as late while sitting in the meeting. That false positive is
+    /// why the indicator is bounded to a short window and is off by default — a badge
+    /// that cries wolf gets the whole feature turned off.
+    private(set) var joinedMeetingIDs: Set<String> = []
+
+    func markJoined(_ id: String) {
+        guard joinedMeetingIDs.insert(id).inserted else { return }
+        UserDefaults.standard.set(Array(joinedMeetingIDs), forKey: Self.k_joinedMeetings)
+    }
+
+    /// True when the user opened this meeting here — either by hand or via auto-join.
+    func hasJoined(_ id: String) -> Bool {
+        joinedMeetingIDs.contains(id) || joinedAutoJoinIDs.contains(id)
+    }
+
+    /// Records a change and persists. Idempotent on `ScheduleChange.id`, so the same
+    /// move seen on consecutive polls doesn't stack up.
+    private func recordScheduleChange(_ change: ScheduleChange) {
+        guard !scheduleChanges.contains(where: { $0.id == change.id }) else { return }
+        scheduleChanges.append(change)
+        pruneScheduleChanges()
+        persistScheduleChanges()
+    }
+
+    /// Marks one entry seen. It stays in the log for review (#29) but stops being a
+    /// pending alert (#28).
+    func acknowledgeScheduleChange(_ id: String) {
+        guard let i = scheduleChanges.firstIndex(where: { $0.id == id }) else { return }
+        scheduleChanges[i].acknowledged = true
+        persistScheduleChanges()
+    }
+
+    func acknowledgeAllScheduleChanges() {
+        guard scheduleChanges.contains(where: { !$0.acknowledged }) else { return }
+        for i in scheduleChanges.indices { scheduleChanges[i].acknowledged = true }
+        persistScheduleChanges()
+    }
+
+    /// Keeps the log bounded. A change is worth showing while its meeting is still
+    /// ahead, or while it is recent enough to explain a day that already happened —
+    /// two days covers "I was off yesterday".
+    private func pruneScheduleChanges() {
+        let cutoff = Date().addingTimeInterval(-Self.scheduleChangeRetention)
+        let kept = scheduleChanges.filter { $0.detectedAt >= cutoff || $0.newStart >= Date() }
+        if kept.count != scheduleChanges.count { scheduleChanges = kept }
+    }
+
+    private func persistScheduleChanges() {
+        if let data = try? JSONEncoder().encode(scheduleChanges) {
+            UserDefaults.standard.set(data, forKey: Self.k_scheduleChanges)
+        }
+    }
+
+    private static let scheduleChangeRetention: TimeInterval = 48 * 3600
+
     func markCancellationNotified(_ id: String) {
         notifiedCancellationIDs.insert(id)
         UserDefaults.standard.set(Array(notifiedCancellationIDs), forKey: Self.k_notifiedCancellations)
         // The pendingCancellations recompute happens on next refresh; nudge published
         // value so the menu bar dropdown updates immediately if the meeting is still
         // in the upcoming list.
+        if let cancelled = upcomingMeetings.first(where: { $0.id == id }), cancelled.isCancelled {
+            recordScheduleChange(.cancelled(cancelled))
+        }
         if let meeting = upcomingMeetings.first(where: { $0.id == id }), meeting.isCancelled,
            !dismissedCancellationIDs.contains(id) {
             if !pendingCancellations.contains(where: { $0.id == id }) {
@@ -667,6 +791,12 @@ final class CalendarManager: ObservableObject {
         dismissedCancellationIDs.insert(id)
         UserDefaults.standard.set(Array(dismissedCancellationIDs), forKey: Self.k_dismissedCancellations)
         pendingCancellations.removeAll { $0.id == id }
+        // Keep the two in step: acknowledging the badge also settles the log entry, so
+        // one cancellation can't sit unread in the schedule-change list forever.
+        for i in scheduleChanges.indices where scheduleChanges[i].meetingID == id && scheduleChanges[i].kind == .cancelled {
+            scheduleChanges[i].acknowledged = true
+        }
+        persistScheduleChanges()
     }
 
     /// User chose "stop reminding me for this event" (Issue #15) — suppresses every
@@ -747,6 +877,7 @@ final class CalendarManager: ObservableObject {
                 let key = "\(baselineKey)_\(Int(event.startDate.timeIntervalSince1970))"
                 if notifiedTimeChanges.insert(key).inserted {
                     diagnosticLog?.info(.calendar, "Meeting moved — \"\(event.title)\": \(prior.formatted(date: .abbreviated, time: .shortened)) → \(event.startDate.formatted(date: .abbreviated, time: .shortened))")
+                    recordScheduleChange(.rescheduled(event, from: prior))
                     onMeetingTimeChanged?(event, prior)
                     dirty = true
                 }

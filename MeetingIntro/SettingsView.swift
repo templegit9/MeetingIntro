@@ -81,6 +81,9 @@ struct SettingsView: View {
     @State private var showMirrorSheet = false
 
     @AppStorage("nextMeetingHighlightHex") private var nextMeetingHighlightHex: String = defaultNextMeetingHighlightHex
+    @AppStorage(MeetingStatusItem.enabledKey) private var menuBarMeetingStatusEnabled: Bool = false
+    @AppStorage(MeetingStatusItem.leadKey) private var menuBarMeetingStatusLead: Int = 15
+    @AppStorage(MeetingStatusItem.lateKey) private var menuBarMeetingStatusLate: Int = 10
     @AppStorage("popoverFitToContent") private var popoverFitToContent: Bool = false
 
     @State private var diagCategoryFilter: DiagnosticLog.Category?
@@ -127,6 +130,7 @@ struct SettingsView: View {
 
     @StateObject private var releaseNotes = ReleaseNotesManager()
     @ObservedObject var updater: AppUpdater
+    @ObservedObject var meetingStatusItem: MeetingStatusItem
 
     @State private var showRecordingDisclaimer = false
     @State private var showTickerSettings = false
@@ -911,6 +915,28 @@ struct SettingsView: View {
                 }
             } header: {
                 SettingsSectionHeader("Upcoming Days", info: "How far ahead the Upcoming view (and the compact menu's Upcoming list) loads.")
+            }
+
+            Section {
+                Toggle("Show meeting status in the menu bar", isOn: $menuBarMeetingStatusEnabled)
+                    .onChange(of: menuBarMeetingStatusEnabled) { _, _ in meetingStatusItem.settingsChanged() }
+                Stepper(value: $menuBarMeetingStatusLead, in: 1...60) {
+                    Text("Appear \(menuBarMeetingStatusLead) min before a meeting")
+                }
+                .disabled(!menuBarMeetingStatusEnabled)
+                .onChange(of: menuBarMeetingStatusLead) { _, _ in meetingStatusItem.settingsChanged() }
+                Stepper(value: $menuBarMeetingStatusLate, in: 1...60) {
+                    Text("Keep showing \(menuBarMeetingStatusLate) min after the start")
+                }
+                .disabled(!menuBarMeetingStatusEnabled)
+                .onChange(of: menuBarMeetingStatusLate) { _, _ in meetingStatusItem.settingsChanged() }
+                // Stated inline, not behind the ⓘ: it's a limit of what the app can
+                // know, and finding out by being called late is worse than reading it.
+                Text("\"Late\" means the app hasn't seen you join. If you open the link from Calendar or dial in from your phone, it can't tell, and will still say late.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } header: {
+                SettingsSectionHeader("Meeting Status", info: "Adds a **separate** item to the menu bar showing the next meeting as it approaches, and an orange warning once it has started if you haven't joined from here.\n\nThe app icon itself never changes — it stays a steady clock so it's always easy to find. This item appears only when there's something to say and disappears again afterwards.")
             }
 
             Section {
