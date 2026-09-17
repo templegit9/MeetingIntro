@@ -171,6 +171,16 @@ final class InvitationCenter: ObservableObject {
 }
 
 extension ResponseStatus {
+    /// Past tense, for the lingering row: "Q4 planning offsite · accepted".
+    var pastLabel: String {
+        switch self {
+        case .accepted:  return "accepted"
+        case .declined:  return "declined"
+        case .tentative: return "tentative"
+        default:         return "answered"
+        }
+    }
+
     /// The verb as it appears on a button and in a failure line: "Accept didn't send".
     var sentVerb: String {
         switch self {

@@ -70,6 +70,12 @@ struct MeetingEvent: Identifiable, Equatable {
     /// Everyone's RSVP breakdown, or nil when no response data is available.
     var responseCounts: ResponseCounts? = nil
 
+    /// Whether the organizer permits a counter-proposal of a different time.
+    /// **Defaults false on purpose**: absent means not allowed, so the Propose action is
+    /// simply not rendered rather than offered and then rejected by the server. Only the
+    /// Graph boundary can ever set it true — EventKit exposes nothing equivalent.
+    var allowsNewTimeProposals: Bool = false
+
     /// Time remaining until the meeting starts, relative to now.
     var timeUntilStart: TimeInterval {
         startDate.timeIntervalSinceNow

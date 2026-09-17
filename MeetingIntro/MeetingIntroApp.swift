@@ -140,6 +140,7 @@ struct MeetingIntroApp: App {
     @StateObject private var taskConfig: TaskConfig
     @StateObject private var taskManager: TaskManager
     @StateObject private var taskReminderCoordinator = TaskReminderCoordinator()
+    @StateObject private var invitations = InvitationCenter()
     @StateObject private var graphVerifierConfig = GraphVerifierConfig()
     @StateObject private var graphVerifier = GraphVerifier()
     @StateObject private var cameraDetector = CameraUseDetector()
@@ -208,6 +209,7 @@ struct MeetingIntroApp: App {
             quickAddService: quickAddService,
             taskManager: taskManager,
             taskReminderCoordinator: taskReminderCoordinator,
+            invitations: invitations,
             assistantConfig: assistantConfig,
             fileOrganizer: fileOrganizer,
             fileOrganizerCoordinator: fileOrganizerCoordinator,
@@ -279,7 +281,8 @@ struct MeetingIntroApp: App {
                 contextMonitor: contextMonitor,
                 quickAddService: quickAddService,
                 quickAddConfig: quickAddConfig,
-                taskManager: taskManager
+                taskManager: taskManager,
+                invitations: invitations
             )
         } else {
             CompactMenuView(
@@ -432,6 +435,7 @@ final class AppLifecycleManager: ObservableObject {
         quickAddService: QuickAddService,
         taskManager: TaskManager,
         taskReminderCoordinator: TaskReminderCoordinator,
+        invitations: InvitationCenter,
         assistantConfig: AssistantConfig,
         fileOrganizer: FileOrganizer,
         fileOrganizerCoordinator: FileOrganizerCoordinator,
@@ -532,6 +536,12 @@ final class AppLifecycleManager: ObservableObject {
                                  contextMonitor: contextMonitor,
                                  recordingController: recordingController,
                                  diagnosticLog: diagnosticLog)
+        // Invitations (#33). Owns the answering of invitations and, crucially, the
+        // visibility of a failed one — see InvitationCenter for why that had to exist
+        // before any of the UI could.
+        invitations.attach(calendarManager: calendarManager)
+        invitations.diagnosticLog = diagnosticLog
+
         taskReminderCoordinator.attach(taskManager: taskManager,
                                        notificationManager: notificationManager,
                                        voiceReminder: voiceReminder,

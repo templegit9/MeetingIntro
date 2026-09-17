@@ -54,9 +54,22 @@ final class CalendarManager: ObservableObject {
     /// changing the protocol and both implementations.
     @Published private(set) var browseEvents: [MeetingEvent] = []
     @Published private(set) var isLoadingBrowse = false
+    private var lastBrowseLoad: Date?
 
     /// Loads `days` ahead into `browseEvents`. Safe to call repeatedly; overlapping
     /// calls are collapsed.
+    /// Load the browse window only when what we have has gone stale.
+    ///
+    /// The invitations section needs to see an invitation three weeks out, which lives
+    /// only in this wider window — but a 45-day fetch on every dropdown open would be
+    /// absurd. Ten minutes is long enough that opening the menu repeatedly costs
+    /// nothing, and short enough that an invitation which arrived while you were in a
+    /// meeting is there when you look.
+    func loadBrowseWindowIfStale(days: Int = 45, maxAge: TimeInterval = 600) async {
+        if !browseEvents.isEmpty, let last = lastBrowseLoad, Date().timeIntervalSince(last) < maxAge { return }
+        await loadBrowseWindow(days: days)
+    }
+
     func loadBrowseWindow(days: Int = 45) async {
         guard !isLoadingBrowse else { return }
         isLoadingBrowse = true
@@ -64,6 +77,7 @@ final class CalendarManager: ObservableObject {
         do {
             let events = try await fetchFromEnabledSources(within: TimeInterval(days * 86_400))
             browseEvents = events
+            lastBrowseLoad = Date()
             diagnosticLog?.debug(.calendar, "Expanded calendar loaded \(events.count) event(s) over \(days) days")
         } catch {
             // Fall back to what the poll already has rather than emptying the grid — a
