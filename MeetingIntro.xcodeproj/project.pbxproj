@@ -29,6 +29,7 @@
 		212CCC0F3F6967F145D6ABB8 /* ConferenceLinkExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28D229B727F2C87F6712FCC4 /* ConferenceLinkExtractor.swift */; };
 		215C25C3836F9EBAB5CED4C4 /* TickerFeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C735A96B380C97241A3455 /* TickerFeed.swift */; };
 		233C9259A105C676B611B212 /* HandoffConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDA27499ED2FB32E55234F2B /* HandoffConfig.swift */; };
+		234CBB8D71165EE94CC79A23 /* InvitationCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C15316EBF9830D13CA84EFE8 /* InvitationCenter.swift */; };
 		2353A8688DF7C978DCD5E5A5 /* CountdownConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BA29FA390A4A1D580C895A8 /* CountdownConfig.swift */; };
 		23C42BF2CF83A30D77F3E853 /* GraphVerifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6AC0A6B400AA7DBA28C0B48 /* GraphVerifier.swift */; };
 		23F0B9105F5E6C68EEC175A6 /* MicrophoneDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B60DBB01A2C688FE793716C /* MicrophoneDetector.swift */; };
@@ -116,6 +117,7 @@
 		8E0C498C8FB52734B010B773 /* OverlayWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22E108D1CE89056097ED33FE /* OverlayWindowController.swift */; };
 		8F939074FDB4F7D6F96C48B5 /* AppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A779B106BB03584C7E64259 /* AppUpdater.swift */; };
 		9006E306631DDA2D4A299195 /* CameraCoverOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADC8D8B1536346F141E3FC27 /* CameraCoverOverlayView.swift */; };
+		9069C9DBB70190EAAFFD0E28 /* InvitationCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C15316EBF9830D13CA84EFE8 /* InvitationCenter.swift */; };
 		914FB58159F10D9161F4DD21 /* FrontmostAppDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEDC37D08E46673E508040D3 /* FrontmostAppDetector.swift */; };
 		92275ACEDB1525CF800BEB71 /* ConcurrentOverlayStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0A3C8188CBC74A7C99597C /* ConcurrentOverlayStyle.swift */; };
 		9B34233499A40226A8A794E1 /* AssistantConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6D5293C913670C06E2CDE2A /* AssistantConfig.swift */; };
@@ -272,6 +274,7 @@
 		B98699F0ED768B00F5C66E45 /* NotesGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesGenerator.swift; sourceTree = "<group>"; };
 		BF7DCEE0AA262DB746742A6A /* EventDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventDraft.swift; sourceTree = "<group>"; };
 		C056713134AC2FEB4996F050 /* ConcurrentOverlayViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConcurrentOverlayViews.swift; sourceTree = "<group>"; };
+		C15316EBF9830D13CA84EFE8 /* InvitationCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvitationCenter.swift; sourceTree = "<group>"; };
 		C24E33006373415A238AD640 /* AssistantModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantModels.swift; sourceTree = "<group>"; };
 		C252C77AB45CB10DE5063A4E /* MixkitSoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MixkitSoundManager.swift; sourceTree = "<group>"; };
 		C529555F228CD4BB1EF1E936 /* LLMClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMClient.swift; sourceTree = "<group>"; };
@@ -471,6 +474,7 @@
 				0899A6EF46ABB7178E3CEFFC /* GraphBrowserAuth.swift */,
 				711DFD4598AE2E83744CCFBD /* GraphCalendarProvider.swift */,
 				FEAF8E0AF4CD102B7017FD2A /* Info-MAS.plist */,
+				C15316EBF9830D13CA84EFE8 /* InvitationCenter.swift */,
 				7DA68ADC9573287817C301B2 /* MeetingClipboard.swift */,
 				570F13DE8551AC2384BF9DB7 /* MeetingDetailsPanel.swift */,
 				5F613B171FEEAEE9AF448698 /* MeetingHoverCard.swift */,
@@ -669,6 +673,7 @@
 				23C42BF2CF83A30D77F3E853 /* GraphVerifier.swift in Sources */,
 				A86F18A52513641C6C274116 /* HandoffConfig.swift in Sources */,
 				383CE6338C41F88BF51B7F8C /* HandoffStateSnapshot.swift in Sources */,
+				9069C9DBB70190EAAFFD0E28 /* InvitationCenter.swift in Sources */,
 				4AB46FF6A5BBC1A5EE9B08DC /* KeychainStore.swift in Sources */,
 				724871746BD559C816813C96 /* LLMClient.swift in Sources */,
 				A7F0985E7E7FDD31F807C978 /* MeetingClipboard.swift in Sources */,
@@ -769,6 +774,7 @@
 				5A8BF1722537C3781E86FBB7 /* GraphVerifier.swift in Sources */,
 				233C9259A105C676B611B212 /* HandoffConfig.swift in Sources */,
 				14F77774777AD8D9D4435860 /* HandoffStateSnapshot.swift in Sources */,
+				234CBB8D71165EE94CC79A23 /* InvitationCenter.swift in Sources */,
 				ED0E2F829E2B5B9606014F6B /* KeychainStore.swift in Sources */,
 				F41BEB4D4C5FE82BCC6F0037 /* LLMClient.swift in Sources */,
 				46250CD9085092A8A895C15B /* MeetingClipboard.swift in Sources */,

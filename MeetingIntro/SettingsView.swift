@@ -125,6 +125,8 @@ struct SettingsView: View {
     @AppStorage(MenuBarPresentation.storageKey) private var menuBarPresentationRaw: String = MenuBarPresentation.popover.rawValue
     @AppStorage(AppUpdater.autoCheckKey) private var autoUpdateEnabled: Bool = true
     @AppStorage("cancellationShowInTodayView") private var cancellationShowInTodayView: Bool = true
+    @AppStorage("invitationWorkdayStartHour") private var invitationWorkdayStart: Int = 9
+    @AppStorage("invitationWorkdayEndHour") private var invitationWorkdayEnd: Int = 18
     @AppStorage("cancellationShowOverlay") private var cancellationShowOverlay: Bool = false
     @AppStorage("cancellationOverlayPosition") private var cancellationOverlayPosition: String = OverlayWindowController.CancellationOverlayPosition.topRight.rawValue
 
@@ -296,6 +298,7 @@ struct SettingsView: View {
 
             if selectedProvider == .microsoftGraph {
                 graphVerifierSection
+                invitationsSection
             }
 
             Section("Calendars to Monitor") {
@@ -412,6 +415,21 @@ struct SettingsView: View {
             }
         } header: {
             SettingsSectionHeader("Verify against Microsoft 365", info: "macOS Calendar's Exchange sync can leave a meeting behind after it has been cancelled on the server. A real case had a meeting cancelled a week earlier still firing reminders, and auto-join opening a Zoom for it. Nothing in the local calendar marks that event as different, so the only way to catch it is to ask the server.\n\nWith this on, meetings on Exchange calendars are cross-checked against Microsoft 365 every 5 minutes. Anything the server says is cancelled, or no longer has at all, stops firing reminders and won't auto-join. Your other calendars are untouched and nothing about them is sent anywhere.\n\nIt is deliberately cautious: a failed or empty response from Microsoft 365 is ignored rather than read as \"everything is cancelled\", and a meeting must fail two checks in a row before it is silenced.\n\nRequires signing in under Microsoft Graph API above. EventKit stays your calendar source — this only adds a second opinion.")
+        }
+    }
+
+    // MARK: - Invitations Section (#33)
+
+    private var invitationsSection: some View {
+        Section {
+            Stepper("Day starts at \(invitationWorkdayStart):00", value: $invitationWorkdayStart, in: 0...23)
+            Stepper("Day ends at \(invitationWorkdayEnd):00", value: $invitationWorkdayEnd, in: 1...24)
+            if invitationWorkdayEnd <= invitationWorkdayStart {
+                Text("The end of the day has to come after the start, or no slot can ever be suggested.")
+                    .font(.caption).foregroundStyle(.orange)
+            }
+        } header: {
+            SettingsSectionHeader("Invitations", info: "Invitations awaiting a reply appear at the top of the menu bar dropdown, where you can accept, decline, or propose a different time.\n\n**Proposing a time only works for Microsoft 365**, and only when the organizer allowed it — when they didn't, the option simply isn't offered. Invitations on iCloud or Google calendars are still listed so you know they're waiting, but Apple gives apps no way to reply to them, so those offer **Open in Calendar** instead.\n\nThe suggested slot is the soonest gap of the same length **on your own calendar**, inside the hours below and never at a weekend. It knows nothing about anyone else's availability, which is why the card says so before you send.")
         }
     }
 

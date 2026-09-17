@@ -332,7 +332,7 @@ final class GraphCalendarProvider: CalendarProvider {
     /// One calendarview request. Split out so the multi-calendar loop above has a single
     /// place that owns status handling and decoding.
     private func fetchEvents(path: String, startStr: String, endStr: String, token: String) async throws -> [GraphEvent] {
-        let urlString = "https://graph.microsoft.com/v1.0/\(path)?startdatetime=\(startStr)&enddatetime=\(endStr)&$select=id,subject,start,end,location,isAllDay,organizer,body,attendees,onlineMeeting,isOnlineMeeting,isCancelled,responseStatus,type&$orderby=start/dateTime&$top=250"
+        let urlString = "https://graph.microsoft.com/v1.0/\(path)?startdatetime=\(startStr)&enddatetime=\(endStr)&$select=id,subject,start,end,location,isAllDay,organizer,body,attendees,onlineMeeting,isOnlineMeeting,isCancelled,responseStatus,allowNewTimeProposals,type&$orderby=start/dateTime&$top=250"
 
         guard let url = URL(string: urlString) else {
             throw CalendarProviderError.unknown(underlying: URLError(.badURL))
@@ -403,10 +403,62 @@ final class GraphCalendarProvider: CalendarProvider {
                     isRecurring: event.type != nil && event.type != "singleInstance",
                     sourceProvider: .microsoftGraph,
                     myResponse: myResponse,
-                    responseCounts: counts
+                    responseCounts: counts,
+                    // You cannot counter-propose your own meeting, and an absent flag
+                    // means no. Both guards live here so the UI never has to ask twice.
+                    allowsNewTimeProposals: (event.allowNewTimeProposals ?? false) && myResponse != .organizer
                 )
             }
             .sorted { $0.startDate < $1.startDate }
+    }
+
+    /// Respond with a counter-proposal. Graph carries the proposal on the same
+    /// accept/decline/tentativelyAccept endpoints, under `proposedNewTime`.
+    ///
+    /// **Accepting with a proposal is not a thing** — a proposal only makes sense
+    /// alongside tentative or decline, because you're saying "not as scheduled". Graph
+    /// rejects it on `accept`, so we reject it here with a clearer error rather than
+    /// letting the server explain it.
+    ///
+    /// The time is sent as **wall-clock plus a named zone**, never a UTC instant with an
+    /// offset — the same rule as `createEvent`, and for the same reason: an offset
+    /// alongside a zone name double-applies and the proposal lands hours away.
+    func propose(_ status: ResponseStatus, to eventID: String, start: Date, end: Date) async throws {
+        let action: String
+        switch status {
+        case .declined:  action = "decline"
+        case .tentative: action = "tentativelyAccept"
+        default: throw CalendarProviderError.notSupported
+        }
+        guard supportsResponding else { throw CalendarProviderError.notSupported }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        formatter.timeZone = TimeZone.current
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+
+        let token = try await validToken()
+        let url = URL(string: "https://graph.microsoft.com/v1.0/me/events/\(eventID)/\(action)")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "sendResponse": true,
+            "proposedNewTime": [
+                "start": ["dateTime": formatter.string(from: start), "timeZone": TimeZone.current.identifier],
+                "end": ["dateTime": formatter.string(from: end), "timeZone": TimeZone.current.identifier]
+            ]
+        ])
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200...299).contains(code) else {
+            let body = String(data: data, encoding: .utf8) ?? ""
+            onDiagnostic?("Propose new time failed — HTTP \(code) on /me/events/{id}/\(action): \(body.prefix(300))")
+            if code == 401 { self.accessToken = nil; throw CalendarProviderError.notAuthenticated }
+            throw CalendarProviderError.networkError(underlying: URLError(.badServerResponse))
+        }
     }
 
     func availableCalendars() async throws -> [CalendarInfo] {
@@ -846,6 +898,9 @@ struct GraphEvent: Codable {
     let organizer: GraphRecipient?
     let isCancelled: Bool?
     let responseStatus: GraphResponseStatus?
+    /// Whether the organizer permits a counter-proposal. Optional because older events
+    /// and some endpoints omit it — and absent must mean "not allowed", never "assume so".
+    let allowNewTimeProposals: Bool?
     /// `singleInstance` | `occurrence` | `exception` | `seriesMaster` — used to flag
     /// recurring events so time-change detection can skip them.
     let type: String?

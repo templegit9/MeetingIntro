@@ -54,9 +54,22 @@ final class CalendarManager: ObservableObject {
     /// changing the protocol and both implementations.
     @Published private(set) var browseEvents: [MeetingEvent] = []
     @Published private(set) var isLoadingBrowse = false
+    private var lastBrowseLoad: Date?
 
     /// Loads `days` ahead into `browseEvents`. Safe to call repeatedly; overlapping
     /// calls are collapsed.
+    /// Load the browse window only when what we have has gone stale.
+    ///
+    /// The invitations section needs to see an invitation three weeks out, which lives
+    /// only in this wider window — but a 45-day fetch on every dropdown open would be
+    /// absurd. Ten minutes is long enough that opening the menu repeatedly costs
+    /// nothing, and short enough that an invitation which arrived while you were in a
+    /// meeting is there when you look.
+    func loadBrowseWindowIfStale(days: Int = 45, maxAge: TimeInterval = 600) async {
+        if !browseEvents.isEmpty, let last = lastBrowseLoad, Date().timeIntervalSince(last) < maxAge { return }
+        await loadBrowseWindow(days: days)
+    }
+
     func loadBrowseWindow(days: Int = 45) async {
         guard !isLoadingBrowse else { return }
         isLoadingBrowse = true
@@ -64,6 +77,7 @@ final class CalendarManager: ObservableObject {
         do {
             let events = try await fetchFromEnabledSources(within: TimeInterval(days * 86_400))
             browseEvents = events
+            lastBrowseLoad = Date()
             diagnosticLog?.debug(.calendar, "Expanded calendar loaded \(events.count) event(s) over \(days) days")
         } catch {
             // Fall back to what the poll already has rather than emptying the grid — a
@@ -1346,11 +1360,38 @@ final class CalendarManager: ObservableObject {
         activeProvider.canCreateEvents ? activeProviderType : .eventKit
     }
 
+    /// Respond to an invitation. **Prefer this over the id-based overload** — routing
+    /// needs the event's own `sourceProvider`, and looking an id up in `upcomingWeek`
+    /// misses every invitation beyond the reminder window, which is exactly the far-out
+    /// ones the invitations section exists to surface.
+    func respond(to meeting: MeetingEvent, status: ResponseStatus) async throws {
+        try await send(status, eventID: meeting.id, origin: meeting.sourceProvider)
+    }
+
     /// Respond to an invitation, then refresh so the new status shows immediately.
     func respond(to eventID: String, status: ResponseStatus) async throws {
         // Route to the provider the event came from. Sending an EventKit id to Graph
-        // (or the reverse) can't work — the id spaces are unrelated.
-        let origin = upcomingWeek.first { $0.id == eventID }?.sourceProvider ?? activeProviderType
+        // (or the reverse) can't work — the id spaces are unrelated. Search the browse
+        // window as well as the reminder window: an invitation three weeks out lives
+        // only in the former, and falling back to `activeProviderType` for it would
+        // route the id to whichever source happens to be primary.
+        let origin = (upcomingWeek + browseEvents).first { $0.id == eventID }?.sourceProvider ?? activeProviderType
+        try await send(status, eventID: eventID, origin: origin)
+    }
+
+    /// Respond while proposing a different time, routed to the event's own source.
+    func propose(_ status: ResponseStatus, to meeting: MeetingEvent, start: Date, end: Date) async throws {
+        do {
+            try await provider(for: meeting.sourceProvider).propose(status, to: meeting.id, start: start, end: end)
+            diagnosticLog?.info(.calendar, "Proposed \(start) for \"\(meeting.title)\"")
+        } catch {
+            diagnosticLog?.error(.calendar, "Propose failed for \"\(meeting.title)\": \(error.localizedDescription)")
+            throw error
+        }
+        await refreshEvents()
+    }
+
+    private func send(_ status: ResponseStatus, eventID: String, origin: CalendarProviderType) async throws {
         do {
             try await provider(for: origin).respond(to: eventID, status: status)
             diagnosticLog?.info(.calendar, "RSVP \(status.rawValue) sent for event \(eventID)")

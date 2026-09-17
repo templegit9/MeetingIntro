@@ -70,6 +70,12 @@ struct MeetingEvent: Identifiable, Equatable {
     /// Everyone's RSVP breakdown, or nil when no response data is available.
     var responseCounts: ResponseCounts? = nil
 
+    /// Whether the organizer permits a counter-proposal of a different time.
+    /// **Defaults false on purpose**: absent means not allowed, so the Propose action is
+    /// simply not rendered rather than offered and then rejected by the server. Only the
+    /// Graph boundary can ever set it true — EventKit exposes nothing equivalent.
+    var allowsNewTimeProposals: Bool = false
+
     /// Time remaining until the meeting starts, relative to now.
     var timeUntilStart: TimeInterval {
         startDate.timeIntervalSinceNow
@@ -187,6 +193,12 @@ protocol CalendarProvider {
     /// blocks programmatic invitation responses); Graph can, once write-scoped.
     var supportsResponding: Bool { get }
 
+    /// Respond while proposing a different time. Graph only, and only for an event whose
+    /// organizer allowed proposals — see `MeetingEvent.allowsNewTimeProposals`. Declared
+    /// with a `.notSupported` default so a provider that can't do it says so rather than
+    /// silently dropping the proposed time and sending a bare reply.
+    func propose(_ status: ResponseStatus, to eventID: String, start: Date, end: Date) async throws
+
     /// Respond to an invitation (accept / decline / tentativelyAccept). Throws
     /// `.notSupported` on backends that can't write the response.
     func respond(to eventID: String, status: ResponseStatus) async throws
@@ -205,6 +217,9 @@ extension CalendarProvider {
     /// the user. This is a *default for a declared requirement* — see the protocol.
     var requiresInteractiveSignIn: Bool { false }
     var canCreateEvents: Bool { false }
+    func propose(_ status: ResponseStatus, to eventID: String, start: Date, end: Date) async throws {
+        throw CalendarProviderError.notSupported
+    }
     func createEvent(from draft: EventDraft, calendarID: String?) async throws {
         throw CalendarProviderError.notSupported
     }
