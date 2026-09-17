@@ -25,6 +25,7 @@ final class AppUpdater: ObservableObject {
     /// that can be wrong. per_page=30 comfortably covers our release cadence.
     private static let listURL = URL(string: "https://api.github.com/repos/templegit9/MeetingIntro/releases?per_page=30")!
     private static let caskRef = "templegit9/tap/meetingintro"
+    static let releasesPage = "https://github.com/templegit9/MeetingIntro/releases/latest"
 
     /// Ephemeral session = no persistent URL cache. GitHub sends `max-age=60`, so a
     /// shared/cached session can serve a stale "latest" and falsely report up-to-date
@@ -139,10 +140,11 @@ final class AppUpdater: ObservableObject {
     /// Run the Homebrew upgrade, then relaunch. Only valid from `.available`.
     func update() async {
         guard Self.selfUpdateAvailable else { return }
-        guard case .available = state else { return }
+        guard case .available(let version) = state else { return }
         state = .updating
         guard let brew = Self.brewPath() else {
-            state = .failed("Homebrew wasn't found. Update manually in Terminal:\nbrew upgrade --cask meetingintro")
+            // No Homebrew at all — the download is the only route, so lead with it.
+            state = .failed("Homebrew isn't installed, so this copy can't update itself.\n\nDownload \(version) from:\n\(Self.releasesPage)")
             return
         }
         // `brew upgrade` auto-refreshes the tap first, so it sees the new cask version.
@@ -150,10 +152,37 @@ final class AppUpdater: ObservableObject {
         if result.ok {
             state = .updated
             Self.relaunch()
-        } else {
-            let tail = String(result.output.suffix(280)).trimmingCharacters(in: .whitespacesAndNewlines)
-            state = .failed("Update failed. Run this in Terminal:\nbrew upgrade --cask meetingintro\n\n\(tail)")
+            return
         }
+
+        let output = result.output
+        let tail = String(output.suffix(280)).trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // "not installed" means Homebrew has no record of this app, which is what you
+        // get when it was installed by unzipping a GitHub release rather than through
+        // the cask. **No brew command can fix that** — the old copy told the user to run
+        // `brew upgrade` anyway, which fails with the same error forever. Reported from a
+        // 2.20.6 install trying to reach 2.20.7.
+        let notAHomebrewInstall = output.localizedCaseInsensitiveContains("is not installed")
+            || output.localizedCaseInsensitiveContains("No available cask")
+            || output.localizedCaseInsensitiveContains("No installed keg")
+        if notAHomebrewInstall {
+            state = .failed("""
+                This copy wasn't installed with Homebrew, so it can't update itself.
+
+                Download \(version) directly:
+                \(Self.releasesPage)
+
+                Or switch to Homebrew so future updates are one click:
+                brew install --cask \(Self.caskRef)
+                """)
+            return
+        }
+
+        // Any other failure is a real brew problem. Name the FULL cask reference — the
+        // old message said `brew upgrade --cask meetingintro`, which fails for anyone
+        // who hasn't tapped templegit9/tap.
+        state = .failed("Update failed. Run this in Terminal:\nbrew upgrade --cask \(Self.caskRef)\n\n\(tail)")
     }
 
     // MARK: - Helpers
