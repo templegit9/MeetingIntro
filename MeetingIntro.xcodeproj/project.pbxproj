@@ -840,7 +840,7 @@
 				INFOPLIST_FILE = "MeetingIntro/Info-MAS.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.21.0;
+				MARKETING_VERSION = 2.21.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.oluyinka.MeetingIntro;
 				PRODUCT_NAME = MeetingIntro;
 				SDKROOT = macosx;
@@ -925,7 +925,7 @@
 				INFOPLIST_FILE = MeetingIntro/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.21.0;
+				MARKETING_VERSION = 2.21.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.oluyinka.MeetingIntro;
 				SDKROOT = macosx;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -1003,7 +1003,7 @@
 				INFOPLIST_FILE = "MeetingIntro/Info-MAS.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.21.0;
+				MARKETING_VERSION = 2.21.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.oluyinka.MeetingIntro;
 				PRODUCT_NAME = MeetingIntro;
 				PROVISIONING_PROFILE_SPECIFIER = "$(MEETINGINTRO_MAS_PROFILE:default=)";
@@ -1029,7 +1029,7 @@
 				INFOPLIST_FILE = MeetingIntro/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.21.0;
+				MARKETING_VERSION = 2.21.1;
 				OTHER_CODE_SIGN_FLAGS = "--timestamp --options runtime";
 				PRODUCT_BUNDLE_IDENTIFIER = com.oluyinka.MeetingIntro;
 				SDKROOT = macosx;
