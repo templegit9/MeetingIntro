@@ -1,6 +1,6 @@
 # MeetingIntro Privacy Policy
 
-_Last updated 11 September 2026_
+_Last updated 17 September 2026_
 
 **I collect nothing.** MeetingIntro has no account, no sign up, no analytics, and no
 telemetry. I do not receive your calendar, your recordings, your files, or any record that
@@ -21,16 +21,24 @@ never sent anywhere unless a section further down says otherwise.
 | Transcripts and notes | Written next to the recording as .transcript.md and .notes.md files. |
 | Tasks and settings | macOS preferences for this app. |
 | Diagnostic logs | ~/Library/Application Support/MeetingIntro/Diagnostics, kept for 7 days and then deleted automatically. You can read them in Settings. |
-| Credentials | Any API key you enter, and the Microsoft 365 sign in token, are stored in the macOS Keychain. Never in a plain file, never transmitted except to the service they belong to. |
+| Credentials | Any API key you enter, and the Microsoft 365 and Google sign in tokens, are stored in the macOS Keychain. Never in a plain file, never transmitted except to the service they belong to. |
 
 ## When data does leave your Mac
 
-Four features can send data off the machine. **Every one of them is off until you turn it
+Five features can send data off the machine. **Every one of them is off until you turn it
 on**, and each sends only to a service you chose and configured yourself.
 
 - **Microsoft 365 calendar.** If you sign in, the app reads your calendar from Microsoft
   Graph and can create, move or cancel events there. That traffic goes to Microsoft under
   your own account, governed by Microsoft's privacy terms, not mine.
+- **Google Calendar.** If you sign in, the app reads your calendar from Google and can
+  reply to invitations and create events there. It requests three scopes and no more:
+  `calendar.events` (read your events, and send your accept, tentative or decline),
+  `calendar.calendarlist.readonly` (list your calendars so you can choose which to watch),
+  and `calendar.freebusy` (when a time is free, for suggesting an alternative). That
+  traffic goes to Google under your own account, governed by Google's privacy terms, not
+  mine. **Your Google data is never sent anywhere except Google**, is not stored off your
+  Mac, is not used to train any model, and is not shared with anyone.
 - **Cloud transcription.** On device transcription with WhisperKit sends nothing anywhere.
   If you instead supply a Groq key, the meeting audio is uploaded to Groq to be transcribed.
 - **AI parsing and notes.** Quick Add's smart parsing, meeting notes and the File Organizer
