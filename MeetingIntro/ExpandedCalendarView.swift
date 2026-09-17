@@ -335,27 +335,23 @@ struct ExpandedCalendarView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 7))
 
-                if !nextUp.isEmpty {
-                    Text("NEXT UP")
-                        .font(.system(size: 9, weight: .semibold))
-                        .tracking(1.1)
-                        .foregroundStyle(.secondary)
+                // The rail belongs to the SELECTED day, so it lists that day's
+                // meetings. Shipping 2.21.0 computed `dayEvents` for the count and then
+                // rendered `nextUp` — a global next-three from now — underneath it, so
+                // picking a date five weeks out showed "2 meetings" above today's
+                // schedule. A count and a list that disagree are worse than either
+                // alone. `nextUp` now appears ONLY when the chosen day is empty, where
+                // "here's what's next instead" is the useful answer and cannot be
+                // misread as the day's own agenda.
+                if !dayEvents.isEmpty {
+                    railSectionLabel(isSelectedToday ? "TODAY" : "SCHEDULE")
+                    ForEach(dayEvents) { e in
+                        agendaRow(e, showWeekday: false)
+                    }
+                } else if !nextUp.isEmpty {
+                    railSectionLabel("NEXT UP")
                     ForEach(nextUp) { e in
-                        HStack(alignment: .top, spacing: 8) {
-                            VStack(alignment: .leading, spacing: 0) {
-                                Text(e.startDate.formatted(.dateTime.weekday(.abbreviated)))
-                                Text(e.formattedStartTime)
-                            }
-                            .font(.system(size: 10, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 44, alignment: .leading)
-                            Rectangle().fill(color(for: e)).frame(width: 2.5)
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(e.title).font(.system(size: 12, weight: .medium)).lineLimit(1)
-                                Text(subtitle(for: e)).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
-                            }
-                            Spacer(minLength: 0)
-                        }
+                        agendaRow(e, showWeekday: true)
                     }
                 }
 
@@ -373,6 +369,48 @@ struct ExpandedCalendarView: View {
             }
             .padding(14)
         }
+    }
+
+    private var isSelectedToday: Bool { Calendar.current.isDateInToday(selected) }
+
+    private func railSectionLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 9, weight: .semibold))
+            .tracking(1.1)
+            .foregroundStyle(.secondary)
+    }
+
+    /// One rail row. `showWeekday` is false for the selected day's own schedule — every
+    /// row shares that date, so the weekday column is noise — and true for the next-up
+    /// list, which spans days and is ambiguous without it. A meeting that has already
+    /// finished is dimmed rather than hidden: on today's date the morning still belongs
+    /// to the day you're looking at.
+    private func agendaRow(_ e: MeetingEvent, showWeekday: Bool) -> some View {
+        let isPast = e.endDate < Date()
+        return HStack(alignment: .top, spacing: 8) {
+            VStack(alignment: .leading, spacing: 0) {
+                if showWeekday {
+                    Text(e.startDate.formatted(.dateTime.weekday(.abbreviated)))
+                }
+                Text(e.formattedStartTime)
+            }
+            .font(.system(size: 10, design: .monospaced))
+            .foregroundStyle(.secondary)
+            .frame(width: 44, alignment: .leading)
+            Rectangle().fill(color(for: e)).frame(width: 2.5)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(e.title)
+                    .font(.system(size: 12, weight: .medium))
+                    .strikethrough(e.isCancelled)
+                    .lineLimit(1)
+                Text(subtitle(for: e))
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+        .opacity(isPast ? 0.45 : 1)
     }
 
     private var nextUp: [MeetingEvent] {
