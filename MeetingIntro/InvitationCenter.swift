@@ -111,6 +111,62 @@ final class InvitationCenter: ObservableObject {
         }
     }
 
+    /// Propose a different time.
+    ///
+    /// **Sent as tentative, never as accept.** A proposal says "not as scheduled", which
+    /// is incoherent alongside an acceptance — and Graph rejects the combination anyway.
+    func propose(to meeting: MeetingEvent, start: Date, end: Date) async {
+        guard let cm = calendarManager else { return }
+        let previous = meeting.myResponse
+        states[meeting.id] = .sending(.tentative)
+        do {
+            try await cm.propose(.tentative, to: meeting, start: start, end: end)
+            states[meeting.id] = .answered(.tentative, previous: previous, at: Date())
+            reopened.remove(meeting.id)
+            diagnosticLog?.info(.calendar, "Proposed a new time for \"\(meeting.title)\"")
+        } catch {
+            states[meeting.id] = .failed(.tentative, message: Self.failureMessage(status: .tentative, meeting: meeting))
+            diagnosticLog?.error(.calendar, "Propose FAILED for \"\(meeting.title)\" — \(error.localizedDescription)")
+        }
+    }
+
+    /// The soonest slot of the same length that is free **on your calendar**.
+    ///
+    /// It knows your calendar and nothing about anyone else's, which is why the card
+    /// says so in words at the moment of sending rather than in a tooltip. Searched in
+    /// quarter-hour steps from the meeting's own start, inside working hours, skipping
+    /// weekends — a proposal outside those is one the organizer won't take seriously.
+    /// Returns nil when nothing fits, and the card then asks you to pick.
+    func suggestedSlot(for meeting: MeetingEvent) -> DateInterval? {
+        let cal = Calendar.current
+        let duration = max(meeting.endDate.timeIntervalSince(meeting.startDate), 900)
+        let busy = visibleEvents.filter { !$0.isAllDay && !$0.isCancelled && $0.id != meeting.id }
+
+        var cursor = max(Date(), meeting.startDate)
+        cursor = cal.date(bySetting: .second, value: 0, of: cursor) ?? cursor
+        let minute = cal.component(.minute, from: cursor)
+        cursor = cal.date(byAdding: .minute, value: (15 - minute % 15) % 15, to: cursor) ?? cursor
+
+        let horizon = cursor.addingTimeInterval(14 * 86_400)
+        while cursor < horizon {
+            let end = cursor.addingTimeInterval(duration)
+            let weekday = cal.component(.weekday, from: cursor)
+            let startsInHours = cal.component(.hour, from: cursor) >= Self.workdayStartHour
+            let endsInHours = end <= cal.date(bySettingHour: Self.workdayEndHour, minute: 0, second: 0, of: cursor)!
+            if weekday != 1, weekday != 7, startsInHours, endsInHours,
+               !busy.contains(where: { $0.startDate < end && $0.endDate > cursor }) {
+                return DateInterval(start: cursor, end: end)
+            }
+            cursor = cursor.addingTimeInterval(900)
+        }
+        return nil
+    }
+
+    /// Working-hours bounds for a suggested slot. Stored rather than hardcoded, per the
+    /// project's no-hardcoded-values rule; Settings → Calendar exposes both.
+    static var workdayStartHour: Int { UserDefaults.standard.object(forKey: "invitationWorkdayStartHour") as? Int ?? 9 }
+    static var workdayEndHour: Int { UserDefaults.standard.object(forKey: "invitationWorkdayEndHour") as? Int ?? 18 }
+
     func retry(_ meeting: MeetingEvent) async {
         guard case .failed(let status, _) = states[meeting.id] else { return }
         await respond(to: meeting, status: status)

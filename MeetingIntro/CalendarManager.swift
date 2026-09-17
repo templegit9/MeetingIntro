@@ -1379,6 +1379,18 @@ final class CalendarManager: ObservableObject {
         try await send(status, eventID: eventID, origin: origin)
     }
 
+    /// Respond while proposing a different time, routed to the event's own source.
+    func propose(_ status: ResponseStatus, to meeting: MeetingEvent, start: Date, end: Date) async throws {
+        do {
+            try await provider(for: meeting.sourceProvider).propose(status, to: meeting.id, start: start, end: end)
+            diagnosticLog?.info(.calendar, "Proposed \(start) for \"\(meeting.title)\"")
+        } catch {
+            diagnosticLog?.error(.calendar, "Propose failed for \"\(meeting.title)\": \(error.localizedDescription)")
+            throw error
+        }
+        await refreshEvents()
+    }
+
     private func send(_ status: ResponseStatus, eventID: String, origin: CalendarProviderType) async throws {
         do {
             try await provider(for: origin).respond(to: eventID, status: status)

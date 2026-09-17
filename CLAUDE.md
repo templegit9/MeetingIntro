@@ -112,6 +112,30 @@ The v2.7.5 redesign fixed two reported bugs: (a) **arming now suppresses every o
 
 **Meeting-start notification (v2.7.6):** a system notification at T-0, in addition to the pre-meeting countdown reminders. A `$meetingsCurrentlyRunning` subscription in `observe()` fires `NotificationManager.sendMeetingStartedNotification` for each newly-running meeting **within a 120s freshness window** (`meetingStartNotifyWindow`) — so launch/wake, where `meetingsCurrentlyRunning` surfaces meetings already long in progress, doesn't announce a stale start. Per-ID dedup (`started_<id>`) keeps it to once. **Skipped** for armed auto-join meetings (their auto-join posts its own "Joining" notice) and RSVP-suppressed ones; `meetingsCurrentlyRunning` already excludes cancelled. Toggle: `NotificationManager.notifyAtStartEnabled` (default on), Settings → Countdown → "Meeting Start".
 
+### Invitations — accept, decline, propose (issue #33, v2.22.0)
+
+A section pinned above Today's rows listing invitations still awaiting a reply, where the cancellation and reschedule callouts already live.
+
+**`try? await` was the blocker, so error visibility is the foundation.** Every RSVP call site swallowed its error, making a decline that never reached the organizer indistinguishable from one that did. `InvitationCenter` (@MainActor, attached in `observe()`) owns the state — `.sending` / `.failed` / `.answered` — and **none of the UI is buildable without it**: a card that says "wasn't notified" cannot exist while the failure is discarded. State is **in-memory only, deliberately**; an answered card lingers for the session so you can see what you just did, and a relaunch should be a clean slate, not a pile of stale receipts.
+
+**Absence, never disablement.** The governing rule for every control on a card: if it can't work, it isn't there. No greyed buttons, no disabled links carrying an explanation of something the user can't have. An account that can't reply (`canRespond(to:)` false — EventKit always, since Apple ships no participant-status API) shows **Open in Calendar** alone. Propose is absent unless `MeetingEvent.allowsNewTimeProposals`, which **defaults false so absent means no**; only the Graph boundary sets it true, and never for your own meeting.
+
+**Unsupported invitations are still listed.** An iCloud invitation you can't answer in-app is one you still need to know about — hiding it would mean the app quietly decides which of your invitations you get to see. The section is about awareness as much as action.
+
+**Controls live in exactly one place.** The same meeting is still a row in Today, but there it carries only a hollow amber dot — state, no controls — and the row's `⋯` menu now offers RSVP **only for a response you already gave** (`[.accepted, .declined, .tentative]`, `.noResponse` removed). The section owns unanswered, the menu owns changing an answer; disjoint sets, so nothing offers the same action twice.
+
+**Decline confirms in place; Accept and Tentative don't.** The confirm replaces the card's action row — no dialog, no sheet — and **names the organizer** ("Sean Park is notified right away"), because that's the consequence; "are you sure?" tests nothing. The asymmetry is the design: only the answer that disappoints someone earns a second beat.
+
+**Undo bends to what's possible.** The design said Undo; **no calendar API can return an invitation to "no response"** — Graph will change accepted→declined but cannot un-answer. So `canUndo` is true only when there was a real prior response to restore, and otherwise the row offers **Change…**, which reopens the actions via `reopened`. An "Undo" that can't undo would break the one thing this design is about.
+
+**Propose sends tentative, never accept.** A proposal says "not as scheduled", which is incoherent alongside an acceptance, and Graph rejects the pairing. `GraphCalendarProvider.propose` posts `proposedNewTime` to `decline`/`tentativelyAccept` as **wall-clock plus a named zone** — same rule as `createEvent`, since an offset alongside a zone name double-applies and the proposal lands hours away.
+
+**One suggested slot, and the caveat is in the card.** `suggestedSlot(for:)` scans the browse window in quarter-hour steps for the soonest same-length gap inside working hours, skipping weekends. It knows **your** calendar and nothing about anyone else's, so "we haven't checked theirs" is printed in the card at the moment of sending — not a tooltip. Nothing free in a fortnight returns nil and the box asks you to pick rather than inventing a slot. Working hours are `invitationWorkdayStartHour`/`EndHour` (Settings → Calendar → Invitations), not constants.
+
+**The section reads the browse window, throttled.** An invitation three weeks out lives only in `browseEvents`, so the popover calls `loadBrowseWindowIfStale()` (10-minute floor) on open — a 45-day fetch per dropdown open would be absurd. It renders **outside the `TimelineView`**: nothing here counts down, and inside it every card would re-render once a second. `CalendarManager.respond(to:eventID:)` also now searches `browseEvents` as well as `upcomingWeek` when routing, or a far-out invitation's id went to whichever provider happened to be primary.
+
+**Known gap:** `CompactMenuView` (the non-default dropdown) has no invitations section and keeps `.noResponse` RSVP in its `⋯` menu with `try? await`, so failures there are still silent in the UI (they do reach the diagnostic log). Recurring series are untested — Graph treats series vs occurrence differently and a wrong answer on a series is loud.
+
 ### Cancellation handling (v2.2.0)
 
 Cancelled meetings are first-class: notify once on detection, suppress all original-start-time channels (overlay, notification, voice, auto-record).

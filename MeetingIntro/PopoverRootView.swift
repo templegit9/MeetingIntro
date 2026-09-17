@@ -56,6 +56,12 @@ struct PopoverRootView: View {
     @State private var showAllInvitations = false
     /// The one invitation whose Decline is awaiting confirmation. Only Decline confirms.
     @State private var confirmingDecline: String?
+    /// The invitation whose Propose box is open. Its card expands in place and the
+    /// others dim — no sheet, no navigation away from the dropdown.
+    @State private var proposingID: String?
+    @State private var proposedStart = Date()
+    @State private var proposedDuration: TimeInterval = 3600
+    @State private var pickingProposedTime = false
 
     private enum Tab { case today, upcoming, tasks }
     /// The expanded calendar (#32). Deliberately **not** persisted: a single click has
@@ -798,7 +804,12 @@ struct PopoverRootView: View {
                         // Two cards, then a count. The section is a prompt to answer,
                         // never a second event list that swallows the dropdown.
                         let shown = showAllInvitations ? awaiting : Array(awaiting.prefix(2))
-                        ForEach(shown) { invitationCard($0) }
+                        ForEach(shown) { m in
+                            invitationCard(m)
+                                // The expanded card owns the moment; its siblings step back.
+                                .opacity(proposingID == nil || proposingID == m.id ? 1 : 0.4)
+                                .allowsHitTesting(proposingID == nil || proposingID == m.id)
+                        }
                         if awaiting.count > shown.count {
                             Button("+ \(awaiting.count - shown.count) more") { showAllInvitations = true }
                                 .buttonStyle(.plain)
@@ -847,7 +858,11 @@ struct PopoverRootView: View {
                 }
             }
 
-            invitationActions(m, state: state)
+            if proposingID == m.id, state == nil {
+                proposeBox(m)
+            } else {
+                invitationActions(m, state: state)
+            }
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -889,13 +904,82 @@ struct PopoverRootView: View {
                 // Propose is ABSENT unless the organizer allows it — never a disabled
                 // link with an explanation of something you can't have.
                 if m.allowsNewTimeProposals {
-                    Button("Propose…") { }
+                    Button("Propose…") { beginProposing(m) }
                         .buttonStyle(.plain)
                         .font(.system(size: 11))
                         .foregroundStyle(accent)
                 }
             }
         }
+    }
+
+    /// One slot, not a list — and the caveat sits **in the card**, visible at the moment
+    /// of sending. We know your calendar and nothing about theirs; that sentence is the
+    /// difference between a useful suggestion and a claim we can't make.
+    @ViewBuilder private func proposeBox(_ m: MeetingEvent) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .top, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(proposedSlotLabel)
+                            .font(.system(size: 12, weight: .semibold))
+                        Text("Your next free hour — we haven't checked theirs")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 0)
+                    invitationButton("Send", tint: .green, filled: true) {
+                        let start = proposedStart
+                        let end = start.addingTimeInterval(proposedDuration)
+                        proposingID = nil
+                        pickingProposedTime = false
+                        Task { await invitations.propose(to: m, start: start, end: end) }
+                    }
+                }
+                if pickingProposedTime {
+                    DatePicker("", selection: $proposedStart, displayedComponents: [.date, .hourAndMinute])
+                        .datePickerStyle(.compact)
+                        .labelsHidden()
+                        .controlSize(.small)
+                }
+            }
+            .padding(9)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.06)))
+
+            HStack {
+                Button(pickingProposedTime ? "Use the suggestion" : "Pick another time…") {
+                    if pickingProposedTime {
+                        pickingProposedTime = false
+                        if let slot = invitations.suggestedSlot(for: m) { proposedStart = slot.start }
+                    } else {
+                        pickingProposedTime = true
+                    }
+                }
+                .buttonStyle(.plain).font(.system(size: 11)).foregroundStyle(accent)
+                Spacer(minLength: 0)
+                Button("Cancel") { proposingID = nil; pickingProposedTime = false }
+                    .buttonStyle(.plain).font(.system(size: 11)).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var proposedSlotLabel: String {
+        proposedStart.formatted(.dateTime.weekday(.abbreviated).hour().minute())
+    }
+
+    private func beginProposing(_ m: MeetingEvent) {
+        proposedDuration = max(m.endDate.timeIntervalSince(m.startDate), 900)
+        if let slot = invitations.suggestedSlot(for: m) {
+            proposedStart = slot.start
+            pickingProposedTime = false
+        } else {
+            // Nothing free in the next fortnight: don't invent a slot, ask for one.
+            proposedStart = m.startDate
+            pickingProposedTime = true
+        }
+        proposingID = m.id
     }
 
     private func invitationButton(_ title: String, tint: Color = .secondary, filled: Bool = false,
