@@ -1735,28 +1735,46 @@ struct SettingsView: View {
             }
 
             Section("Save Location") {
-                HStack {
-                    Image(systemName: "folder")
-                    Text(recordingConfig.resolveSaveDirectory().path)
-                        .font(.system(.caption, design: .monospaced))
-                        .truncationMode(.middle)
-                        .lineLimit(1)
-                    Spacer()
-                }
-                HStack(spacing: 12) {
-                    Button("Show in Finder") {
-                        let url = recordingConfig.resolveSaveDirectory()
-                        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-                        NSWorkspace.shared.activateFileViewerSelecting([url])
+                if let dir = recordingConfig.resolveSaveDirectory() {
+                    HStack {
+                        Image(systemName: "folder")
+                        Text(dir.path)
+                            .font(.system(.caption, design: .monospaced))
+                            .truncationMode(.middle)
+                            .lineLimit(1)
+                        Spacer()
                     }
-                    Button("Change…") { pickSaveLocation() }
-                    if recordingConfig.saveDirectoryBookmark != nil {
-                        Button("Reset to default") { recordingConfig.saveDirectoryBookmark = nil }
+                    HStack(spacing: 12) {
+                        Button("Show in Finder") {
+                            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+                            NSWorkspace.shared.activateFileViewerSelecting([dir])
+                        }
+                        Button("Change…") { pickSaveLocation() }
+                        // No "Reset to default" in the sandboxed build — there is no
+                        // default to go back to, only a folder the user picked.
+                        if recordingConfig.saveDirectoryBookmark != nil,
+                           !RecordingConfig.requiresChosenDirectory {
+                            Button("Reset to default") { recordingConfig.saveDirectoryBookmark = nil }
+                        }
                     }
+                    Text("\(recordingStats.count) recording\(recordingStats.count == 1 ? "" : "s"), \(formatBytes(recordingStats.sizeBytes))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    // Sandboxed build, nothing chosen yet. Stated inline rather than
+                    // behind the section ⓘ — recording cannot run until this is answered.
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Text("No folder chosen yet")
+                            .foregroundStyle(.orange)
+                    }
+                    Text("Recordings are saved wherever you choose, so you can find them in Finder. Nothing is recorded until you pick a folder.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button("Choose Folder…") { pickSaveLocation() }
+                        .buttonStyle(.borderedProminent)
                 }
-                Text("\(recordingStats.count) recording\(recordingStats.count == 1 ? "" : "s"), \(formatBytes(recordingStats.sizeBytes))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
 
             Section("Transcription & Notes") {
@@ -1911,6 +1929,7 @@ struct SettingsView: View {
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false
         panel.prompt = "Choose"
+        panel.message = "Choose where MeetingIntro saves recordings, transcripts and notes."
         if panel.runModal() == .OK, let url = panel.url {
             recordingConfig.saveDirectoryBookmark = try? url.bookmarkData(
                 options: [.withSecurityScope],
@@ -1922,7 +1941,10 @@ struct SettingsView: View {
     }
 
     private func refreshRecordingStats() {
-        let dir = recordingConfig.resolveSaveDirectory()
+        guard let dir = recordingConfig.resolveSaveDirectory() else {
+            recordingStats = (0, 0)
+            return
+        }
         guard let items = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.fileSizeKey], options: [.skipsHiddenFiles]) else {
             recordingStats = (0, 0)
             return
@@ -2177,8 +2199,20 @@ struct SettingsView: View {
     }
 
     /// Icon button beside the version: check for / install updates via Homebrew.
+    ///
+    /// Absent entirely in the App Store build — updates come from the store there, and an
+    /// "install update" control that cannot install anything is worse than none.
     @ViewBuilder
     private var updateControl: some View {
+        if !AppUpdater.selfUpdateAvailable {
+            EmptyView()
+        } else {
+            updateStates
+        }
+    }
+
+    @ViewBuilder
+    private var updateStates: some View {
         switch updater.state {
         case .checking, .updating:
             ProgressView().controlSize(.small)
@@ -2217,6 +2251,15 @@ struct SettingsView: View {
     /// One-line status under the version for the states worth spelling out.
     @ViewBuilder
     private var updateStatusLine: some View {
+        if !AppUpdater.selfUpdateAvailable {
+            EmptyView()
+        } else {
+            updateStatusStates
+        }
+    }
+
+    @ViewBuilder
+    private var updateStatusStates: some View {
         switch updater.state {
         case .available(let v):
             Button("Update available — install v\(v)") { Task { await updater.update() } }
@@ -2480,12 +2523,18 @@ struct SettingsView: View {
 
                 updateStatusLine
 
-                Toggle("Check for updates automatically", isOn: $autoUpdateEnabled)
-                    .toggleStyle(.checkbox)
-                    .font(.caption)
-                    .fixedSize()
-                    .onChange(of: autoUpdateEnabled) { _, _ in updater.refreshAutoChecks() }
-                    .padding(.top, 2)
+                if AppUpdater.selfUpdateAvailable {
+                    Toggle("Check for updates automatically", isOn: $autoUpdateEnabled)
+                        .toggleStyle(.checkbox)
+                        .font(.caption)
+                        .fixedSize()
+                        .onChange(of: autoUpdateEnabled) { _, _ in updater.refreshAutoChecks() }
+                        .padding(.top, 2)
+                } else {
+                    Text("Updates arrive through the App Store.")
+                        .font(.caption2).foregroundStyle(.secondary)
+                        .padding(.top, 2)
+                }
             }
 
             Text("Never be late to a meeting again.\nGet countdown overlays and voice reminders\nbefore your meetings start.")
@@ -2519,7 +2568,9 @@ struct SettingsView: View {
 
             Spacer()
 
-            Text("© \(Calendar.current.component(.year, from: Date())) TempleGit · MIT License")
+            // String(year), not the bare Int — SwiftUI's Text interpolation formats an
+            // Int with the locale's grouping separator, which shipped "© 2,026".
+            Text("© \(String(Calendar.current.component(.year, from: Date()))) TempleGit · MIT License")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
                 .padding(.bottom, 12)
@@ -2530,6 +2581,7 @@ struct SettingsView: View {
             // leave a stale `.upToDate` from before a newer release shipped; opening
             // About is an explicit "is there an update?" so it should hit GitHub fresh
             // (unless an update is already in flight).
+            guard AppUpdater.selfUpdateAvailable else { return }
             if case .updating = updater.state {} else { await updater.check() }
         }
     }

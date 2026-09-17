@@ -154,7 +154,7 @@ struct CompactMenuView: View {
 
     private var menuBody: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if case .available(let v) = updater.state {
+            if AppUpdater.selfUpdateAvailable, case .available(let v) = updater.state {
                 actionRow(icon: "arrow.down.circle.fill", tint: accent,
                           label: "Update available — install v\(v)", bold: true) {
                     Task { await updater.update() }

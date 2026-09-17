@@ -1105,6 +1105,9 @@ final class CalendarManager: ObservableObject {
     /// Sources currently skipped for lack of a token, and sources currently returning
     /// nothing. Both are logged on transition only — a per-poll line would drown the log.
     private var skippedUnauthorizedSources: Set<CalendarProviderType> = []
+    /// Sources already asked for access since launch. Asking once per launch, not once per
+    /// poll: a declined prompt must not re-appear every 30 seconds.
+    private var accessRequestedThisLaunch: Set<CalendarProviderType> = []
     private var emptySources: Set<CalendarProviderType> = []
 
     private func fetchFromEnabledSources(within window: TimeInterval) async throws -> [MeetingEvent] {
@@ -1117,6 +1120,22 @@ final class CalendarManager: ObservableObject {
 
         for type in types {
             let source = provider(for: type)
+            // A non-primary source that loses its grant could never get it back: only
+            // `activeProvider` was ever asked for access, so with Microsoft 365 primary a
+            // revoked macOS Calendar permission left EventKit skipped for ever, with no
+            // path back except a button in Settings nobody knows to press.
+            //
+            // Asking here is safe for providers whose request is a system permission
+            // prompt. It is NOT safe for one that opens a browser — that was v2.20.3's
+            // sign-in ambush — so interactive providers are still left alone and wait for
+            // the user to press Sign In.
+            if !source.isAuthorized, !source.requiresInteractiveSignIn,
+               !accessRequestedThisLaunch.contains(type) {
+                accessRequestedThisLaunch.insert(type)
+                if (try? await source.requestAccess()) == true {
+                    diagnosticLog?.info(.calendar, "Source \(type.rawValue) authorized after asking")
+                }
+            }
             guard source.isAuthorized else {
                 // Log the transition, not every poll. An enabled source that quietly
                 // stops contributing is otherwise invisible — and `isAuthorized` reads
