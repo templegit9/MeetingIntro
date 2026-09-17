@@ -1346,11 +1346,26 @@ final class CalendarManager: ObservableObject {
         activeProvider.canCreateEvents ? activeProviderType : .eventKit
     }
 
+    /// Respond to an invitation. **Prefer this over the id-based overload** — routing
+    /// needs the event's own `sourceProvider`, and looking an id up in `upcomingWeek`
+    /// misses every invitation beyond the reminder window, which is exactly the far-out
+    /// ones the invitations section exists to surface.
+    func respond(to meeting: MeetingEvent, status: ResponseStatus) async throws {
+        try await send(status, eventID: meeting.id, origin: meeting.sourceProvider)
+    }
+
     /// Respond to an invitation, then refresh so the new status shows immediately.
     func respond(to eventID: String, status: ResponseStatus) async throws {
         // Route to the provider the event came from. Sending an EventKit id to Graph
-        // (or the reverse) can't work — the id spaces are unrelated.
-        let origin = upcomingWeek.first { $0.id == eventID }?.sourceProvider ?? activeProviderType
+        // (or the reverse) can't work — the id spaces are unrelated. Search the browse
+        // window as well as the reminder window: an invitation three weeks out lives
+        // only in the former, and falling back to `activeProviderType` for it would
+        // route the id to whichever source happens to be primary.
+        let origin = (upcomingWeek + browseEvents).first { $0.id == eventID }?.sourceProvider ?? activeProviderType
+        try await send(status, eventID: eventID, origin: origin)
+    }
+
+    private func send(_ status: ResponseStatus, eventID: String, origin: CalendarProviderType) async throws {
         do {
             try await provider(for: origin).respond(to: eventID, status: status)
             diagnosticLog?.info(.calendar, "RSVP \(status.rawValue) sent for event \(eventID)")
