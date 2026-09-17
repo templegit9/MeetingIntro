@@ -158,6 +158,9 @@ struct SettingsView: View {
     @State private var accountLookupFailed = false
     @State private var graphAuthMessage: String?
     @State private var isSigningIn: Bool = false
+    @State private var isSigningInGoogle: Bool = false
+    @State private var googleAuthMessage: String?
+    @AppStorage("googleClientID") private var googleClientID: String = ""
     @State private var availableCalendars: [CalendarInfo] = []
     @State private var selectedCalendarIDs: Set<String> = []
     @State private var volume: Float = 0.7
@@ -244,6 +247,13 @@ struct SettingsView: View {
                         // Account details live behind a chevron on the source's own row,
                         // rather than as a separate section further down the tab: the
                         // account belongs to the source, not to the page.
+                        if type == .googleCalendar, enabledProviders.contains(type) {
+                            DisclosureGroup("Account") {
+                                googleAccountDetails
+                            }
+                            .font(.caption)
+                        }
+
                         if type == .microsoftGraph, enabledProviders.contains(type),
                            calendarManager.graphCalendarProvider.isAuthorized {
                             DisclosureGroup("Account") {
@@ -263,6 +273,12 @@ struct SettingsView: View {
                                     }
                                     .controlSize(.small)
                                     .disabled(isSigningIn)
+                                case .googleCalendar:
+                                    Button(isSigningInGoogle ? "Waiting for browser…" : "Sign in with Google") {
+                                        Task { await signInGoogle() }
+                                    }
+                                    .controlSize(.small)
+                                    .disabled(isSigningInGoogle || !GoogleCalendarAuth.isPlausibleClientID(googleClientID))
                                 case .eventKit:
                                     Button("Grant calendar access") {
                                         Task { _ = try? await calendarManager.eventKitProvider.requestAccess() }
@@ -2687,6 +2703,59 @@ struct SettingsView: View {
             availableCalendars = await calendarManager.availableCalendarsFromEnabledSources()
         } catch {
             availableCalendars = []
+        }
+    }
+
+    /// Google needs an OAuth client the user creates, because Google will not let an app
+    /// ship one for other people to use without passing its verification review — an
+    /// unverified app is capped at 100 users. So rather than an instruction to go and
+    /// find the console, this hands over the exact link and the exact app type.
+    @ViewBuilder private var googleAccountDetails: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if calendarManager.googleProvider.isAuthorized {
+                if let email = calendarManager.googleProvider.accountEmail {
+                    Label(email, systemImage: "person.crop.circle.fill").foregroundStyle(.secondary)
+                }
+                Button("Sign out") {
+                    calendarManager.googleProvider.signOut()
+                    googleAuthMessage = nil
+                }
+                .controlSize(.small)
+            } else {
+                Text("Create an OAuth client ID, then paste it here.")
+                    .foregroundStyle(.secondary)
+                TextField("1234567890-abc.apps.googleusercontent.com", text: $googleClientID)
+                    .textFieldStyle(.roundedBorder)
+                if !googleClientID.isEmpty, !GoogleCalendarAuth.isPlausibleClientID(googleClientID) {
+                    Text("A Google client ID ends in .apps.googleusercontent.com")
+                        .foregroundStyle(.orange)
+                }
+                Link("Open the Google Cloud credentials page", destination: URL(string: GoogleCalendarProvider.setupURL)!)
+                // The app type is the single most common way this goes wrong: a Web
+                // application client rejects the redirect and the error says nothing
+                // useful, so it is stated up front rather than left to be discovered.
+                Text("Choose **iOS** as the application type — a Web application client will be rejected when signing in. Bundle ID: com.oluyinka.MeetingIntro")
+                    .foregroundStyle(.secondary)
+            }
+            if let message = googleAuthMessage {
+                Text(message).foregroundStyle(message.hasPrefix("Signed in") ? .green : .orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func signInGoogle() async {
+        isSigningInGoogle = true
+        googleAuthMessage = nil
+        defer { isSigningInGoogle = false }
+        do {
+            calendarManager.googleProvider.clientID = googleClientID
+            _ = try await calendarManager.googleProvider.requestAccess()
+            googleAuthMessage = "Signed in."
+            await calendarManager.refreshEvents()
+        } catch {
+            googleAuthMessage = error.localizedDescription
         }
     }
 
