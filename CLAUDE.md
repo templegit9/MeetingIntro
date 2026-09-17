@@ -36,6 +36,17 @@ GitHub release notes are auto-generated: a "What's changed since <previous tag>"
 - `CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO` in Release. Otherwise Xcode injects `com.apple.security.get-task-allow` (the debugger-attach entitlement) and notarization rejects it.
 - `Info.plist` uses `$(MARKETING_VERSION)` / `$(CURRENT_PROJECT_VERSION)` substitutions so the version the release script passes via `xcodebuild MARKETING_VERSION=$VERSION` actually reaches the bundle.
 
+## Mac App Store build (`MeetingIntroMAS` target, v2.20.7)
+
+The same code ships twice: **Developer ID via Homebrew** (unsandboxed) and **sandboxed via the Mac App Store**. One target each, generated from `project.yml`; `scripts/appstore.sh` is the store pipeline's sibling to `release.sh`. Full rationale, certificate requirements and the App Review history: [docs/APPSTORE.md](./docs/APPSTORE.md).
+
+- **`SWIFT_ACTIVE_COMPILATION_CONDITIONS: MAS`** gates code that cannot exist in a sandbox. `AppUpdater.selfUpdateAvailable` is false there and every entry point checks it, because in-app `brew upgrade` requires spawning a process — the thing the sandbox exists to prevent. Every update affordance hides itself; About says updates arrive through the App Store.
+- **`CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO`** for the same reason as Release: Xcode would otherwise inject `get-task-allow` and the upload is rejected.
+- **Entitlements are minimal, and App Review checks that.** Six: `app-sandbox`, `personal-information.calendars`, `network.client`, `files.user-selected.read-write`, `files.bookmarks.app-scope`, `device.audio-input`. `assets.movies.read-write` was declared and **rejected under 2.4.5(i) as an entitlement with no matching functionality** — don't add it back; every user-facing write goes through an `NSOpenPanel` folder, which `files.user-selected.read-write` already covers.
+- **`files.bookmarks.app-scope` is load-bearing**, not optional: without it a security-scoped bookmark resolves but grants nothing after relaunch, and every saved folder silently stops working.
+
+**Recordings have no default location in the sandboxed build.** `RecordingConfig.resolveSaveDirectory()` returns `URL?` and `requiresChosenDirectory` is true under `#if MAS`. Unsandboxed it still falls back to `~/Movies/MeetingIntro/`, a real folder you can open; **under the sandbox that same call resolves to `~/Library/Containers/<id>/Data/Movies`, which no user will ever find** — App Review rejected 2.20.6 under 2.4.5(i) for exactly that, and the `.transcript.md` / `.notes.md` sidecars went in there with the audio. The MAS build now refuses to record until a folder is picked and says so. **Do not reintroduce a fallback directory in the MAS build** — a default the user cannot see is the rejection.
+
 ## Architecture
 
 ### App composition (`MeetingIntroApp.swift`)
