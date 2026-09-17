@@ -430,6 +430,25 @@ macOS Calendar's Exchange sync can fail to apply a change and leave a **phantom*
 - **Runs every 5 min** (`runInterval`), driven by a `$upcomingWeek` subscription — **not** `onPollComplete`, which `CalendarMirrorEngine` already owns as a single closure (assigning it there would silently disable mirroring).
 - Opt-in (`GraphVerifierConfig.isEnabled`, default off) under Settings → Calendar → "Verify against Microsoft 365"; requires the Graph sign-in above. **Note the deployment reality:** since Microsoft's managed consent policy (Oct 2025, extended June 2026) even `Calendars.Read` needs **admin consent** in default tenants, so enterprise users need IT approval regardless of scope.
 
+### Google Calendar (`GoogleCalendarProvider.swift` / `GoogleCalendarAuth.swift`, v2.23.0)
+
+**It adds capability, not coverage.** EventKit already reads Google — that's what "iCloud, Exchange, Google, etc." means on the Calendar Sources row. What it cannot do is *answer*: Apple exposes no participant-status API, so every Gmail invitation was awareness-only. Google's API can PATCH your own `responseStatus`, and can answer free/busy for **other people**. Adding it for reading alone would have been pointless.
+
+**Three things differ from Graph's sign-in and all three are load-bearing:**
+- **The redirect URI is derived from the client ID.** Google's native (iOS/macOS) client type accepts only the *reversed* client ID as a scheme — `com.googleusercontent.apps.<id>:/oauth2redirect`. `meetingintro://auth` is rejected outright, so `redirectURI(for:)` builds it per client. A **Web application** client is the single most common setup mistake and its failure message is useless, so Settings states the app type up front.
+- **`access_type=offline` AND `prompt=consent` are both required** for a refresh token. Without the second, a user who has consented before gets an access token and no refresh token, and the account dies silently an hour later — the exact bug Graph shipped before v2.7.0. **Don't drop `prompt=consent` to smooth the flow.**
+- **No bundled client ID.** A Microsoft public client ID is not a secret and we ship ours; Google caps an *unverified* app at 100 users and gates the rest behind OAuth verification (privacy policy, demo video, verified domain). Shipping one would break for the 101st person with no way for them to fix it, so the user brings their own — with the exact console link, per the `always-link-the-action` rule, not an instruction to go find it.
+
+**RSVP is a PATCH of the whole attendee list.** Google has no accept/decline endpoint: you read the event, change your own entry's `responseStatus`, and PATCH `attendees` back. **The whole list must be sent** — a PATCH carrying only your own entry drops everyone else from the meeting — so the preceding read is not optional and must not be "optimised" away. If no attendee is flagged `self`, we refuse rather than guess: patching a guessed entry could answer on someone else's behalf.
+
+**Event endpoints are per calendar, so `calendarIDByEvent` is not optional.** `events/{id}` against the wrong calendar is a 404, not a redirect, and `MeetingEvent` carries a calendar *name*, not an id. Without the map, replying to anything on a shared team calendar failed with an error about the event not existing. Populated at fetch time.
+
+**Propose is `notSupported`, permanently.** Google Calendar has no counter-proposal concept — no API, and none in Google's own UI. Declining with a suggested time is a message, not a calendar operation. `allowsNewTimeProposals` is therefore always false for Google events, so the action is simply absent, per the absence-never-disablement rule.
+
+**Reply routing is provider-agnostic (v2.23.0).** `MeetingEvent.graphCounterpartID` was replaced by `replyProvider`/`replyEventID`: a Google account is at least as likely as a Microsoft one to be *also* in macOS Calendar, and the EventKit copy wins the merge, so Google would have inherited the identical "this account can't send replies" bug v2.22.2 fixed for Graph. The merge now hands the winner any dropped duplicate's identity whenever the duplicate can respond and the winner can't, whichever providers those happen to be.
+
+**`busyIntervals(for:from:to:)` is implemented but NOT yet wired** into the propose suggestion. Google's freeBusy can only answer for calendars Google can see, and the attendees of a *Graph* meeting generally aren't among them — the right counterpart there is Graph's own `getSchedule`. Wiring one without the other would make the suggestion confidently wrong for half of meetings. **Absence of busy time is not evidence of free time** (an unreadable calendar contributes nothing), so any caller that surfaces this has to say whose calendars were actually readable.
+
 ### Calendar mirror / sync (`CalendarSync/`, v2.5.0)
 
 One-way continuous mirror: source calendar(s) → a destination, every poll. **The app's first autonomous recurring write to real calendars** — treat changes here with the caution that implies.

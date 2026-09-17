@@ -76,16 +76,20 @@ struct MeetingEvent: Identifiable, Equatable {
     /// Graph boundary can ever set it true — EventKit exposes nothing equivalent.
     var allowsNewTimeProposals: Bool = false
 
-    /// The Microsoft 365 id for this same meeting, when it reached us from **both**
-    /// sources and the EventKit copy won the merge.
+    /// Where a reply for this meeting must actually be sent, when the copy we kept
+    /// can't send one.
     ///
-    /// EventKit winning is deliberate — armed auto-joins, dismissed reminders and
-    /// notified cancellations are all keyed to its id, and preferring the Graph copy
-    /// would orphan every one of them. But the EventKit copy **cannot RSVP**, so without
-    /// carrying its Graph twin's id a dual-synced work account loses the ability to
-    /// answer invitations entirely. Identity stays EventKit; only the reply takes the
-    /// capable path.
-    var graphCounterpartID: String? = nil
+    /// A work or personal account frequently reaches us **twice** — through macOS
+    /// Calendar and through its own API. The EventKit copy wins the merge deliberately:
+    /// armed auto-joins, dismissed reminders and notified cancellations are all keyed to
+    /// its id, and preferring the other copy would orphan every one of them. But EventKit
+    /// **cannot RSVP**, so without carrying the capable twin's identity a dual-synced
+    /// account loses the ability to answer invitations entirely — which is the exact
+    /// state the feature shipped in for Microsoft 365 users in v2.22.1.
+    ///
+    /// Identity stays with the copy that won; only the reply takes the capable path.
+    var replyProvider: CalendarProviderType? = nil
+    var replyEventID: String? = nil
 
     /// Time remaining until the meeting starts, relative to now.
     var timeUntilStart: TimeInterval {
@@ -146,6 +150,7 @@ extension ResponseStatus {
 enum CalendarProviderType: String, CaseIterable, Identifiable {
     case eventKit = "EventKit"
     case microsoftGraph = "Microsoft Graph"
+    case googleCalendar = "Google Calendar"
 
     var id: String { rawValue }
 
@@ -157,6 +162,8 @@ enum CalendarProviderType: String, CaseIterable, Identifiable {
             return "Uses calendars configured in macOS System Settings (iCloud, Exchange, Google, etc.)"
         case .microsoftGraph:
             return "Connects directly to Microsoft 365 via Graph API (requires Azure App Registration)"
+        case .googleCalendar:
+            return "Connects directly to Google Calendar, so you can reply to Gmail invitations — which macOS Calendar can't do (requires your own Google OAuth client)"
         }
     }
 }

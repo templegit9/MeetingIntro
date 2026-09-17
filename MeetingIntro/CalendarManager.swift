@@ -271,6 +271,7 @@ final class CalendarManager: ObservableObject {
     /// Internal, not private: `GraphVerifier` uses it to cross-check Exchange events
     /// even while EventKit is the active provider.
     let graphProvider = GraphCalendarProvider()
+    let googleProvider = GoogleCalendarProvider()
 
     /// The currently active provider type.
     /// Which sources are read. Reading from BOTH is the point: Google and iCloud arrive
@@ -298,6 +299,7 @@ final class CalendarManager: ObservableObject {
         switch type {
         case .eventKit: return eventKitProvider
         case .microsoftGraph: return graphProvider
+        case .googleCalendar: return googleProvider
         }
     }
 
@@ -318,6 +320,7 @@ final class CalendarManager: ObservableObject {
         switch activeProviderType {
         case .eventKit: return eventKitProvider
         case .microsoftGraph: return graphProvider
+        case .googleCalendar: return googleProvider
         }
     }
 
@@ -1174,11 +1177,17 @@ final class CalendarManager: ObservableObject {
                     let key = Self.duplicateKey(for: event)
                     if let idx = indexByKey[key] {
                         duplicates += 1
-                        // The Graph twin of an EventKit event is the only copy that can
+                        // The duplicate we're dropping may be the only copy that can
                         // send an RSVP, and the only one that knows whether the organizer
                         // allows a counter-proposal. Hand both to the copy that won.
-                        if event.sourceProvider == .microsoftGraph, merged[idx].sourceProvider == .eventKit {
-                            merged[idx].graphCounterpartID = event.id
+                        // Provider-agnostic on purpose: this is true of Google exactly as
+                        // it is of Microsoft 365, and both accounts are commonly also in
+                        // macOS Calendar.
+                        if merged[idx].replyProvider == nil,
+                           provider(for: event.sourceProvider).supportsResponding,
+                           !provider(for: merged[idx].sourceProvider).supportsResponding {
+                            merged[idx].replyProvider = event.sourceProvider
+                            merged[idx].replyEventID = event.id
                             merged[idx].allowsNewTimeProposals = event.allowsNewTimeProposals
                         }
                         continue
@@ -1365,7 +1374,8 @@ final class CalendarManager: ObservableObject {
     /// its Graph twin when a dual-synced account left us holding the EventKit copy.
     func canRespond(to meeting: MeetingEvent) -> Bool {
         if provider(for: meeting.sourceProvider).supportsResponding { return true }
-        return meeting.graphCounterpartID != nil && provider(for: .microsoftGraph).supportsResponding
+        guard let type = meeting.replyProvider, meeting.replyEventID != nil else { return false }
+        return provider(for: type).supportsResponding
     }
 
     /// Where a reply for this meeting must actually be sent.
@@ -1375,9 +1385,9 @@ final class CalendarManager: ObservableObject {
     /// but is incapable of the one thing being asked of it here.
     private func responseRoute(for meeting: MeetingEvent) -> (CalendarProviderType, String) {
         if !provider(for: meeting.sourceProvider).supportsResponding,
-           let graphID = meeting.graphCounterpartID,
-           provider(for: .microsoftGraph).supportsResponding {
-            return (.microsoftGraph, graphID)
+           let type = meeting.replyProvider, let id = meeting.replyEventID,
+           provider(for: type).supportsResponding {
+            return (type, id)
         }
         return (meeting.sourceProvider, meeting.id)
     }

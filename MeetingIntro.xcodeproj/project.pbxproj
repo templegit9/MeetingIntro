@@ -43,6 +43,7 @@
 		2B12A77C9BF7293F27AB6EEF /* MeetingRecordingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67C9C4B04514972B0139B4A6 /* MeetingRecordingCoordinator.swift */; };
 		2B99583ACD1D6265E7B02B6F /* ConcurrentOverlayViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C056713134AC2FEB4996F050 /* ConcurrentOverlayViews.swift */; };
 		2D5EE19C094043D79ACBE6A1 /* CountdownOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D81EBB57F5E6FDD478BC43 /* CountdownOverlayView.swift */; };
+		2FEF17CD92DCEFAAF2E3F2AE /* GoogleCalendarProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AED7B43EF7A648ADEC6385F /* GoogleCalendarProvider.swift */; };
 		30F5B135719E5762114E3AB1 /* MeetingNotesWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F3370AFA9E12241C562AFFA /* MeetingNotesWindow.swift */; };
 		35BF26B527A5A21AC72F528A /* TickerWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37955A2360A91988DC7CA1BC /* TickerWindowController.swift */; };
 		37432243B8E41664BE9E75E1 /* MeetingDetailsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 570F13DE8551AC2384BF9DB7 /* MeetingDetailsPanel.swift */; };
@@ -56,6 +57,7 @@
 		40A9E9C56EF2073C8FAC3675 /* DiagnosticLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 463397CA545A59897240FF4C /* DiagnosticLog.swift */; };
 		411DF639E6BD60D5069EDA49 /* EventDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF7DCEE0AA262DB746742A6A /* EventDraft.swift */; };
 		41A27D2B4672DC2B286E3661 /* DiagnosticLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 463397CA545A59897240FF4C /* DiagnosticLog.swift */; };
+		4243C4BCC30AB03DD2371F2D /* GoogleCalendarAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C2776DA3D3177B60D9C80E8 /* GoogleCalendarAuth.swift */; };
 		43C704B3A35F793DC2EE790F /* QuickAddLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 732B93F16D10E8BEED65BCBB /* QuickAddLink.swift */; };
 		46250CD9085092A8A895C15B /* MeetingClipboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DA68ADC9573287817C301B2 /* MeetingClipboard.swift */; };
 		49251E5644AADF6152292412 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 992F1CBAD1FD8A706D9AEC26 /* WhisperKit */; };
@@ -106,6 +108,7 @@
 		7D9B0967BEB3BCDDCE8E9527 /* ExpandedCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FAF4345E309F9DA8D20C726 /* ExpandedCalendarView.swift */; };
 		7ED2557749FC1DDB68203F28 /* EventDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF7DCEE0AA262DB746742A6A /* EventDraft.swift */; };
 		7EFC604B98E26CFB0CD4756C /* Mirror.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B4D39A7A32C15CF3C1E9B7 /* Mirror.swift */; };
+		80BD4E16949FC1E81D68AD2F /* GoogleCalendarProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AED7B43EF7A648ADEC6385F /* GoogleCalendarProvider.swift */; };
 		819E80585DAAE96E7564DB5C /* TaskDeadlineOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E61F0E3FE2659AEA9B917D /* TaskDeadlineOverlayView.swift */; };
 		84C7CC01E47970DC39106161 /* CameraUseDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CAC3CAF14343B9EBCFA50C /* CameraUseDetector.swift */; };
 		8515C8D4989B544B40F7A4B8 /* WhisperKitEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72275B905671FFA1F87F986C /* WhisperKitEngine.swift */; };
@@ -156,6 +159,7 @@
 		C13F7B2B4C696639B999205C /* CameraUseDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CAC3CAF14343B9EBCFA50C /* CameraUseDetector.swift */; };
 		C1E8129140CC40187BF1FB15 /* TickerLeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC444235069286A1DD2FEA6 /* TickerLeader.swift */; };
 		C46798CEEC21E0BE8FB3F5C5 /* FocusModeDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B8186D8004986233B28EE7F /* FocusModeDetector.swift */; };
+		C615C4C8C146101F7F91138A /* GoogleCalendarAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C2776DA3D3177B60D9C80E8 /* GoogleCalendarAuth.swift */; };
 		C689B7972F1CE125BB7A6C3B /* TickerCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18EB6DCA64E48B0F98D0A9F4 /* TickerCoordinator.swift */; };
 		C6B4DB6D0C9D29D96266533B /* FilePreviewExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81286000F64FE87B65167C38 /* FilePreviewExtractor.swift */; };
 		C7D67F889CA6E39386F2B34D /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79AB0D1338EB2A471C1C13FD /* AudioManager.swift */; };
@@ -252,12 +256,14 @@
 		732B93F16D10E8BEED65BCBB /* QuickAddLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddLink.swift; sourceTree = "<group>"; };
 		769C85809834D97A437384EF /* CameraCoverReminder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCoverReminder.swift; sourceTree = "<group>"; };
 		79AB0D1338EB2A471C1C13FD /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
+		7AED7B43EF7A648ADEC6385F /* GoogleCalendarProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleCalendarProvider.swift; sourceTree = "<group>"; };
 		7DA68ADC9573287817C301B2 /* MeetingClipboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingClipboard.swift; sourceTree = "<group>"; };
 		81286000F64FE87B65167C38 /* FilePreviewExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilePreviewExtractor.swift; sourceTree = "<group>"; };
 		88FE80611C96045D0752ECE8 /* MeetingIntroApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingIntroApp.swift; sourceTree = "<group>"; };
 		89FCBBD6F8A0CE7B02ED0EBF /* TaskEditSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskEditSheet.swift; sourceTree = "<group>"; };
 		8A99A9D2EE9624DA582CD8D5 /* CalendarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarManager.swift; sourceTree = "<group>"; };
 		8B60DBB01A2C688FE793716C /* MicrophoneDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicrophoneDetector.swift; sourceTree = "<group>"; };
+		8C2776DA3D3177B60D9C80E8 /* GoogleCalendarAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleCalendarAuth.swift; sourceTree = "<group>"; };
 		9B33CEBB2784C6AFE2BB1379 /* ReminderEscalationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderEscalationPolicy.swift; sourceTree = "<group>"; };
 		9C58BE975466982E750F7FDA /* VoiceReminderManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceReminderManager.swift; sourceTree = "<group>"; };
 		9DA13D3684D8A428FE7348A9 /* PluginGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginGrid.swift; sourceTree = "<group>"; };
@@ -474,6 +480,8 @@
 				B4D81EBB57F5E6FDD478BC43 /* CountdownOverlayView.swift */,
 				1B73976360782F9155FDD238 /* EventKitProvider.swift */,
 				0FAF4345E309F9DA8D20C726 /* ExpandedCalendarView.swift */,
+				8C2776DA3D3177B60D9C80E8 /* GoogleCalendarAuth.swift */,
+				7AED7B43EF7A648ADEC6385F /* GoogleCalendarProvider.swift */,
 				0899A6EF46ABB7178E3CEFFC /* GraphBrowserAuth.swift */,
 				711DFD4598AE2E83744CCFBD /* GraphCalendarProvider.swift */,
 				FEAF8E0AF4CD102B7017FD2A /* Info-MAS.plist */,
@@ -672,6 +680,8 @@
 				E6BC699DC42179C53C65FDAB /* FocusModeController.swift in Sources */,
 				B7EA1C818EBD405895A0EB6F /* FocusModeDetector.swift in Sources */,
 				914FB58159F10D9161F4DD21 /* FrontmostAppDetector.swift in Sources */,
+				C615C4C8C146101F7F91138A /* GoogleCalendarAuth.swift in Sources */,
+				80BD4E16949FC1E81D68AD2F /* GoogleCalendarProvider.swift in Sources */,
 				18C4BCEB05941BA1EB6257AF /* GraphBrowserAuth.swift in Sources */,
 				C8676CAB632124F3AFBD267B /* GraphCalendarProvider.swift in Sources */,
 				23C42BF2CF83A30D77F3E853 /* GraphVerifier.swift in Sources */,
@@ -774,6 +784,8 @@
 				1393506E4BD640BDF244096A /* FocusModeController.swift in Sources */,
 				C46798CEEC21E0BE8FB3F5C5 /* FocusModeDetector.swift in Sources */,
 				548AA653E4C79F743ACE9E1E /* FrontmostAppDetector.swift in Sources */,
+				4243C4BCC30AB03DD2371F2D /* GoogleCalendarAuth.swift in Sources */,
+				2FEF17CD92DCEFAAF2E3F2AE /* GoogleCalendarProvider.swift in Sources */,
 				0196728EDF97CB129818A6A6 /* GraphBrowserAuth.swift in Sources */,
 				73B45D502E4860D77D1E7C36 /* GraphCalendarProvider.swift in Sources */,
 				5A8BF1722537C3781E86FBB7 /* GraphVerifier.swift in Sources */,
@@ -852,7 +864,7 @@
 				INFOPLIST_FILE = "MeetingIntro/Info-MAS.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.22.1;
+				MARKETING_VERSION = 2.22.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.oluyinka.MeetingIntro;
 				PRODUCT_NAME = MeetingIntro;
 				SDKROOT = macosx;
@@ -937,7 +949,7 @@
 				INFOPLIST_FILE = MeetingIntro/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.22.1;
+				MARKETING_VERSION = 2.22.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.oluyinka.MeetingIntro;
 				SDKROOT = macosx;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -1015,7 +1027,7 @@
 				INFOPLIST_FILE = "MeetingIntro/Info-MAS.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.22.1;
+				MARKETING_VERSION = 2.22.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.oluyinka.MeetingIntro;
 				PRODUCT_NAME = MeetingIntro;
 				PROVISIONING_PROFILE_SPECIFIER = "$(MEETINGINTRO_MAS_PROFILE:default=)";
@@ -1041,7 +1053,7 @@
 				INFOPLIST_FILE = MeetingIntro/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.22.1;
+				MARKETING_VERSION = 2.22.2;
 				OTHER_CODE_SIGN_FLAGS = "--timestamp --options runtime";
 				PRODUCT_BUNDLE_IDENTIFIER = com.oluyinka.MeetingIntro;
 				SDKROOT = macosx;
