@@ -455,7 +455,7 @@ final class AppLifecycleManager: ObservableObject {
         // Wire the config manager into CalendarManager
         calendarManager.countdownConfigs = countdownConfig
         menuBarCountdown.configure(calendarManager: calendarManager, countdownConfig: countdownConfig)
-        meetingStatusItem.attach(calendarManager: calendarManager)
+        meetingStatusItem.attach(calendarManager: calendarManager, diagnosticLog: diagnosticLog)
         calendarManager.diagnosticLog = diagnosticLog
         calendarManager.eventKitProvider.diagnosticLog = diagnosticLog
         calendarManager.graphProvider.diagnosticLog = diagnosticLog

@@ -53,13 +53,24 @@ final class MeetingStatusItem: NSObject, ObservableObject {
     /// The meeting currently displayed, so the click menu can act on it.
     private var shown: MeetingEvent?
 
-    func attach(calendarManager: CalendarManager) {
+    func attach(calendarManager: CalendarManager, diagnosticLog: DiagnosticLog? = nil) {
         self.calendarManager = calendarManager
-        calendarManager.$todaysMeetings
+        self.diagnosticLog = diagnosticLog
+        // **Subscribe to upcomingWeek, NOT todaysMeetings.** `todaysMeetings` is built
+        // from the *reminder window* (`allEvents.filter { $0.startDate <= reminderWindowEnd }`),
+        // so with a 15-minute largest threshold it simply does not contain a meeting
+        // 45 minutes out — and this feature's lead can be up to 60. Reading it made the
+        // item silently never appear for any lead wider than the reminder window.
+        calendarManager.$upcomingWeek
             .sink { [weak self] _ in self?.refresh() }
             .store(in: &cancellables)
+        diagnosticLog?.info(.calendar, "Meeting status item attached — enabled=\(Self.isEnabled) lead=\(Self.leadMinutes)m late=\(Self.lateMinutes)m")
         refresh()
     }
+
+    private weak var diagnosticLog: DiagnosticLog?
+    /// Last thing we displayed, so the log records transitions rather than every tick.
+    private var lastLabel: String?
 
     /// Called when the setting changes so the item appears or disappears immediately
     /// rather than at the next tick.
@@ -72,9 +83,14 @@ final class MeetingStatusItem: NSObject, ObservableObject {
         guard Self.isEnabled, let manager = calendarManager else { return nil }
         let now = Date()
 
+        // Today's meetings taken from the browse window, which actually spans the day.
+        let today = manager.upcomingWeek
+            .filter { Calendar.current.isDateInToday($0.startDate) }
+            .sorted { $0.startDate < $1.startDate }
+
         // Late beats upcoming: if you're already missing one, the next one can wait.
         let lateWindow = TimeInterval(Self.lateMinutes * 60)
-        let late = manager.todaysMeetings.first { m in
+        let late = today.first { m in
             !m.isCancelled
                 && !m.isAllDay
                 && m.startDate <= now
@@ -88,7 +104,7 @@ final class MeetingStatusItem: NSObject, ObservableObject {
         }
 
         let leadWindow = TimeInterval(Self.leadMinutes * 60)
-        let soon = manager.todaysMeetings
+        let soon = today
             .filter { !$0.isCancelled && !$0.isAllDay && $0.startDate > now
                       && $0.startDate.timeIntervalSince(now) <= leadWindow }
             .min { $0.startDate < $1.startDate }
@@ -103,6 +119,10 @@ final class MeetingStatusItem: NSObject, ObservableObject {
 
     func refresh() {
         guard let state = currentState() else {
+            if lastLabel != nil {
+                diagnosticLog?.debug(.calendar, "Meeting status item hidden — nothing within \(Self.leadMinutes)m")
+                lastLabel = nil
+            }
             shown = nil
             stopTicking()
             removeStatusItem()
@@ -112,6 +132,11 @@ final class MeetingStatusItem: NSObject, ObservableObject {
         installStatusItem()
         update(state)
         startTicking()
+        let label = "\(state.text) · \(state.meeting.title)"
+        if label != lastLabel {
+            diagnosticLog?.info(.calendar, "Meeting status item showing — \(label)")
+            lastLabel = label
+        }
     }
 
     /// Ticks every 15s, not every second: this shows whole minutes, so a per-second
@@ -150,15 +175,34 @@ final class MeetingStatusItem: NSObject, ObservableObject {
         button.image = img
         button.imagePosition = .imageLeading
 
+        // Title first, then the time: the meeting is the subject and the countdown is
+        // what's happening to it, which is the order you'd say it out loud. The title is
+        // truncated rather than omitted — the menu bar is shared real estate, and an
+        // item that grows to fit a long meeting name shoves everyone else along.
+        let label = " \(Self.shortTitle(state.meeting.title)) · \(state.text)"
         if state.late {
             button.attributedTitle = NSAttributedString(
-                string: " " + state.text,
+                string: label,
                 attributes: [.foregroundColor: NSColor.systemOrange]
             )
         } else {
-            button.attributedTitle = NSAttributedString(string: " " + state.text)
+            button.attributedTitle = NSAttributedString(string: label)
         }
+        // The tooltip carries the untruncated title, so the full name is always one
+        // hover away.
         button.toolTip = "\(state.meeting.title) · \(state.meeting.formattedStartTime)"
+    }
+
+    /// Caps the title so the item stays a reasonable width. Truncates on a word
+    /// boundary where it can, so "Quarterly Roadmap Rev…" beats "Quarterly Roadmap R…".
+    static func shortTitle(_ title: String, max: Int = 22) -> String {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count > max else { return trimmed }
+        let cut = String(trimmed.prefix(max))
+        if let space = cut.lastIndex(of: " "), cut.distance(from: cut.startIndex, to: space) > max / 2 {
+            return String(cut[..<space]) + "…"
+        }
+        return cut + "…"
     }
 
     private func removeStatusItem() {

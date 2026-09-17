@@ -49,6 +49,9 @@ struct PopoverRootView: View {
     @State private var editedDraft: EventDraft?
 
     private enum Tab { case today, upcoming, tasks }
+    /// The expanded calendar (#32). Deliberately **not** persisted: a single click has
+    /// to stay the fast glance, never a full calendar you must dismiss first.
+    @State private var expanded = false
     @State private var tab: Tab = .today
     @State private var dayOffset = 1   // upcoming starts at tomorrow
 
@@ -66,7 +69,15 @@ struct PopoverRootView: View {
     }
 
     var body: some View {
-        if showingNewEvent {
+        if expanded {
+            ExpandedCalendarView(
+                calendarManager: calendarManager,
+                taskManager: taskManager,
+                accent: accent,
+                onCollapse: { expanded = false },
+                onNewEvent: { expanded = false; showingNewEvent = true }
+            )
+        } else if showingNewEvent {
             newEventForm
         } else if editingTask != nil {
             taskComposer
@@ -622,12 +633,33 @@ struct PopoverRootView: View {
             segment("Upcoming", isOn: tab == .upcoming) { tab = .upcoming }
             segment("Tasks", isOn: tab == .tasks) { tab = .tasks }
             Spacer()
-            Text(syncedText)
-                .font(.system(size: 10)).foregroundStyle(.tertiary)
+            // Compact age, and it has to actually count. The header sits outside the
+            // body's 1s TimelineView, so a seconds display rendered here would freeze at
+            // whatever it read when the popover opened — "0s" forever. Only this one
+            // Text gets its own ticker; re-rendering the whole header every second would
+            // fight the layout the tabs depend on.
+            TimelineView(.periodic(from: .now, by: 1)) { _ in
+                Text(syncedText)
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                    .help(syncedHelp)
+            }
+            .layoutPriority(-1)
             Button { Task { await calendarManager.refreshEvents() } } label: {
                 Image(systemName: "arrow.clockwise").font(.system(size: 12))
             }
-            .buttonStyle(.borderless).help("Refresh").padding(.leading, 6)
+            .buttonStyle(.borderless).help("Refresh").padding(.leading, 4)
+            // Expand in place (#32). Two entry points, both from the design note: this
+            // control and ⌘⇧C. The originally-specced double-click on the menu bar icon
+            // is not reachable from a `.window` MenuBarExtra — see ExpandedCalendarView.
+            Button { expanded = true } label: {
+                Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 11))
+            }
+            .buttonStyle(.borderless)
+            .keyboardShortcut("c", modifiers: [.command, .shift])
+            .help("Full calendar (⌘⇧C)")
+            .padding(.leading, 1)
         }
         .padding(.horizontal, 14).padding(.top, 11).padding(.bottom, 8)
     }
@@ -637,18 +669,32 @@ struct PopoverRootView: View {
             Text(title)
                 .font(.system(size: 12, weight: isOn ? .semibold : .regular))
                 .foregroundStyle(isOn ? accent : .secondary)
-                .padding(.vertical, 5).padding(.horizontal, 12)
+                // Never wrap or compress: adding the expand control to this row made
+                // "Upcoming" break across two lines. The tabs hold their width and the
+                // synced label gives way instead.
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.vertical, 5).padding(.horizontal, 10)
                 .background(isOn ? accent.opacity(0.15) : .clear, in: RoundedRectangle(cornerRadius: 6))
         }
         .buttonStyle(.plain)
     }
 
+    /// Age of the last successful sync, as short as it can be read: 0s, 45s, 3m, 2h.
+    /// The word "synced" was costing more header width than it earned — the icon beside
+    /// it already says what this is, and the tooltip carries the long form.
     private var syncedText: String {
-        guard let date = calendarManager.lastRefreshDate else { return "" }
-        let secs = Int(Date().timeIntervalSince(date))
-        if secs < 60 { return "synced just now" }
-        if secs < 3600 { return "synced \(secs / 60)m ago" }
-        return "synced \(secs / 3600)h ago"
+        guard let date = calendarManager.lastRefreshDate else { return "—" }
+        let secs = max(0, Int(Date().timeIntervalSince(date)))
+        if secs < 60 { return "\(secs)s" }
+        if secs < 3600 { return "\(secs / 60)m" }
+        if secs < 86_400 { return "\(secs / 3600)h" }
+        return "\(secs / 86_400)d"
+    }
+
+    private var syncedHelp: String {
+        guard calendarManager.lastRefreshDate != nil else { return "Not synced yet" }
+        return syncedText == "0s" ? "Synced just now" : "Synced \(syncedText) ago"
     }
 
     // MARK: - Day timeline (Today)

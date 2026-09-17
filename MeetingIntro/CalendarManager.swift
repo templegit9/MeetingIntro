@@ -42,6 +42,47 @@ final class CalendarManager: ObservableObject {
     /// is still here when you come back — which is the whole point of the request.
     @Published private(set) var scheduleChanges: [ScheduleChange] = []
 
+    /// A wider window than the 30s poll keeps, loaded on demand for the expanded
+    /// calendar (#32). The regular poll fetches `upcomingDaysAhead` (default 7), which
+    /// is right for reminders and far too narrow for a month grid — three weeks of it
+    /// would read as empty. Nothing subscribes to this except the expanded view, and it
+    /// is only ever fetched while that view is open, so the polling path is untouched.
+    ///
+    /// **Forward-looking only.** `CalendarProvider.fetchUpcomingEvents(within:)` takes an
+    /// interval from now, so days earlier in the current month come back empty. That is
+    /// a real limit of the provider protocol, not an oversight — widening it means
+    /// changing the protocol and both implementations.
+    @Published private(set) var browseEvents: [MeetingEvent] = []
+    @Published private(set) var isLoadingBrowse = false
+
+    /// Loads `days` ahead into `browseEvents`. Safe to call repeatedly; overlapping
+    /// calls are collapsed.
+    func loadBrowseWindow(days: Int = 45) async {
+        guard !isLoadingBrowse else { return }
+        isLoadingBrowse = true
+        defer { isLoadingBrowse = false }
+        do {
+            let events = try await fetchFromEnabledSources(within: TimeInterval(days * 86_400))
+            browseEvents = events
+            diagnosticLog?.debug(.calendar, "Expanded calendar loaded \(events.count) event(s) over \(days) days")
+        } catch {
+            // Fall back to what the poll already has rather than emptying the grid — a
+            // narrower month is far better than a blank one.
+            browseEvents = upcomingWeek
+            diagnosticLog?.warn(.calendar, "Expanded calendar fetch failed (\(error.localizedDescription)); showing the \(upcomingDaysAhead)-day window instead")
+        }
+    }
+
+    /// Events on a given day from the expanded window, falling back to the poll's
+    /// window before the wider load lands so the grid is never blank on open.
+    func browseEvents(on day: Date) -> [MeetingEvent] {
+        let cal = Calendar.current
+        let source = browseEvents.isEmpty ? upcomingWeek : browseEvents
+        return source
+            .filter { cal.isDate($0.startDate, inSameDayAs: day) }
+            .sorted { $0.startDate < $1.startDate }
+    }
+
     /// Reschedules still awaiting acknowledgment. Cancellations have their own
     /// `pendingCancellations` and keep it — only reschedules were previously invisible.
     var pendingReschedules: [ScheduleChange] {
