@@ -278,7 +278,7 @@ struct SettingsView: View {
                                         Task { await signInGoogle() }
                                     }
                                     .controlSize(.small)
-                                    .disabled(isSigningInGoogle || !GoogleCalendarAuth.isPlausibleClientID(googleClientID))
+                                    .disabled(isSigningInGoogle)
                                 case .eventKit:
                                     Button("Grant calendar access") {
                                         Task { _ = try? await calendarManager.eventKitProvider.requestAccess() }
@@ -2722,20 +2722,27 @@ struct SettingsView: View {
                 }
                 .controlSize(.small)
             } else {
-                Text("Create an OAuth client ID, then paste it here.")
+                Text("Sign in above to connect your Google account. Nothing to set up first.")
                     .foregroundStyle(.secondary)
-                TextField("1234567890-abc.apps.googleusercontent.com", text: $googleClientID)
-                    .textFieldStyle(.roundedBorder)
-                if !googleClientID.isEmpty, !GoogleCalendarAuth.isPlausibleClientID(googleClientID) {
-                    Text("A Google client ID ends in .apps.googleusercontent.com")
-                        .foregroundStyle(.orange)
+                // Almost nobody needs this, so it stays folded. It's here for anyone
+                // whose organization requires the app to run under their own Google
+                // Cloud project.
+                DisclosureGroup("Use your own Google client ID") {
+                    VStack(alignment: .leading, spacing: 6) {
+                        TextField("1234567890-abc.apps.googleusercontent.com", text: $googleClientID)
+                            .textFieldStyle(.roundedBorder)
+                        if calendarManager.googleProvider.hasUnusableClientIDOverride {
+                            Text("That doesn't look like a Google client ID, so the one built into MeetingIntro is being used instead. A client ID ends in .apps.googleusercontent.com")
+                                .foregroundStyle(.orange)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Link("Create one in the Google Cloud console", destination: URL(string: GoogleCalendarProvider.setupURL)!)
+                        Text("Choose **iOS** as the application type — a Web application client is rejected at sign-in. Bundle ID: com.oluyinka.MeetingIntro")
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.top, 4)
                 }
-                Link("Open the Google Cloud credentials page", destination: URL(string: GoogleCalendarProvider.setupURL)!)
-                // The app type is the single most common way this goes wrong: a Web
-                // application client rejects the redirect and the error says nothing
-                // useful, so it is stated up front rather than left to be discovered.
-                Text("Choose **iOS** as the application type — a Web application client will be rejected when signing in. Bundle ID: com.oluyinka.MeetingIntro")
-                    .foregroundStyle(.secondary)
             }
             if let message = googleAuthMessage {
                 Text(message).foregroundStyle(message.hasPrefix("Signed in") ? .green : .orange)
@@ -2750,7 +2757,6 @@ struct SettingsView: View {
         googleAuthMessage = nil
         defer { isSigningInGoogle = false }
         do {
-            calendarManager.googleProvider.clientID = googleClientID
             _ = try await calendarManager.googleProvider.requestAccess()
             googleAuthMessage = "Signed in."
             await calendarManager.refreshEvents()

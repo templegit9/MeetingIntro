@@ -16,14 +16,25 @@ import Foundation
 @MainActor
 final class GoogleCalendarProvider: ObservableObject, CalendarProvider {
 
-    /// Where a user creates the OAuth client this provider needs.
+    /// **The app ships its own OAuth client, exactly as it does for Microsoft 365.**
     ///
-    /// **There is deliberately no bundled client ID.** Unlike Microsoft — where a public
-    /// client ID is not a secret and we ship ours — Google caps an unverified app at 100
-    /// users and gates the rest behind an OAuth verification review (privacy policy,
-    /// demo video, verified domain). Shipping one would break for the 101st person with
-    /// no way for them to fix it. Until MeetingIntro is verified, the honest answer is
-    /// "bring your own", with the exact link rather than an instruction to go find it.
+    /// A client ID is not a secret: a native app has no client secret, PKCE is what stops
+    /// an intercepted code being redeemed elsewhere, and every desktop tool that does this
+    /// ships one (the gcloud CLI and VS Code both do). Bundling it is the whole difference
+    /// between "Sign in with Google" and "go create a Google Cloud project", which nobody
+    /// does — the same reasoning that put `GraphCalendarProvider.defaultClientID` in the
+    /// app, and the user's standing rule that the app should never hand someone homework
+    /// it could do itself.
+    ///
+    /// **What bundling does NOT change** — worth knowing before raising the limits:
+    /// every sign-in runs against *this* Google Cloud project, so its quota and its
+    /// unverified-app user cap are shared by everyone, and while the project sits in
+    /// *Testing* publishing status Google expires refresh tokens after 7 days, which
+    /// reaches users as a weekly silent sign-out. Those are properties of the project,
+    /// not of the app, and are fixed in the Google console rather than here.
+    static let defaultClientID = "501318872780-5amv9qgi8o61svla5lqb36bthrs4mrcf.apps.googleusercontent.com"
+
+    /// Where someone would create their own client, if they'd rather not use ours.
     static let setupURL = "https://console.cloud.google.com/apis/credentials/oauthclient"
 
     private static let base = "https://www.googleapis.com/calendar/v3"
@@ -47,9 +58,22 @@ final class GoogleCalendarProvider: ObservableObject, CalendarProvider {
 
     /// Client ID is configuration, not a credential, so UserDefaults. Tokens are in the
     /// Keychain, same split as Graph.
+    /// The bundled client unless the user has set a valid override.
+    ///
+    /// An implausible override **falls back to the bundled one** rather than failing the
+    /// sign-in, mirroring `GraphCalendarProvider`: v2.20.1 shipped a non-GUID in that
+    /// constant and every sign-in died with an error naming a tenant that didn't exist.
+    /// A typo in a field should not be able to break the feature silently.
     var clientID: String {
-        get { UserDefaults.standard.string(forKey: "googleClientID") ?? "" }
-        set { UserDefaults.standard.set(newValue, forKey: "googleClientID") }
+        let override = UserDefaults.standard.string(forKey: "googleClientID") ?? ""
+        return GoogleCalendarAuth.isPlausibleClientID(override) ? override : Self.defaultClientID
+    }
+
+    /// True when a user-supplied client ID is present but unusable — Settings says so
+    /// rather than letting it look as though the override took effect.
+    var hasUnusableClientIDOverride: Bool {
+        let override = UserDefaults.standard.string(forKey: "googleClientID") ?? ""
+        return !override.isEmpty && !GoogleCalendarAuth.isPlausibleClientID(override)
     }
     private var accessToken: String? {
         get { KeychainStore.get("googleAccessToken") }
