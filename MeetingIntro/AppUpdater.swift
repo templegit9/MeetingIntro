@@ -54,7 +54,20 @@ final class AppUpdater: ObservableObject {
     /// Start proactive checks: once now, then every 6 hours, plus on wake. Silent —
     /// background failures don't surface an error icon. Idempotent. No-op if the user
     /// disabled auto-checks.
+    /// True when this build updates itself. **False for the App Store build**: an App
+    /// Store app may not install software, and the sandbox couldn't spawn `brew` anyway.
+    /// Updates arrive through the store, so every surface that offers one is hidden
+    /// rather than left to fail at the moment someone presses it.
+    static var selfUpdateAvailable: Bool {
+        #if MAS
+        false
+        #else
+        true
+        #endif
+    }
+
     func startAutoChecks() {
+        guard Self.selfUpdateAvailable else { return }
         guard autoCheckEnabled, !autoChecksStarted else { return }
         autoChecksStarted = true
         Task { await checkSilently() }
@@ -78,11 +91,13 @@ final class AppUpdater: ObservableObject {
 
     /// Re-evaluate after the user toggles the preference: start or stop accordingly.
     func refreshAutoChecks() {
+        guard Self.selfUpdateAvailable else { return }
         if autoCheckEnabled { startAutoChecks() } else { stopAutoChecks() }
     }
 
     /// User-initiated check — shows the spinner and surfaces failures.
     func check() async {
+        guard Self.selfUpdateAvailable else { state = .idle; return }
         state = .checking
         await performCheck(silent: false)
     }
@@ -91,6 +106,7 @@ final class AppUpdater: ObservableObject {
     /// (so a flaky network doesn't flip a known result to an error). Won't interrupt an
     /// in-progress update.
     func checkSilently() async {
+        guard Self.selfUpdateAvailable else { return }
         if case .updating = state { return }
         await performCheck(silent: true)
     }
@@ -122,6 +138,7 @@ final class AppUpdater: ObservableObject {
 
     /// Run the Homebrew upgrade, then relaunch. Only valid from `.available`.
     func update() async {
+        guard Self.selfUpdateAvailable else { return }
         guard case .available = state else { return }
         state = .updating
         guard let brew = Self.brewPath() else {

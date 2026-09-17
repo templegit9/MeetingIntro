@@ -41,6 +41,7 @@ final class MeetingRecordingCoordinator: ObservableObject {
     /// this session. Without this the coordinator logs an identical error on every
     /// meeting start, drowning the diagnostic log. Reset once permission is granted.
     private var loggedPermissionWarning = false
+    private var loggedSaveDirectoryWarning = false
 
     init(config: RecordingConfig, controller: RecordingController) {
         self.config = config
@@ -155,7 +156,18 @@ final class MeetingRecordingCoordinator: ObservableObject {
         }
         loggedPermissionWarning = false
 
-        let directory = config.resolveSaveDirectory()
+        // No silent fallback: in the sandboxed build there is no default folder, and
+        // writing into the container would hide the user's own recordings from them.
+        guard let directory = config.resolveSaveDirectory() else {
+            lastError = "Choose where to save recordings in Settings \u{2192} Recording before auto-record can run."
+            if !loggedSaveDirectoryWarning {
+                loggedSaveDirectoryWarning = true
+                diagnosticLog?.warn(.recording, "Skipping recording \u{2014} no save folder chosen. Settings \u{2192} Recording \u{2192} Save Location.")
+            }
+            return
+        }
+        loggedSaveDirectoryWarning = false
+
         do {
             let fileURL = try await controller.start(for: meeting, saveDirectory: directory)
             diagnosticLog?.info(.recording, "Recording started — \(meeting.title)")

@@ -61,3 +61,63 @@ targets:
           CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
           OTHER_CODE_SIGN_FLAGS: "--timestamp --options runtime"
           SWIFT_OPTIMIZATION_LEVEL: "-Owholemodule"
+
+  # Mac App Store build. Same sources, different rules: the store requires the sandbox,
+  # and an App Store app may not update itself — so the Homebrew updater is compiled out
+  # via the MAS flag rather than left to fail at runtime.
+  #
+  # Kept as a SEPARATE target on purpose. Sandboxing changes runtime behaviour (audio
+  # device switching, file access, where Application Support lives), and the Developer ID
+  # build that people already run must not inherit any of it.
+  MeetingIntroMAS:
+    type: application
+    platform: macOS
+    productName: MeetingIntro
+    sources:
+      - path: MeetingIntro
+        excludes:
+          - "*.entitlements"
+          - "Info.plist"
+    dependencies:
+      - package: WhisperKit
+    info:
+      path: MeetingIntro/Info-MAS.plist
+      properties:
+        LSUIElement: true
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        ITSAppUsesNonExemptEncryption: false
+        LSApplicationCategoryType: public.app-category.productivity
+        NSCalendarsFullAccessUsageDescription: "MeetingIntro needs access to your calendars to monitor upcoming meetings and trigger countdown reminders."
+        NSCalendarsUsageDescription: "MeetingIntro needs access to your calendars to monitor upcoming meetings and trigger countdown reminders."
+        NSFocusStatusUsageDescription: "MeetingIntro uses your Focus status to silence voice reminders and audio alerts while you're in Do Not Disturb."
+        NSMicrophoneUsageDescription: "MeetingIntro records your microphone alongside meeting audio when Auto-Record is enabled, so you can review what was said after the meeting."
+        NSScreenCaptureUsageDescription: "MeetingIntro captures meeting audio playback via ScreenCaptureKit. No video is recorded — audio only."
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.oluyinka.MeetingIntro
+        MARKETING_VERSION: "2.20.6"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.9"
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
+        COMBINE_HIDPI_IMAGES: true
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        PRODUCT_NAME: MeetingIntro
+        CODE_SIGN_ENTITLEMENTS: MeetingIntro/MeetingIntro-MAS.entitlements
+        # `MAS` gates the Homebrew self-updater out of the binary entirely.
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) MAS"
+      configs:
+        Debug:
+          CODE_SIGN_IDENTITY: "-"
+          ENABLE_HARDENED_RUNTIME: false
+          SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+        Release:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: "$(MEETINGINTRO_MAS_SIGN_IDENTITY:default=-)"
+          DEVELOPMENT_TEAM: "$(MEETINGINTRO_TEAM_ID:default=)"
+          PROVISIONING_PROFILE_SPECIFIER: "$(MEETINGINTRO_MAS_PROFILE:default=)"
+          # Same reasoning as the Developer ID build: entitlements are declared
+          # explicitly, never injected, so nothing unexpected (get-task-allow) rides along.
+          CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+          SWIFT_OPTIMIZATION_LEVEL: "-Owholemodule"
