@@ -17,6 +17,20 @@ enum InvitationState: Equatable {
     case answered(ResponseStatus, previous: ResponseStatus, at: Date)
 }
 
+/// An answer we actually sent, kept across launches.
+///
+/// **The receipt is session-scoped; the fact is not.** A reply reaches the server
+/// immediately, but `myResponse` is read from whichever copy of the event we display —
+/// often the EventKit one, which only changes when macOS next syncs. Without this the
+/// meeting reads as unanswered again on the next prune or relaunch and the app asks you
+/// to accept something you already accepted. Contradicting a write we made ourselves is
+/// the worst thing this feature could do.
+private struct AnsweredRecord: Codable {
+    var status: String
+    var previous: String
+    var at: Date
+}
+
 /// One invitation answered during this session — the dashed lingering row.
 struct AnsweredInvitation: Identifiable {
     var event: MeetingEvent
@@ -43,8 +57,27 @@ final class InvitationCenter: ObservableObject {
     /// they now carry a real response, because the user has said they want to change it.
     @Published private(set) var reopened: Set<String> = []
 
+    /// Answers we've sent, by event id. Persisted; see `AnsweredRecord`.
+    @Published private var answered: [String: AnsweredRecord] = [:] {
+        didSet { persistAnswers() }
+    }
+    private static let answersKey = "invitationAnswers"
+
     private weak var calendarManager: CalendarManager?
     var diagnosticLog: DiagnosticLog?
+
+    init() {
+        if let data = UserDefaults.standard.data(forKey: Self.answersKey),
+           let decoded = try? JSONDecoder().decode([String: AnsweredRecord].self, from: data) {
+            answered = decoded
+        }
+    }
+
+    private func persistAnswers() {
+        if let data = try? JSONEncoder().encode(answered) {
+            UserDefaults.standard.set(data, forKey: Self.answersKey)
+        }
+    }
 
     func attach(calendarManager: CalendarManager) {
         self.calendarManager = calendarManager
@@ -72,7 +105,8 @@ final class InvitationCenter: ObservableObject {
         return visibleEvents
             .filter { !$0.isCancelled && $0.startDate > now }
             .filter { event in
-                if case .answered = states[event.id] { return false }
+                // An answer we sent wins over what the calendar has caught up to.
+                if answered[event.id] != nil { return false }
                 if states[event.id] != nil { return true }          // sending / failed
                 if reopened.contains(event.id) { return true }      // "Change…"
                 return event.myResponse == .noResponse
@@ -81,16 +115,24 @@ final class InvitationCenter: ObservableObject {
     }
 
     /// Answered during this session, newest first.
+    /// The dashed rows. One stays **until the calendar agrees with it** — that's exactly
+    /// how long the uncertainty lasts, and it's why the row can't be a timer.
     var recentlyAnswered: [AnsweredInvitation] {
-        states.compactMap { id, state -> AnsweredInvitation? in
-            guard case .answered(let status, let previous, let at) = state,
-                  let event = visibleEvents.first(where: { $0.id == id }) else { return nil }
-            return AnsweredInvitation(event: event, status: status, previous: previous, at: at)
+        answered.compactMap { id, record -> AnsweredInvitation? in
+            guard let event = visibleEvents.first(where: { $0.id == id }),
+                  let status = ResponseStatus(rawValue: record.status) else { return nil }
+            return AnsweredInvitation(event: event, status: status,
+                                      previous: ResponseStatus(rawValue: record.previous) ?? .unknown,
+                                      at: record.at)
         }
         .sorted { $0.at > $1.at }
     }
 
-    func state(for id: String) -> InvitationState? { states[id] }
+    func state(for id: String) -> InvitationState? {
+        if let transient = states[id] { return transient }
+        guard let record = answered[id], let status = ResponseStatus(rawValue: record.status) else { return nil }
+        return .answered(status, previous: ResponseStatus(rawValue: record.previous) ?? .unknown, at: record.at)
+    }
 
     // MARK: - Answering
 
@@ -101,7 +143,8 @@ final class InvitationCenter: ObservableObject {
 
         do {
             try await cm.respond(to: meeting, status: status)
-            states[meeting.id] = .answered(status, previous: previous, at: Date())
+            states[meeting.id] = nil
+            answered[meeting.id] = AnsweredRecord(status: status.rawValue, previous: previous.rawValue, at: Date())
             reopened.remove(meeting.id)
             diagnosticLog?.info(.calendar, "Invitation \(status.rawValue): \"\(meeting.title)\"")
         } catch {
@@ -121,7 +164,8 @@ final class InvitationCenter: ObservableObject {
         states[meeting.id] = .sending(.tentative)
         do {
             try await cm.propose(.tentative, to: meeting, start: start, end: end)
-            states[meeting.id] = .answered(.tentative, previous: previous, at: Date())
+            states[meeting.id] = nil
+            answered[meeting.id] = AnsweredRecord(status: ResponseStatus.tentative.rawValue, previous: previous.rawValue, at: Date())
             reopened.remove(meeting.id)
             diagnosticLog?.info(.calendar, "Proposed a new time for \"\(meeting.title)\"")
         } catch {
@@ -180,24 +224,27 @@ final class InvitationCenter: ObservableObject {
     /// label promises something it can't deliver. This is the one place the design's
     /// wording had to bend, and it bends toward not lying.
     func canUndo(_ id: String) -> Bool {
-        guard case .answered(_, let previous, _) = states[id] else { return false }
+        guard let record = answered[id], let previous = ResponseStatus(rawValue: record.previous) else { return false }
         return [.accepted, .declined, .tentative].contains(previous)
     }
 
     func undo(_ meeting: MeetingEvent) async {
-        guard case .answered(_, let previous, _) = states[meeting.id], canUndo(meeting.id) else { return }
+        guard canUndo(meeting.id), let record = answered[meeting.id],
+              let previous = ResponseStatus(rawValue: record.previous) else { return }
         await respond(to: meeting, status: previous)
     }
 
     /// Put an answered invitation back in the list so its actions are available again.
     func reopen(_ meeting: MeetingEvent) {
         states[meeting.id] = nil
+        answered[meeting.id] = nil
         reopened.insert(meeting.id)
     }
 
     /// Drop the lingering row without changing the answer.
     func dismiss(_ id: String) {
         states[id] = nil
+        answered[id] = nil
         reopened.remove(id)
     }
 
@@ -205,10 +252,29 @@ final class InvitationCenter: ObservableObject {
     /// window or already started. Conservative — an id transiently missing from a fetch
     /// is left alone, since dropping it would only lose a receipt, never an answer.
     func prune() {
-        let live = Set(visibleEvents.filter { $0.startDate > Date() }.map(\.id))
-        let gone = states.keys.filter { !live.contains($0) }
-        for id in gone where !isInFlight(id) { states[id] = nil }
-        reopened.formIntersection(live)
+        let now = Date()
+        // Transient state belongs to a meeting still ahead of us.
+        let upcoming = Set(visibleEvents.filter { $0.startDate > now }.map(\.id))
+        for id in states.keys where !upcoming.contains(id) && !isInFlight(id) { states[id] = nil }
+        reopened.formIntersection(upcoming)
+
+        // An answer is dropped only when it can no longer be contradicted:
+        //   · the calendar now agrees with what we sent, or
+        //   · the meeting has ended, or
+        //   · a week has passed and the sync is never coming.
+        // **Not** when the meeting merely starts — that was the bug that made the
+        // receipt vanish mid-meeting and let a synced-late invitation ask again.
+        for (id, record) in answered {
+            guard let event = visibleEvents.first(where: { $0.id == id }) else {
+                if now.timeIntervalSince(record.at) > 7 * 86_400 { answered[id] = nil }
+                continue
+            }
+            if event.myResponse.rawValue == record.status || event.endDate < now {
+                answered[id] = nil
+            } else if now.timeIntervalSince(record.at) > 7 * 86_400 {
+                answered[id] = nil
+            }
+        }
     }
 
     private func isInFlight(_ id: String) -> Bool {
