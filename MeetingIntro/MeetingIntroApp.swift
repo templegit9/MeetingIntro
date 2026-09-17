@@ -294,7 +294,8 @@ struct MeetingIntroApp: App {
                 contextMonitor: contextMonitor,
                 quickAddService: quickAddService,
                 quickAddConfig: quickAddConfig,
-                taskManager: taskManager
+                taskManager: taskManager,
+                invitations: invitations
             )
         }
     }

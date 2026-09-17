@@ -55,13 +55,9 @@ struct PopoverRootView: View {
     @State private var invitationsCollapsed = false
     @State private var showAllInvitations = false
     /// The one invitation whose Decline is awaiting confirmation. Only Decline confirms.
-    @State private var confirmingDecline: String?
     /// The invitation whose Propose box is open. Its card expands in place and the
     /// others dim — no sheet, no navigation away from the dropdown.
     @State private var proposingID: String?
-    @State private var proposedStart = Date()
-    @State private var proposedDuration: TimeInterval = 3600
-    @State private var pickingProposedTime = false
 
     private enum Tab { case today, upcoming, tasks }
     /// The expanded calendar (#32). Deliberately **not** persisted: a single click has
@@ -805,7 +801,8 @@ struct PopoverRootView: View {
                         // never a second event list that swallows the dropdown.
                         let shown = showAllInvitations ? awaiting : Array(awaiting.prefix(2))
                         ForEach(shown) { m in
-                            invitationCard(m)
+                            InvitationCardView(invitations: invitations, calendarManager: calendarManager,
+                                               meeting: m, accent: accent, proposingID: $proposingID)
                                 // The expanded card owns the moment; its siblings step back.
                                 .opacity(proposingID == nil || proposingID == m.id ? 1 : 0.4)
                                 .allowsHitTesting(proposingID == nil || proposingID == m.id)
@@ -818,242 +815,11 @@ struct PopoverRootView: View {
                         }
                     }
                 }
-                ForEach(answered) { answeredRow($0) }
+                ForEach(answered) { AnsweredInvitationRow(invitations: invitations, answered: $0, accent: accent) }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
         }
-    }
-
-    private func invitationCard(_ m: MeetingEvent) -> some View {
-        let state = invitations.state(for: m.id)
-        var failed = false
-        if case .failed = state { failed = true }
-
-        return VStack(alignment: .leading, spacing: 6) {
-            Text(m.title)
-                .font(.system(size: 13, weight: .semibold))
-                .lineLimit(1)
-
-            // The second line is whatever the card most needs to say right now.
-            if case .failed(_, let message) = state {
-                Text(message).font(.system(size: 11)).foregroundStyle(.red)
-            } else if case .sending(let sending) = state {
-                Text("Sending \(sending.sentVerb)…").font(.system(size: 11)).foregroundStyle(.secondary)
-            } else if confirmingDecline == m.id {
-                // Names the person, because that is the actual consequence. "Are you
-                // sure?" tests nothing.
-                Text("Decline this? \(organizerLabel(m)) is notified right away.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-            } else {
-                Text(invitationWhen(m))
-                    .font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
-                if !calendarManager.canRespond(to: m) {
-                    Text("This account can't send replies")
-                        .font(.system(size: 11)).foregroundStyle(.secondary)
-                } else if let clash = firstConflict(m) {
-                    Text("Conflicts with \(clash)")
-                        .font(.system(size: 11)).foregroundStyle(.orange).lineLimit(1)
-                }
-            }
-
-            if proposingID == m.id, state == nil {
-                proposeBox(m)
-            } else {
-                invitationActions(m, state: state)
-            }
-        }
-        .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 8).fill(failed ? Color.red.opacity(0.13) : Color.primary.opacity(0.05)))
-        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(failed ? Color.red.opacity(0.45) : Color.primary.opacity(0.10), lineWidth: 1))
-    }
-
-    @ViewBuilder private func invitationActions(_ m: MeetingEvent, state: InvitationState?) -> some View {
-        if case .sending = state {
-            HStack { Spacer(minLength: 0); ProgressView().controlSize(.small) }
-        } else if case .failed = state {
-            HStack(spacing: 6) {
-                invitationButton("Retry", tint: .red, filled: true) { Task { await invitations.retry(m) } }
-                invitationButton("Open in Calendar") { openInCalendar() }
-                Spacer(minLength: 0)
-            }
-        } else if !calendarManager.canRespond(to: m) {
-            // Absence, never disablement: one action that works, not three that can't.
-            HStack { invitationButton("Open in Calendar") { openInCalendar() }; Spacer(minLength: 0) }
-        } else if confirmingDecline == m.id {
-            HStack(spacing: 6) {
-                invitationButton("Send decline", tint: .red, filled: true) {
-                    confirmingDecline = nil
-                    Task { await invitations.respond(to: m, status: .declined) }
-                }
-                invitationButton("Keep") { confirmingDecline = nil }
-                Spacer(minLength: 0)
-            }
-        } else {
-            HStack(spacing: 6) {
-                // Accept and Tentative send straight through. Only the answer that
-                // disappoints someone earns a second beat.
-                invitationButton("Accept", tint: .green, filled: true) {
-                    Task { await invitations.respond(to: m, status: .accepted) }
-                }
-                invitationButton("Tentative") { Task { await invitations.respond(to: m, status: .tentative) } }
-                invitationButton("Decline") { confirmingDecline = m.id }
-                Spacer(minLength: 0)
-                // Propose is ABSENT unless the organizer allows it — never a disabled
-                // link with an explanation of something you can't have.
-                if m.allowsNewTimeProposals {
-                    Button("Propose…") { beginProposing(m) }
-                        .buttonStyle(.plain)
-                        .font(.system(size: 11))
-                        .foregroundStyle(accent)
-                }
-            }
-        }
-    }
-
-    /// One slot, not a list — and the caveat sits **in the card**, visible at the moment
-    /// of sending. We know your calendar and nothing about theirs; that sentence is the
-    /// difference between a useful suggestion and a claim we can't make.
-    @ViewBuilder private func proposeBox(_ m: MeetingEvent) -> some View {
-        VStack(alignment: .leading, spacing: 7) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .top, spacing: 8) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(proposedSlotLabel)
-                            .font(.system(size: 12, weight: .semibold))
-                        Text("Your next free hour — we haven't checked theirs")
-                            .font(.system(size: 10))
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    Spacer(minLength: 0)
-                    invitationButton("Send", tint: .green, filled: true) {
-                        let start = proposedStart
-                        let end = start.addingTimeInterval(proposedDuration)
-                        proposingID = nil
-                        pickingProposedTime = false
-                        Task { await invitations.propose(to: m, start: start, end: end) }
-                    }
-                }
-                if pickingProposedTime {
-                    DatePicker("", selection: $proposedStart, displayedComponents: [.date, .hourAndMinute])
-                        .datePickerStyle(.compact)
-                        .labelsHidden()
-                        .controlSize(.small)
-                }
-            }
-            .padding(9)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.06)))
-
-            HStack {
-                Button(pickingProposedTime ? "Use the suggestion" : "Pick another time…") {
-                    if pickingProposedTime {
-                        pickingProposedTime = false
-                        if let slot = invitations.suggestedSlot(for: m) { proposedStart = slot.start }
-                    } else {
-                        pickingProposedTime = true
-                    }
-                }
-                .buttonStyle(.plain).font(.system(size: 11)).foregroundStyle(accent)
-                Spacer(minLength: 0)
-                Button("Cancel") { proposingID = nil; pickingProposedTime = false }
-                    .buttonStyle(.plain).font(.system(size: 11)).foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private var proposedSlotLabel: String {
-        proposedStart.formatted(.dateTime.weekday(.abbreviated).hour().minute())
-    }
-
-    private func beginProposing(_ m: MeetingEvent) {
-        proposedDuration = max(m.endDate.timeIntervalSince(m.startDate), 900)
-        if let slot = invitations.suggestedSlot(for: m) {
-            proposedStart = slot.start
-            pickingProposedTime = false
-        } else {
-            // Nothing free in the next fortnight: don't invent a slot, ask for one.
-            proposedStart = m.startDate
-            pickingProposedTime = true
-        }
-        proposingID = m.id
-    }
-
-    private func invitationButton(_ title: String, tint: Color = .secondary, filled: Bool = false,
-                                  action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 11, weight: .medium))
-                .padding(.horizontal, 9)
-                .padding(.vertical, 4)
-                .background(RoundedRectangle(cornerRadius: 5).fill(filled ? tint.opacity(0.85) : Color.clear))
-                .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(filled ? Color.clear : Color.primary.opacity(0.22), lineWidth: 1))
-                .foregroundStyle(filled ? Color.white : Color.primary)
-        }
-        .buttonStyle(.plain)
-    }
-
-    /// The answered card lingers so you can see what you just did — and take it back.
-    private func answeredRow(_ a: AnsweredInvitation) -> some View {
-        HStack(spacing: 6) {
-            Text("\(a.event.title) · \(a.status.pastLabel)")
-                .font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
-            Spacer(minLength: 0)
-            if invitations.canUndo(a.id) {
-                Button("Undo") { Task { await invitations.undo(a.event) } }
-                    .buttonStyle(.plain).font(.system(size: 11)).foregroundStyle(accent)
-            } else {
-                // Nothing can return an invitation to "no response", so the honest
-                // affordance is to reopen the actions rather than promise an undo.
-                Button("Change…") { invitations.reopen(a.event) }
-                    .buttonStyle(.plain).font(.system(size: 11)).foregroundStyle(accent)
-            }
-        }
-        .padding(.horizontal, 9)
-        .padding(.vertical, 5)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(
-            RoundedRectangle(cornerRadius: 6)
-                .strokeBorder(Color.secondary.opacity(0.45), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
-        )
-    }
-
-    /// When it is, and how far out when that itself changes the answer, and who asked.
-    private func invitationWhen(_ m: MeetingEvent) -> String {
-        let cal = Calendar.current
-        var parts: [String] = []
-        if cal.isDateInToday(m.startDate) {
-            parts.append("Today \(m.formattedStartTime)")
-        } else if cal.isDateInTomorrow(m.startDate) {
-            parts.append("Tomorrow \(m.formattedStartTime)")
-        } else {
-            parts.append("\(m.startDate.formatted(.dateTime.month(.abbreviated).day())), \(m.formattedStartTime)")
-        }
-        let days = cal.dateComponents([.day], from: Date(), to: m.startDate).day ?? 0
-        if days >= 7 { parts.append(m.startDate.formatted(.relative(presentation: .named))) }
-        if let org = m.organizerName, !org.isEmpty { parts.append(org) }
-        return parts.joined(separator: " · ")
-    }
-
-    private func organizerLabel(_ m: MeetingEvent) -> String {
-        if let org = m.organizerName, !org.isEmpty { return org }
-        return "The organizer"
-    }
-
-    /// Only ever a real clash: the meeting itself is excluded, and an all-day or
-    /// cancelled event never counts. Bounded by the reminder window, so a far-out
-    /// invitation simply shows no line rather than a wrong one.
-    private func firstConflict(_ m: MeetingEvent) -> String? {
-        calendarManager.conflicts(start: m.startDate, end: m.endDate)
-            .first { $0.id != m.id }?
-            .title
-    }
-
-    private func openInCalendar() {
-        NSWorkspace.shared.open(URL(string: "ical://")!)
     }
 
     @ViewBuilder private var calloutCards: some View {
