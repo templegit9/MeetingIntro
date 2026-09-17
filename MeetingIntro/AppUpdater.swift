@@ -179,6 +179,31 @@ final class AppUpdater: ObservableObject {
             return
         }
 
+        // Homebrew had to escalate to `sudo`, which happens when the copy in
+        // /Applications isn't writable by this user. We run brew through `zsh -lc` with
+        // **no TTY**, so sudo has nothing to prompt on, fails with "a terminal is
+        // required to read the password", and brew rolls back — the user sees
+        // "Purging files for version X" and a message about askpass helpers.
+        // **No in-app retry can fix this**: the password has to be typed somewhere that
+        // has a terminal. Reported 2026-09-17 from a genuine cask install of 2.20.7 that
+        // could not reach 2.21.0 — note this is a *different* failure from the
+        // not-a-Homebrew-install case above and matches none of its markers, which is
+        // why the generic message sent the user chasing the wrong problem.
+        let needsPassword = output.localizedCaseInsensitiveContains("terminal is required to read the password")
+            || output.localizedCaseInsensitiveContains("askpass")
+            || output.localizedCaseInsensitiveContains("sudo:")
+        if needsPassword {
+            state = .failed("""
+                This update needs your Mac password, and it can't be typed inside the app.
+
+                Run this once in Terminal:
+                brew upgrade --cask \(Self.caskRef)
+
+                It only asks because this copy of MeetingIntro isn't owned by your user                 account. The upgrade replaces it with one that is, so updates after this                 won't ask again.
+                """)
+            return
+        }
+
         // Any other failure is a real brew problem. Name the FULL cask reference — the
         // old message said `brew upgrade --cask meetingintro`, which fails for anyone
         // who hasn't tapped templegit9/tap.
