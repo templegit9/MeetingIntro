@@ -19,7 +19,12 @@ final class GraphCalendarProvider: CalendarProvider {
     /// path segment of an unparseable client_id as a tenant. Reproduced against the live
     /// authorize endpoint; `isPlausibleClientID` below is the guard that stops it
     /// recurring silently.
-    static let defaultClientID = "73eb19c6-e5b0-468d-a66e-2499269e33d1"
+    static let defaultClientID = "f2846765-c549-4afd-b60e-1330b8a56e20"
+
+    /// The registration shipped up to v2.23.2, before the move to a publisher-verified
+    /// app. Kept only so an upgrade can recognise tokens that predate
+    /// `graphTokenClientID` and explain the one-off re-sign-in.
+    static let legacyClientID = "73eb19c6-e5b0-468d-a66e-2499269e33d1"
 
     /// A client ID is always a GUID. Anything else reaches Microsoft as an unreadable
     /// AADSTS page instead of a sign-in, so catch it here and say what is wrong.
@@ -208,6 +213,7 @@ final class GraphCalendarProvider: CalendarProvider {
         self.tokenExpiration = tokens.expiration
         if let rt = tokens.refreshToken { self.refreshToken = rt }
         self.grantedScope = tokens.scope ?? Self.oauthScope
+        Self.tokenClientID = clientId
         await refreshAccountLabel()
         return true
     }
@@ -222,13 +228,52 @@ final class GraphCalendarProvider: CalendarProvider {
         self.tokenExpiration = token.expiration
         if let rt = token.refreshToken { self.refreshToken = rt }
         self.grantedScope = token.scope ?? Self.oauthScope
+        Self.tokenClientID = clientId
         return true
     }
 
     /// Returns a usable access token, transparently refreshing via the refresh token
     /// when the cached one has expired. Throws `.notAuthenticated` only when there's
     /// no way to obtain a valid token (no refresh token, or refresh failed).
+    /// The client ID that issued the tokens we're holding.
+    ///
+    /// A refresh token belongs to the registration that minted it. When the bundled
+    /// `defaultClientID` changes — as it did in v2.24.0, when the app moved to a
+    /// publisher-verifiable registration in a real Entra tenant — every stored refresh
+    /// token becomes unusable, and the failure surfaces as a bare "not connected" that
+    /// looks like a bug. Recording which registration the tokens came from lets us say
+    /// what actually happened and ask for one more sign-in.
+    static var tokenClientID: String? {
+        get { UserDefaults.standard.string(forKey: "graphTokenClientID") }
+        set { UserDefaults.standard.set(newValue, forKey: "graphTokenClientID") }
+    }
+
+    /// Set when the stored tokens were issued by a previous registration, so Settings can
+    /// explain the one-off re-sign-in rather than showing an unexplained disconnection.
+    private(set) var registrationChanged = false
+
     private func validToken() async throws -> String {
+        // Tokens from a previous registration can never be refreshed. Clear them once,
+        // deliberately, rather than letting every call fail against Microsoft.
+        //
+        // A build before v2.24.0 never wrote `graphTokenClientID`, so on the upgrade that
+        // matters most the key is absent — tokens with no recorded issuer are therefore
+        // treated as belonging to the previous registration, which is what they are.
+        // Reading the key as `nil` and skipping would miss exactly the users this exists
+        // for and hand them the unexplained "not connected" it was written to prevent.
+        if accessToken != nil || refreshToken != nil {
+            let issued = Self.tokenClientID ?? Self.legacyClientID
+            if issued != clientId {
+                accessToken = nil
+                refreshToken = nil
+                tokenExpiration = nil
+                registrationChanged = true
+                Self.tokenClientID = nil
+                onDiagnostic?("Microsoft registration changed (\(issued) -> \(clientId)); stored sign-in cleared, user must sign in again")
+                throw CalendarProviderError.notAuthenticated
+            }
+        }
+
         if let token = accessToken, !token.isEmpty, let exp = tokenExpiration, exp > Date().addingTimeInterval(60) {
             return token
         }

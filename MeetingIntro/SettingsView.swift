@@ -262,6 +262,14 @@ struct SettingsView: View {
                             .font(.caption)
                         }
 
+                        // A registration change is not the same as never having connected,
+                        // and saying so turns an alarming disconnection into a one-off task.
+                        if type == .microsoftGraph, calendarManager.graphCalendarProvider.registrationChanged {
+                            Text("MeetingIntro's Microsoft registration changed in this update, so your previous sign-in no longer works. Sign in once more and it will stay signed in.")
+                                .font(.caption).foregroundStyle(.orange)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
                         if enabledProviders.contains(type), !calendarManager.provider(for: type).isAuthorized {
                             HStack(spacing: 8) {
                                 Label("Not connected", systemImage: "exclamationmark.circle.fill")
