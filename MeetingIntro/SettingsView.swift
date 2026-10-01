@@ -1,4 +1,5 @@
 import AppKit
+import EventKit
 import SwiftUI
 
 /// Brings the Settings window to the front and activates the app. `SettingsLink`
@@ -162,6 +163,9 @@ struct SettingsView: View {
     @State private var googleAuthMessage: String?
     @AppStorage("googleClientID") private var googleClientID: String = ""
     @State private var availableCalendars: [CalendarInfo] = []
+    /// Set while we're waiting for macOS Calendar to finish a webcal subscription,
+    /// so the wait is visible instead of looking like nothing happened.
+    @State private var awaitingSubscription = false
     @State private var selectedCalendarIDs: Set<String> = []
     @State private var volume: Float = 0.7
 
@@ -320,12 +324,15 @@ struct SettingsView: View {
                 SettingsSectionHeader("Calendar Sources", info: "Turn on both to see everything at once — Google, iCloud and anything else in macOS Calendar through EventKit, plus a work Outlook calendar through Microsoft 365.\n\nA meeting that appears in both (a work calendar synced into macOS *and* read from Microsoft 365) is shown once. If one source fails, the other still loads.\n\nWhen both are on, \"Create new events in\" decides where Quick Add writes.")
             }
 
-            if selectedProvider == .microsoftGraph {
+            // Gate on the source being ENABLED, not on it being the write target.
+            // These settings configure how Microsoft 365 is read; where Quick Add
+            // writes is a separate choice and must not hide them.
+            if enabledProviders.contains(.microsoftGraph) {
                 graphVerifierSection
                 invitationsSection
             }
 
-            Section("Calendars to Monitor") {
+            Section {
                 if availableCalendars.isEmpty {
                     Button("Load Calendars") {
                         Task { await loadCalendars() }
@@ -360,9 +367,40 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+
+                if awaitingSubscription {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.small)
+                        Text("Waiting for macOS Calendar to finish subscribing…")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            } header: {
+                // A refresh that is always reachable. The list used to be loadable only
+                // while it was empty, so once populated there was no way to pick up a
+                // calendar added afterwards — including the one you just subscribed to.
+                HStack {
+                    Text("Calendars to Monitor")
+                    Spacer()
+                    Button {
+                        Task { await loadCalendars() }
+                    } label: {
+                        Label("Refresh", systemImage: "arrow.clockwise")
+                            .labelStyle(.iconOnly)
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Reload the calendar list")
+                }
             }
 
-            if selectedProvider == .eventKit {
+            // Subscribing hands a webcal link to macOS Calendar, which is possible
+            // whenever EventKit is an enabled SOURCE. This used to read
+            // `selectedProvider == .eventKit`, written when one provider was active at
+            // a time and that property really did mean "the source I'm using". Since
+            // both sources run at once it means "where Quick Add writes" — so picking
+            // Microsoft 365 or Google as the write target made this box vanish, with
+            // EventKit still enabled and subscribing still perfectly possible.
+            if enabledProviders.contains(.eventKit) {
                 Section {
                     HStack(spacing: 8) {
                         TextField("https://…/calendar.ics  or  webcal://…", text: $subscribeURL)
@@ -381,6 +419,13 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
+        .task { await loadCalendars() }
+        // macOS posts this when the calendar database changes — which is exactly what a
+        // finished webcal subscription is. Without it the Settings list is a snapshot
+        // taken once and never corrected.
+        .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in
+            Task { await loadCalendars() }
+        }
     }
 
     /// Normalize an http(s)/webcal calendar link to `webcal://` and hand it to macOS
@@ -409,10 +454,20 @@ struct SettingsView: View {
         NSWorkspace.shared.open(url)
         subscribeError = nil
         subscribeURL = ""
-        // After macOS finishes subscribing, reload so the new calendar shows above.
+        // Subscribing is a conversation with Calendar.app — pick an account, pick a
+        // refresh interval, confirm — and then it still has to fetch the feed. A single
+        // reload 2.5s later (what this used to do) fired while that sheet was still on
+        // screen, found nothing new, and left the calendar invisible with no way to look
+        // again. Poll until it shows up instead, with a bound so this can't spin forever.
         Task {
-            try? await Task.sleep(nanoseconds: 2_500_000_000)
-            await loadCalendars()
+            awaitingSubscription = true
+            defer { awaitingSubscription = false }
+            let before = Set(availableCalendars.map(\.id))
+            for _ in 0..<40 {                                   // 40 x 3s = 2 minutes
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                await loadCalendars()
+                if !Set(availableCalendars.map(\.id)).subtracting(before).isEmpty { return }
+            }
         }
     }
 
