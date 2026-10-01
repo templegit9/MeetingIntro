@@ -163,9 +163,11 @@ struct SettingsView: View {
     @State private var googleAuthMessage: String?
     @AppStorage("googleClientID") private var googleClientID: String = ""
     @State private var availableCalendars: [CalendarInfo] = []
-    /// Set while we're waiting for macOS Calendar to finish a webcal subscription,
-    /// so the wait is visible instead of looking like nothing happened.
-    @State private var awaitingSubscription = false
+    /// How many webcal subscriptions are still waiting on macOS Calendar. A COUNT, not
+    /// a flag: you can hand off a second link while the first is still being confirmed,
+    /// and with a Bool whichever wait finished first would clear the indicator out from
+    /// under the one still running.
+    @State private var pendingSubscriptions = 0
     @State private var selectedCalendarIDs: Set<String> = []
     @State private var volume: Float = 0.7
 
@@ -368,10 +370,12 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                if awaitingSubscription {
+                if pendingSubscriptions > 0 {
                     HStack(spacing: 6) {
                         ProgressView().controlSize(.small)
-                        Text("Waiting for macOS Calendar to finish subscribing…")
+                        Text(pendingSubscriptions == 1
+                             ? "Waiting for macOS Calendar to finish subscribing…"
+                             : "Waiting for macOS Calendar to finish \(pendingSubscriptions) subscriptions…")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
@@ -460,8 +464,8 @@ struct SettingsView: View {
         // screen, found nothing new, and left the calendar invisible with no way to look
         // again. Poll until it shows up instead, with a bound so this can't spin forever.
         Task {
-            awaitingSubscription = true
-            defer { awaitingSubscription = false }
+            pendingSubscriptions += 1
+            defer { pendingSubscriptions -= 1 }
             let before = Set(availableCalendars.map(\.id))
             for _ in 0..<40 {                                   // 40 x 3s = 2 minutes
                 try? await Task.sleep(nanoseconds: 3_000_000_000)
