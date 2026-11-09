@@ -13,6 +13,27 @@ final class MeetingRecordingCoordinator: ObservableObject {
     /// Surfaced for the Settings UI banner when permission/setup fails. Nil between runs.
     @Published private(set) var lastError: String?
 
+    /// App Store build only: the running meeting that can be recorded now. Recording
+    /// there never starts on its own, because consent has to be confirmed by a person
+    /// at the moment it starts.
+    @Published private(set) var recordableMeeting: MeetingEvent?
+
+    static var autoStarts: Bool {
+        #if MAS
+        false
+        #else
+        true
+        #endif
+    }
+
+    static var deletesAudioAfterTranscript: Bool { !autoStarts }
+
+    static var announcement: String {
+        deletesAudioAfterTranscript
+            ? "I'm recording this meeting for my own notes. It's transcribed on my Mac and the audio is deleted afterwards."
+            : "I'm recording this meeting for my own notes."
+    }
+
     private let config: RecordingConfig
     private let controller: RecordingController
     private weak var calendarManager: CalendarManager?
@@ -111,8 +132,10 @@ final class MeetingRecordingCoordinator: ObservableObject {
 
         runningMeetingIDs = currentIDs
 
+        refreshRecordable(meetings)
+
         // First started meeting per cycle, gated on the user's preferences.
-        if !controller.isRecording,
+        if Self.autoStarts, !controller.isRecording,
            let firstStartedID = started.first,
            let meeting = meetings.first(where: { $0.id == firstStartedID }),
            shouldRecord(meeting) {
@@ -128,13 +151,42 @@ final class MeetingRecordingCoordinator: ObservableObject {
         }
     }
 
-    private func shouldRecord(_ meeting: MeetingEvent) -> Bool {
+    private func refreshRecordable(_ meetings: [MeetingEvent]) {
+        guard !Self.autoStarts, !controller.isRecording else { recordableMeeting = nil; return }
+        recordableMeeting = meetings.first { shouldRecord($0, quiet: true) }
+    }
+
+    /// Asks before every recording. Confirming copies a line to paste in the meeting
+    /// chat, so telling everyone is one paste rather than something to remember.
+    func recordWithConsent(_ meeting: MeetingEvent) async {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = "Record \u{201C}\(meeting.title)\u{201D}?"
+        alert.informativeText = Self.deletesAudioAfterTranscript
+            ? "Only record if everyone on the call knows. A line saying so is copied for you to paste in the meeting chat. The audio is transcribed on this Mac and deleted once the transcript is written."
+            : "Only record if everyone on the call knows. A line saying so is copied for you to paste in the meeting chat."
+        alert.addButton(withTitle: "Everyone knows. Record")
+        alert.addButton(withTitle: "Cancel")
+        guard alert.runModal() == .alertFirstButtonReturn else {
+            diagnosticLog?.info(.recording, "Recording not started, consent not confirmed: \(meeting.title)")
+            return
+        }
+        diagnosticLog?.info(.recording, "Recording consent confirmed: \(meeting.title)")
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(Self.announcement, forType: .string)
+        recordableMeeting = nil
+        await beginRecording(meeting)
+        if !controller.isRecording, let calendarManager { refreshRecordable(calendarManager.meetingsCurrentlyRunning) }
+    }
+
+    private func shouldRecord(_ meeting: MeetingEvent, quiet: Bool = false) -> Bool {
         guard config.isEnabled,
               config.hasAcceptedDisclaimer,
               meeting.url != nil,
               !meeting.isCancelled else { return false }
         // RSVP gate: don't record a meeting the user declined / didn't answer.
         if responseSuppressed?(meeting) ?? false {
+            if quiet { return false }
             diagnosticLog?.info(.recording, "Not recording \(meeting.title) — RSVP \(meeting.myResponse.rawValue) with skip settings on")
             return false
         }
@@ -221,6 +273,7 @@ final class MeetingRecordingCoordinator: ObservableObject {
     func stopManually() async {
         await stopAndEnqueueNotes()
         RecordingSession.clear()
+        if let calendarManager { refreshRecordable(calendarManager.meetingsCurrentlyRunning) }
     }
 
     /// Passthrough for the AppDelegate so it can block app termination only when a

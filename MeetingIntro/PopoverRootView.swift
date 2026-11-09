@@ -180,6 +180,7 @@ struct PopoverRootView: View {
     private var showSectionDivider: Bool {
         calendarManager.nextMeeting != nil
             || recordingController.isRecording
+            || recordingCoordinator.recordableMeeting != nil
             || !calendarManager.armedAutoJoinMeetings.isEmpty
             || !calendarManager.pendingCancellations.isEmpty
             || !calendarManager.pendingReschedules.isEmpty
@@ -826,6 +827,10 @@ struct PopoverRootView: View {
         if recordingController.isRecording, let title = recordingController.currentMeetingTitle {
             calloutCard(icon: "record.circle.fill", tint: .red, title: "Recording — \(title)", actionLabel: "Stop") {
                 Task { await recordingCoordinator.stopManually() }
+            }
+        } else if let meeting = recordingCoordinator.recordableMeeting {
+            calloutCard(icon: "record.circle", tint: .red, title: meeting.title, actionLabel: "Record") {
+                Task { await recordingCoordinator.recordWithConsent(meeting) }
             }
         }
         ForEach(calendarManager.armedAutoJoinMeetings) { m in

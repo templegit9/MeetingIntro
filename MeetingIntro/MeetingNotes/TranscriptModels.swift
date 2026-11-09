@@ -66,6 +66,7 @@ struct RecordingDocument: Identifiable, Equatable {
     var notesURL: URL { audioURL.deletingPathExtension().appendingPathExtension("notes.md") }
 
     var hasTranscript: Bool { FileManager.default.fileExists(atPath: transcriptURL.path) }
+    var hasAudio: Bool { FileManager.default.fileExists(atPath: audioURL.path) }
     var hasNotes: Bool { FileManager.default.fileExists(atPath: notesURL.path) }
 
     /// Parse "YYYY-MM-DD HHmm - Title" back into display parts. Falls back to the
@@ -87,8 +88,16 @@ struct RecordingDocument: Identifiable, Equatable {
         let items = (try? FileManager.default.contentsOfDirectory(
             at: directory, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]
         )) ?? []
-        return items
-            .filter { $0.pathExtension.lowercased() == "m4a" }
+        // A meeting whose audio was deleted after transcription still lists, keyed by
+        // where its audio was.
+        let audio = items.filter { $0.pathExtension.lowercased() == "m4a" }
+        let audioPaths = Set(audio.map(\.path))
+        let transcriptOnly = items
+            .filter { $0.lastPathComponent.hasSuffix(".transcript.md") }
+            .map { $0.deletingLastPathComponent().appendingPathComponent(
+                String($0.lastPathComponent.dropLast(".transcript.md".count)) + ".m4a") }
+            .filter { !audioPaths.contains($0.path) }
+        return (audio + transcriptOnly)
             .map(RecordingDocument.init(audioURL:))
             .sorted { ($0.displayDate ?? .distantPast) > ($1.displayDate ?? .distantPast) }
     }

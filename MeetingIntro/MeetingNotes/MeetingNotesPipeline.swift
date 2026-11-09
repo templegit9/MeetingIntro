@@ -71,6 +71,12 @@ final class MeetingNotesPipeline: ObservableObject {
             self?.diagnosticLog?.info(.notes, "[\(document.baseName)] \(stage)")
         }
         do {
+            let transcriptBody: String
+            if document.hasTranscript, !document.hasAudio {
+                // Audio already deleted after transcription; only the notes are left to do.
+                let saved = try String(contentsOf: document.transcriptURL, encoding: .utf8)
+                transcriptBody = saved.components(separatedBy: "\n").dropFirst(2).joined(separator: "\n")
+            } else {
             // 1. Split the dual-track recording into per-speaker mono files.
             setStage("Splitting audio tracks…")
             let tracks = try await AudioTrackExporter.split(document.audioURL)
@@ -98,9 +104,21 @@ final class MeetingNotesPipeline: ObservableObject {
 
             // 3. Merge + write the transcript sidecar.
             setStage("Writing transcript…")
-            let transcriptBody = segments.renderedMarkdown()
+            transcriptBody = segments.renderedMarkdown()
             let transcriptDoc = "# Transcript — \(document.displayTitle)\n\n" + transcriptBody + "\n"
             try transcriptDoc.write(to: document.transcriptURL, atomically: true, encoding: .utf8)
+
+            // Store build: keep the words, not the voices. Only after the transcript is
+            // safely on disk; a failed transcription keeps the audio for a retry.
+            if MeetingRecordingCoordinator.deletesAudioAfterTranscript {
+                do {
+                    try FileManager.default.removeItem(at: document.audioURL)
+                    diagnosticLog?.info(.notes, "[\(document.baseName)] Audio deleted after transcription")
+                } catch {
+                    diagnosticLog?.warn(.notes, "[\(document.baseName)] Couldn't delete audio after transcription: \(error.localizedDescription)")
+                }
+            }
+            }
 
             // 4. Generate + write the notes sidecar.
             setStage("Generating notes (\(quickAddConfig.modelID))…")

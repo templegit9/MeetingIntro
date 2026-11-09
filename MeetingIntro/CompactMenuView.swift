@@ -177,6 +177,16 @@ struct CompactMenuView: View {
                 }
                 .padding(.horizontal, 14).padding(.vertical, 6)
                 Divider()
+            } else if let meeting = recordingCoordinator.recordableMeeting {
+                HStack(spacing: 8) {
+                    Image(systemName: "record.circle").foregroundStyle(.red)
+                    Text(meeting.title).font(.caption.weight(.semibold)).lineLimit(1)
+                    Spacer()
+                    Button("Record") { Task { await recordingCoordinator.recordWithConsent(meeting) } }
+                        .controlSize(.small)
+                }
+                .padding(.horizontal, 14).padding(.vertical, 6)
+                Divider()
             }
 
             if smartConfig.suppressWhenInCall && contextMonitor.snapshot.isInActiveCall {

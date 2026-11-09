@@ -156,7 +156,7 @@ struct MeetingNotesWindow: View {
                 .help("Copy the current tab's markdown")
 
                 Button {
-                    NSWorkspace.shared.activateFileViewerSelecting([doc.audioURL])
+                    NSWorkspace.shared.activateFileViewerSelecting([doc.hasAudio ? doc.audioURL : doc.transcriptURL])
                 } label: {
                     Label("Show in Finder", systemImage: "folder")
                 }

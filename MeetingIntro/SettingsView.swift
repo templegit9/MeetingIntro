@@ -1800,7 +1800,9 @@ struct SettingsView: View {
     private var recordingTab: some View {
         Form {
             Section {
-                Toggle("Record meetings with conference links automatically",
+                Toggle(MeetingRecordingCoordinator.autoStarts
+                       ? "Record meetings with conference links automatically"
+                       : "Allow recording meetings with conference links (you start each one, after confirming everyone knows)",
                        isOn: Binding(
                         get: { recordingConfig.isEnabled },
                         set: { newValue in
