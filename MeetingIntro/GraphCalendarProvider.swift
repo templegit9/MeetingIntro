@@ -218,6 +218,7 @@ final class GraphCalendarProvider: CalendarProvider {
         return true
     }
 
+    #if !MAS
     /// The original device code flow: shows a code the user types at
     /// microsoft.com/devicelogin. Retained for troubleshooting when the browser
     /// callback doesn't come back.
@@ -231,6 +232,7 @@ final class GraphCalendarProvider: CalendarProvider {
         Self.tokenClientID = clientId
         return true
     }
+    #endif
 
     /// Returns a usable access token, transparently refreshing via the refresh token
     /// when the cached one has expired. Throws `.notAuthenticated` only when there's
@@ -903,6 +905,7 @@ final class GraphCalendarProvider: CalendarProvider {
         let scope: String?
     }
 
+    #if !MAS
     private func performDeviceCodeAuth() async throws -> TokenResult {
         let tenantId = "common" // Multi-tenant
         let url = URL(string: "https://login.microsoftonline.com/\(tenantId)/oauth2/v2.0/devicecode")!
@@ -935,7 +938,9 @@ final class GraphCalendarProvider: CalendarProvider {
         // Poll for token
         return try await pollForToken(deviceCode: deviceCode)
     }
+    #endif
 
+    #if !MAS
     private func pollForToken(deviceCode: DeviceCodeResponse) async throws -> TokenResult {
         let tenantId = "common"
         let tokenUrl = URL(string: "https://login.microsoftonline.com/\(tenantId)/oauth2/v2.0/token")!
@@ -974,6 +979,7 @@ final class GraphCalendarProvider: CalendarProvider {
 
         throw CalendarProviderError.notAuthenticated
     }
+    #endif
 
     // MARK: - Date Parsing
 

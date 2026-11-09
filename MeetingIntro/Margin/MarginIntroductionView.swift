@@ -33,7 +33,7 @@ struct MarginIntroductionView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Setup time depends on your connection. Margin checks memory and storage first. You can cancel and retry later. Installed models are kept.")
                     Text(requirements)
-                    Text("Web research sends search queries online. Connected calendar actions use your calendar service. You choose which folders and calendars Margin can access.")
+                    Text(Self.dataNote)
                     Text("Memory and voice learn from your messages. You can inspect, edit or pause learning in Margin’s settings.")
                 }.font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).padding(.top, 8)
             }
@@ -76,5 +76,15 @@ struct MarginAISetupStatus: View {
                 config.isEnabled = true; showIntroduction = false; setup.start()
             })
         }
+    }
+}
+
+extension MarginIntroductionView {
+    static var dataNote: String {
+        #if MAS
+        "Margin runs on this Mac and sends nothing online. Connected calendar actions use your calendar service. You choose which folders and calendars Margin can access."
+        #else
+        "Web research sends search queries online. Connected calendar actions use your calendar service. You choose which folders and calendars Margin can access."
+        #endif
     }
 }
