@@ -36,6 +36,73 @@ final class CalendarManager: ObservableObject {
     /// in UserDefaults — exactly the "someone cancelled overnight" case in Jon's doc.
     @Published var pendingCancellations: [MeetingEvent] = []
 
+    /// Every cancellation and reschedule seen recently, acknowledged or not (#28, #29).
+    /// This is the reviewable log; the cancellation sets below remain the thing that
+    /// drives reminder suppression. Persisted, so a change detected while you were away
+    /// is still here when you come back — which is the whole point of the request.
+    @Published private(set) var scheduleChanges: [ScheduleChange] = []
+
+    /// A wider window than the 30s poll keeps, loaded on demand for the expanded
+    /// calendar (#32). The regular poll fetches `upcomingDaysAhead` (default 7), which
+    /// is right for reminders and far too narrow for a month grid — three weeks of it
+    /// would read as empty. Nothing subscribes to this except the expanded view, and it
+    /// is only ever fetched while that view is open, so the polling path is untouched.
+    ///
+    /// **Forward-looking only.** `CalendarProvider.fetchUpcomingEvents(within:)` takes an
+    /// interval from now, so days earlier in the current month come back empty. That is
+    /// a real limit of the provider protocol, not an oversight — widening it means
+    /// changing the protocol and both implementations.
+    @Published private(set) var browseEvents: [MeetingEvent] = []
+    @Published private(set) var isLoadingBrowse = false
+    private var lastBrowseLoad: Date?
+
+    /// Loads `days` ahead into `browseEvents`. Safe to call repeatedly; overlapping
+    /// calls are collapsed.
+    /// Load the browse window only when what we have has gone stale.
+    ///
+    /// The invitations section needs to see an invitation three weeks out, which lives
+    /// only in this wider window — but a 45-day fetch on every dropdown open would be
+    /// absurd. Ten minutes is long enough that opening the menu repeatedly costs
+    /// nothing, and short enough that an invitation which arrived while you were in a
+    /// meeting is there when you look.
+    func loadBrowseWindowIfStale(days: Int = 45, maxAge: TimeInterval = 600) async {
+        if !browseEvents.isEmpty, let last = lastBrowseLoad, Date().timeIntervalSince(last) < maxAge { return }
+        await loadBrowseWindow(days: days)
+    }
+
+    func loadBrowseWindow(days: Int = 45) async {
+        guard !isLoadingBrowse else { return }
+        isLoadingBrowse = true
+        defer { isLoadingBrowse = false }
+        do {
+            let events = try await fetchFromEnabledSources(within: TimeInterval(days * 86_400))
+            browseEvents = events
+            lastBrowseLoad = Date()
+            diagnosticLog?.debug(.calendar, "Expanded calendar loaded \(events.count) event(s) over \(days) days")
+        } catch {
+            // Fall back to what the poll already has rather than emptying the grid — a
+            // narrower month is far better than a blank one.
+            browseEvents = upcomingWeek
+            diagnosticLog?.warn(.calendar, "Expanded calendar fetch failed (\(error.localizedDescription)); showing the \(upcomingDaysAhead)-day window instead")
+        }
+    }
+
+    /// Events on a given day from the expanded window, falling back to the poll's
+    /// window before the wider load lands so the grid is never blank on open.
+    func browseEvents(on day: Date) -> [MeetingEvent] {
+        let cal = Calendar.current
+        let source = browseEvents.isEmpty ? upcomingWeek : browseEvents
+        return source
+            .filter { cal.isDate($0.startDate, inSameDayAs: day) }
+            .sorted { $0.startDate < $1.startDate }
+    }
+
+    /// Reschedules still awaiting acknowledgment. Cancellations have their own
+    /// `pendingCancellations` and keep it — only reschedules were previously invisible.
+    var pendingReschedules: [ScheduleChange] {
+        scheduleChanges.filter { $0.kind == .rescheduled && !$0.acknowledged }
+    }
+
     /// The next meeting that hasn't been triggered yet.
     @Published var nextMeeting: MeetingEvent?
 
@@ -204,6 +271,7 @@ final class CalendarManager: ObservableObject {
     /// Internal, not private: `GraphVerifier` uses it to cross-check Exchange events
     /// even while EventKit is the active provider.
     let graphProvider = GraphCalendarProvider()
+    let googleProvider = GoogleCalendarProvider()
 
     /// The currently active provider type.
     /// Which sources are read. Reading from BOTH is the point: Google and iCloud arrive
@@ -231,6 +299,7 @@ final class CalendarManager: ObservableObject {
         switch type {
         case .eventKit: return eventKitProvider
         case .microsoftGraph: return graphProvider
+        case .googleCalendar: return googleProvider
         }
     }
 
@@ -251,6 +320,7 @@ final class CalendarManager: ObservableObject {
         switch activeProviderType {
         case .eventKit: return eventKitProvider
         case .microsoftGraph: return graphProvider
+        case .googleCalendar: return googleProvider
         }
     }
 
@@ -341,6 +411,8 @@ final class CalendarManager: ObservableObject {
     private var notifiedTimeChanges: Set<String> = []
     private static let k_knownStartTimes = "knownStartTimes"
     private static let k_notifiedTimeChanges = "notifiedTimeChanges"
+    private static let k_scheduleChanges = "scheduleChanges"
+    private static let k_joinedMeetings = "joinedMeetingIDs"
     /// Ignore sub-minute jitter; only a real reschedule should notify.
     private static let timeChangeMinDelta: TimeInterval = 60
 
@@ -364,6 +436,11 @@ final class CalendarManager: ObservableObject {
             self.knownStartTimes = decoded
         }
         self.notifiedTimeChanges = Set(d.stringArray(forKey: Self.k_notifiedTimeChanges) ?? [])
+        self.joinedMeetingIDs = Set(d.stringArray(forKey: Self.k_joinedMeetings) ?? [])
+        if let data = d.data(forKey: Self.k_scheduleChanges),
+           let decoded = try? JSONDecoder().decode([ScheduleChange].self, from: data) {
+            self.scheduleChanges = decoded
+        }
     }
 
     /// Start polling for calendar events.
@@ -647,12 +724,76 @@ final class CalendarManager: ObservableObject {
 
     /// Mark a cancellation as notified so the next refresh doesn't re-fire the
     /// system notification. Persisted to UserDefaults.
+    /// Meetings the user opened *through MeetingIntro*. Backs the late-meeting
+    /// indicator (#27): a meeting that has started and hasn't been joined is the thing
+    /// worth flagging.
+    ///
+    /// **This can only ever know about joins that went through the app.** Someone who
+    /// clicked the link in Calendar.app, or dialled in from a phone, is invisible here
+    /// and would be flagged as late while sitting in the meeting. That false positive is
+    /// why the indicator is bounded to a short window and is off by default — a badge
+    /// that cries wolf gets the whole feature turned off.
+    private(set) var joinedMeetingIDs: Set<String> = []
+
+    func markJoined(_ id: String) {
+        guard joinedMeetingIDs.insert(id).inserted else { return }
+        UserDefaults.standard.set(Array(joinedMeetingIDs), forKey: Self.k_joinedMeetings)
+    }
+
+    /// True when the user opened this meeting here — either by hand or via auto-join.
+    func hasJoined(_ id: String) -> Bool {
+        joinedMeetingIDs.contains(id) || joinedAutoJoinIDs.contains(id)
+    }
+
+    /// Records a change and persists. Idempotent on `ScheduleChange.id`, so the same
+    /// move seen on consecutive polls doesn't stack up.
+    private func recordScheduleChange(_ change: ScheduleChange) {
+        guard !scheduleChanges.contains(where: { $0.id == change.id }) else { return }
+        scheduleChanges.append(change)
+        pruneScheduleChanges()
+        persistScheduleChanges()
+    }
+
+    /// Marks one entry seen. It stays in the log for review (#29) but stops being a
+    /// pending alert (#28).
+    func acknowledgeScheduleChange(_ id: String) {
+        guard let i = scheduleChanges.firstIndex(where: { $0.id == id }) else { return }
+        scheduleChanges[i].acknowledged = true
+        persistScheduleChanges()
+    }
+
+    func acknowledgeAllScheduleChanges() {
+        guard scheduleChanges.contains(where: { !$0.acknowledged }) else { return }
+        for i in scheduleChanges.indices { scheduleChanges[i].acknowledged = true }
+        persistScheduleChanges()
+    }
+
+    /// Keeps the log bounded. A change is worth showing while its meeting is still
+    /// ahead, or while it is recent enough to explain a day that already happened —
+    /// two days covers "I was off yesterday".
+    private func pruneScheduleChanges() {
+        let cutoff = Date().addingTimeInterval(-Self.scheduleChangeRetention)
+        let kept = scheduleChanges.filter { $0.detectedAt >= cutoff || $0.newStart >= Date() }
+        if kept.count != scheduleChanges.count { scheduleChanges = kept }
+    }
+
+    private func persistScheduleChanges() {
+        if let data = try? JSONEncoder().encode(scheduleChanges) {
+            UserDefaults.standard.set(data, forKey: Self.k_scheduleChanges)
+        }
+    }
+
+    private static let scheduleChangeRetention: TimeInterval = 48 * 3600
+
     func markCancellationNotified(_ id: String) {
         notifiedCancellationIDs.insert(id)
         UserDefaults.standard.set(Array(notifiedCancellationIDs), forKey: Self.k_notifiedCancellations)
         // The pendingCancellations recompute happens on next refresh; nudge published
         // value so the menu bar dropdown updates immediately if the meeting is still
         // in the upcoming list.
+        if let cancelled = upcomingMeetings.first(where: { $0.id == id }), cancelled.isCancelled {
+            recordScheduleChange(.cancelled(cancelled))
+        }
         if let meeting = upcomingMeetings.first(where: { $0.id == id }), meeting.isCancelled,
            !dismissedCancellationIDs.contains(id) {
             if !pendingCancellations.contains(where: { $0.id == id }) {
@@ -667,6 +808,12 @@ final class CalendarManager: ObservableObject {
         dismissedCancellationIDs.insert(id)
         UserDefaults.standard.set(Array(dismissedCancellationIDs), forKey: Self.k_dismissedCancellations)
         pendingCancellations.removeAll { $0.id == id }
+        // Keep the two in step: acknowledging the badge also settles the log entry, so
+        // one cancellation can't sit unread in the schedule-change list forever.
+        for i in scheduleChanges.indices where scheduleChanges[i].meetingID == id && scheduleChanges[i].kind == .cancelled {
+            scheduleChanges[i].acknowledged = true
+        }
+        persistScheduleChanges()
     }
 
     /// User chose "stop reminding me for this event" (Issue #15) — suppresses every
@@ -747,6 +894,7 @@ final class CalendarManager: ObservableObject {
                 let key = "\(baselineKey)_\(Int(event.startDate.timeIntervalSince1970))"
                 if notifiedTimeChanges.insert(key).inserted {
                     diagnosticLog?.info(.calendar, "Meeting moved — \"\(event.title)\": \(prior.formatted(date: .abbreviated, time: .shortened)) → \(event.startDate.formatted(date: .abbreviated, time: .shortened))")
+                    recordScheduleChange(.rescheduled(event, from: prior))
                     onMeetingTimeChanged?(event, prior)
                     dirty = true
                 }
@@ -974,18 +1122,39 @@ final class CalendarManager: ObservableObject {
     /// Sources currently skipped for lack of a token, and sources currently returning
     /// nothing. Both are logged on transition only — a per-poll line would drown the log.
     private var skippedUnauthorizedSources: Set<CalendarProviderType> = []
+    /// Sources already asked for access since launch. Asking once per launch, not once per
+    /// poll: a declined prompt must not re-appear every 30 seconds.
+    private var accessRequestedThisLaunch: Set<CalendarProviderType> = []
     private var emptySources: Set<CalendarProviderType> = []
 
     private func fetchFromEnabledSources(within window: TimeInterval) async throws -> [MeetingEvent] {
         let types = CalendarProviderType.allCases.filter { enabledProviderTypes.contains($0) }
         var merged: [MeetingEvent] = []
-        var seen = Set<String>()
+        // Index rather than a bare Set: a dropped duplicate still has something to give
+        // the copy that beat it — see `graphCounterpartID`.
+        var indexByKey: [String: Int] = [:]
         var counts: [String] = []
         var duplicates = 0
         var failures: [String] = []
 
         for type in types {
             let source = provider(for: type)
+            // A non-primary source that loses its grant could never get it back: only
+            // `activeProvider` was ever asked for access, so with Microsoft 365 primary a
+            // revoked macOS Calendar permission left EventKit skipped for ever, with no
+            // path back except a button in Settings nobody knows to press.
+            //
+            // Asking here is safe for providers whose request is a system permission
+            // prompt. It is NOT safe for one that opens a browser — that was v2.20.3's
+            // sign-in ambush — so interactive providers are still left alone and wait for
+            // the user to press Sign In.
+            if !source.isAuthorized, !source.requiresInteractiveSignIn,
+               !accessRequestedThisLaunch.contains(type) {
+                accessRequestedThisLaunch.insert(type)
+                if (try? await source.requestAccess()) == true {
+                    diagnosticLog?.info(.calendar, "Source \(type.rawValue) authorized after asking")
+                }
+            }
             guard source.isAuthorized else {
                 // Log the transition, not every poll. An enabled source that quietly
                 // stops contributing is otherwise invisible — and `isAuthorized` reads
@@ -1006,8 +1175,24 @@ final class CalendarManager: ObservableObject {
                 var added = 0
                 for event in events {
                     let key = Self.duplicateKey(for: event)
-                    if seen.contains(key) { duplicates += 1; continue }
-                    seen.insert(key)
+                    if let idx = indexByKey[key] {
+                        duplicates += 1
+                        // The duplicate we're dropping may be the only copy that can
+                        // send an RSVP, and the only one that knows whether the organizer
+                        // allows a counter-proposal. Hand both to the copy that won.
+                        // Provider-agnostic on purpose: this is true of Google exactly as
+                        // it is of Microsoft 365, and both accounts are commonly also in
+                        // macOS Calendar.
+                        if merged[idx].replyProvider == nil,
+                           provider(for: event.sourceProvider).supportsResponding,
+                           !provider(for: merged[idx].sourceProvider).supportsResponding {
+                            merged[idx].replyProvider = event.sourceProvider
+                            merged[idx].replyEventID = event.id
+                            merged[idx].allowsNewTimeProposals = event.allowsNewTimeProposals
+                        }
+                        continue
+                    }
+                    indexByKey[key] = merged.count
                     merged.append(event)
                     added += 1
                 }
@@ -1198,9 +1383,26 @@ final class CalendarManager: ObservableObject {
         CalendarProviderType.allCases.contains { enabledProviderTypes.contains($0) && provider(for: $0).supportsResponding }
     }
 
-    /// Whether THIS meeting can be responded to — routed by where it came from.
+    /// Whether THIS meeting can be responded to — routed by where it came from, or by
+    /// its Graph twin when a dual-synced account left us holding the EventKit copy.
     func canRespond(to meeting: MeetingEvent) -> Bool {
-        provider(for: meeting.sourceProvider).supportsResponding
+        if provider(for: meeting.sourceProvider).supportsResponding { return true }
+        guard let type = meeting.replyProvider, meeting.replyEventID != nil else { return false }
+        return provider(for: type).supportsResponding
+    }
+
+    /// Where a reply for this meeting must actually be sent.
+    ///
+    /// The event's own source, unless that source can't reply and a Graph twin exists —
+    /// the dual-sync case, where the EventKit copy is the identity for everything else
+    /// but is incapable of the one thing being asked of it here.
+    private func responseRoute(for meeting: MeetingEvent) -> (CalendarProviderType, String) {
+        if !provider(for: meeting.sourceProvider).supportsResponding,
+           let type = meeting.replyProvider, let id = meeting.replyEventID,
+           provider(for: type).supportsResponding {
+            return (type, id)
+        }
+        return (meeting.sourceProvider, meeting.id)
     }
 
     /// Where a Quick Add event will actually be created: the primary source when it can
@@ -1255,11 +1457,40 @@ final class CalendarManager: ObservableObject {
         meeting.sourceProvider == .eventKit
     }
 
+    /// Respond to an invitation. **Prefer this over the id-based overload** — routing
+    /// needs the event's own `sourceProvider`, and looking an id up in `upcomingWeek`
+    /// misses every invitation beyond the reminder window, which is exactly the far-out
+    /// ones the invitations section exists to surface.
+    func respond(to meeting: MeetingEvent, status: ResponseStatus) async throws {
+        let (origin, id) = responseRoute(for: meeting)
+        try await send(status, eventID: id, origin: origin)
+    }
+
     /// Respond to an invitation, then refresh so the new status shows immediately.
     func respond(to eventID: String, status: ResponseStatus) async throws {
         // Route to the provider the event came from. Sending an EventKit id to Graph
-        // (or the reverse) can't work — the id spaces are unrelated.
-        let origin = upcomingWeek.first { $0.id == eventID }?.sourceProvider ?? activeProviderType
+        // (or the reverse) can't work — the id spaces are unrelated. Search the browse
+        // window as well as the reminder window: an invitation three weeks out lives
+        // only in the former, and falling back to `activeProviderType` for it would
+        // route the id to whichever source happens to be primary.
+        let origin = (upcomingWeek + browseEvents).first { $0.id == eventID }?.sourceProvider ?? activeProviderType
+        try await send(status, eventID: eventID, origin: origin)
+    }
+
+    /// Respond while proposing a different time, routed to the event's own source.
+    func propose(_ status: ResponseStatus, to meeting: MeetingEvent, start: Date, end: Date) async throws {
+        do {
+            let (origin, id) = responseRoute(for: meeting)
+            try await provider(for: origin).propose(status, to: id, start: start, end: end)
+            diagnosticLog?.info(.calendar, "Proposed \(start) for \"\(meeting.title)\"")
+        } catch {
+            diagnosticLog?.error(.calendar, "Propose failed for \"\(meeting.title)\": \(error.localizedDescription)")
+            throw error
+        }
+        await refreshEvents()
+    }
+
+    private func send(_ status: ResponseStatus, eventID: String, origin: CalendarProviderType) async throws {
         do {
             try await provider(for: origin).respond(to: eventID, status: status)
             diagnosticLog?.info(.calendar, "RSVP \(status.rawValue) sent for event \(eventID)")

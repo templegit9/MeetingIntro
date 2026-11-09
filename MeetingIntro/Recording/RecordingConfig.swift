@@ -8,6 +8,13 @@ import Foundation
 ///   modal only appears once.
 /// - `saveDirectoryBookmark` is nil when the user is using the default
 ///   `~/Movies/MeetingIntro/`; non-nil when they've picked a custom folder.
+///
+/// **There is no default under the sandbox (App Store build).** `.moviesDirectory`
+/// inside a sandbox resolves to `~/Library/Containers/<id>/Data/Movies`, which the user
+/// cannot reach in Finder — App Review rejected 2.20.6 under guideline 2.4.5(i) for
+/// exactly that ("the container is not for user documents"). So `resolveSaveDirectory()`
+/// returns nil in the MAS build until the user picks a folder, and recording refuses to
+/// start rather than writing somewhere invisible.
 @MainActor
 final class RecordingConfig: ObservableObject {
 
@@ -30,14 +37,29 @@ final class RecordingConfig: ObservableObject {
         self.saveDirectoryBookmark = d.data(forKey: Self.k_saveDirBookmark)
     }
 
-    /// Resolves the save directory URL. Falls back to `~/Movies/MeetingIntro/` when no
-    /// bookmark is set. Resolving the bookmark also re-starts security-scoped access —
-    /// callers are responsible for `stopAccessingSecurityScopedResource()` when done.
-    func resolveSaveDirectory() -> URL {
+    /// True when the build has no implicit save location and the user must choose one.
+    /// Sandboxed (App Store) builds only — see the type comment.
+    static var requiresChosenDirectory: Bool {
+        #if MAS
+        true
+        #else
+        false
+        #endif
+    }
+
+    /// Resolves the save directory URL. Resolving the bookmark also re-starts
+    /// security-scoped access — callers are responsible for
+    /// `stopAccessingSecurityScopedResource()` when done.
+    ///
+    /// Returns nil **only** in the MAS build when the user hasn't picked a folder yet.
+    /// The Developer ID build keeps its `~/Movies/MeetingIntro/` default, which is a real
+    /// user-visible folder there because that build isn't sandboxed.
+    func resolveSaveDirectory() -> URL? {
         if let bookmark = saveDirectoryBookmark,
            let url = Self.resolveBookmark(bookmark) {
             return url
         }
+        if Self.requiresChosenDirectory { return nil }
         let movies = FileManager.default.urls(for: .moviesDirectory, in: .userDomainMask).first
             ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Movies")
         return movies.appendingPathComponent("MeetingIntro", isDirectory: true)

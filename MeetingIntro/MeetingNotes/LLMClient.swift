@@ -40,6 +40,7 @@ enum LLMClient {
         guard let endpoint = URL(string: trimmedBase + "/chat/completions"), endpoint.scheme != nil else {
             throw LLMError.invalidBaseURL(baseURL)
         }
+        guard EgressPolicy.permits(endpoint) else { throw LLMError.invalidBaseURL(baseURL) }
 
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"

@@ -31,6 +31,9 @@ enum QuickAddProvider: String, CaseIterable, Identifiable {
 
     /// nil for `.custom` — the user supplies the URL.
     var baseURL: String? {
+        #if MAS
+        return self == .ollama ? "http://localhost:11434/v1" : nil
+        #else
         switch self {
         case .openRouter: return QuickAddConfig.defaultBaseURL
         // Anthropic's OpenAI-compatible endpoint — /chat/completions with Bearer auth.
@@ -42,6 +45,7 @@ enum QuickAddProvider: String, CaseIterable, Identifiable {
         case .ollama:     return "http://localhost:11434/v1"
         case .custom:     return nil
         }
+        #endif
     }
 
     var suggestedModel: String {
@@ -70,6 +74,9 @@ enum QuickAddProvider: String, CaseIterable, Identifiable {
     }
 
     var keyConsoleURL: String? {
+        #if MAS
+        return nil
+        #else
         switch self {
         case .openRouter: return "https://openrouter.ai/keys"
         case .anthropic:  return "https://console.anthropic.com/settings/keys"
@@ -79,7 +86,12 @@ enum QuickAddProvider: String, CaseIterable, Identifiable {
         case .cerebras:   return "https://cloud.cerebras.ai"
         case .ollama, .custom: return nil
         }
+        #endif
     }
+
+    #if MAS
+    static var allCases: [QuickAddProvider] { [.ollama] }
+    #endif
 
     var needsKey: Bool {
         switch self {
@@ -124,7 +136,11 @@ final class QuickAddConfig: ObservableObject {
         didSet { UserDefaults.standard.set(apiBaseURL, forKey: Self.k_apiBaseURL) }
     }
 
+    #if MAS
+    static let defaultBaseURL = "http://localhost:11434/v1"
+    #else
     static let defaultBaseURL = "https://openrouter.ai/api/v1"
+    #endif
 
     /// Calendar identifier for created events. nil → EventKit's default calendar.
     @Published var defaultCalendarID: String? {
@@ -151,7 +167,11 @@ final class QuickAddConfig: ObservableObject {
 
     /// Smart parsing is usable when a key is set OR the base URL points somewhere
     /// custom (a local Ollama needs no key at all).
+    #if MAS
+    var llmEnabled: Bool { EgressPolicy.isLocal(apiBaseURL) }
+    #else
     var llmEnabled: Bool { hasLLMKey || apiBaseURL != Self.defaultBaseURL }
+    #endif
 
     /// The link smart-attach reaches for, or nil if none is marked default.
     var defaultLink: SavedMeetingLink? {
@@ -222,7 +242,12 @@ final class QuickAddConfig: ObservableObject {
         let d = UserDefaults.standard
         self.openRouterKey = KeychainStore.get(Self.keychainAccount) ?? ""
         self.modelID = d.string(forKey: Self.k_modelID) ?? "anthropic/claude-haiku-4.5"
-        self.apiBaseURL = d.string(forKey: Self.k_apiBaseURL) ?? Self.defaultBaseURL
+        let storedBase = d.string(forKey: Self.k_apiBaseURL) ?? Self.defaultBaseURL
+        #if MAS
+        self.apiBaseURL = EgressPolicy.isLocal(storedBase) ? storedBase : Self.defaultBaseURL
+        #else
+        self.apiBaseURL = storedBase
+        #endif
         self.defaultCalendarID = d.string(forKey: Self.k_defaultCalendarID)
         let stored = d.integer(forKey: Self.k_defaultDuration)
         self.defaultDurationMinutes = stored > 0 ? stored : 30

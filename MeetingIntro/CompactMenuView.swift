@@ -18,6 +18,11 @@ struct CompactMenuView: View {
     @ObservedObject var quickAddService: QuickAddService
     @ObservedObject var quickAddConfig: QuickAddConfig
     @ObservedObject var taskManager: TaskManager
+    @ObservedObject var invitations: InvitationCenter
+
+    /// The invitation whose Propose box is open, so the others can step back.
+    @State private var proposingInvitation: String?
+    @State private var showAllInvitations = false
 
     /// #13 focus spike: an inline compact New Event form embedded in the dropdown.
     @State private var showingNewEvent = false
@@ -155,7 +160,7 @@ struct CompactMenuView: View {
 
     private var menuBody: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if case .available(let v) = updater.state {
+            if AppUpdater.selfUpdateAvailable, case .available(let v) = updater.state {
                 actionRow(icon: "arrow.down.circle.fill", tint: accent,
                           label: "Update available — install v\(v)", bold: true) {
                     Task { await updater.update() }
@@ -173,6 +178,16 @@ struct CompactMenuView: View {
                 }
                 .padding(.horizontal, 14).padding(.vertical, 6)
                 Divider()
+            } else if let meeting = recordingCoordinator.recordableMeeting {
+                HStack(spacing: 8) {
+                    Image(systemName: "record.circle").foregroundStyle(.red)
+                    Text(meeting.title).font(.caption.weight(.semibold)).lineLimit(1)
+                    Spacer()
+                    Button("Record") { Task { await recordingCoordinator.recordWithConsent(meeting) } }
+                        .controlSize(.small)
+                }
+                .padding(.horizontal, 14).padding(.vertical, 6)
+                Divider()
             }
 
             if smartConfig.suppressWhenInCall && contextMonitor.snapshot.isInActiveCall {
@@ -184,11 +199,57 @@ struct CompactMenuView: View {
                 Divider()
             }
 
+            // Invitations (#33). Same rules as the rich popover — the card is literally
+            // the same view — but sized for the menu-styled list.
+            let awaitingInvitations = invitations.awaiting
+            let answeredInvitations = invitations.recentlyAnswered
+            if !awaitingInvitations.isEmpty {
+                sectionHeader("\(awaitingInvitations.count) invitation\(awaitingInvitations.count == 1 ? "" : "s") awaiting a reply", color: .orange)
+                let shownInvitations = showAllInvitations ? awaitingInvitations : Array(awaitingInvitations.prefix(2))
+                VStack(spacing: 6) {
+                    ForEach(shownInvitations) { m in
+                        InvitationCardView(invitations: invitations, calendarManager: calendarManager,
+                                           meeting: m, accent: accent, compact: true,
+                                           proposingID: $proposingInvitation)
+                            .opacity(proposingInvitation == nil || proposingInvitation == m.id ? 1 : 0.4)
+                            .allowsHitTesting(proposingInvitation == nil || proposingInvitation == m.id)
+                    }
+                    if awaitingInvitations.count > shownInvitations.count {
+                        Button("+ \(awaitingInvitations.count - shownInvitations.count) more") { showAllInvitations = true }
+                            .buttonStyle(.plain).font(.system(size: 11)).foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.bottom, 4)
+                Divider()
+            }
+            if !answeredInvitations.isEmpty {
+                VStack(spacing: 5) {
+                    ForEach(answeredInvitations) { AnsweredInvitationRow(invitations: invitations, answered: $0, accent: accent) }
+                }
+                .padding(.horizontal, 12).padding(.bottom, 4)
+                Divider()
+            }
+
             if !calendarManager.pendingCancellations.isEmpty {
                 sectionHeader("Cancelled — click to dismiss", color: .orange)
                 ForEach(calendarManager.pendingCancellations) { m in
                     glyphRow(icon: "xmark.circle.fill", tint: .red, time: m.formattedStartTime, title: m.title) {
                         calendarManager.dismissCancellation(m.id)
+                    }
+                }
+                Divider()
+            }
+
+            // Moved meetings (#28) — same persistent, dismissable treatment that
+            // cancellations have had since v2.2.0.
+            if !calendarManager.pendingReschedules.isEmpty {
+                sectionHeader("Moved — click to dismiss", color: .orange)
+                ForEach(calendarManager.pendingReschedules) { change in
+                    glyphRow(icon: "calendar.badge.clock", tint: .orange,
+                             time: "", title: "\(change.title) · \(change.summary)") {
+                        calendarManager.acknowledgeScheduleChange(change.id)
                     }
                 }
                 Divider()
@@ -325,20 +386,41 @@ struct CompactMenuView: View {
                 .foregroundStyle(meeting.isCancelled ? .secondary : .primary)
                 .lineLimit(1)
             Spacer(minLength: 4)
-            if let glyph = meeting.myResponse.todayGlyph, !meeting.isCancelled {
-                Image(systemName: glyph).font(.caption2)
-                    .foregroundStyle(meeting.myResponse == .declined ? .red : .secondary)
+            if !meeting.isCancelled {
+                if meeting.myResponse == .noResponse {
+                    // Awaiting a reply: **state only, no controls.** The buttons live in
+                    // the invitations section above; the two must never compete for the
+                    // same click.
+                    Circle().strokeBorder(Color.orange, lineWidth: 1.5).frame(width: 8, height: 8)
+                        .help("Awaiting your reply")
+                } else if let glyph = meeting.myResponse.todayGlyph {
+                    Image(systemName: glyph).font(.caption2)
+                        .foregroundStyle(meeting.myResponse == .declined ? .red : .secondary)
+                }
             }
             if let url = meeting.url, !meeting.isCancelled {
-                Button { NSWorkspace.shared.open(url) } label: {
+                Button { calendarManager.markJoined(meeting.id); NSWorkspace.shared.open(url) } label: {
                     Image(systemName: "video.fill").foregroundStyle(.green)
                 }
                 .buttonStyle(.borderless).help("Join")
             }
             if !meeting.isCancelled {
                 Menu {
+                    // Copy actions (#31 copy link, #25 copy details). Hidden when the
+                    // meeting has nothing of that kind — see MeetingClipboard.
+                    if MeetingClipboard.has(.link, meeting) {
+                        Button("Copy Join Link") { MeetingClipboard.copy(.link, of: meeting) }
+                    }
+                    Button("Copy Details") { MeetingClipboard.copy(.details, of: meeting) }
+                    if MeetingClipboard.has(.notes, meeting) {
+                        Button("Copy Notes") { MeetingClipboard.copy(.notes, of: meeting) }
+                    }
+                    Divider()
+                    // **Unanswered invitations are not here** — the invitations
+                    // section above owns those. This stays for changing an answer you
+                    // already gave, which that section no longer lists. Disjoint sets.
                     if calendarManager.canRespond(to: meeting),
-                       [.accepted, .declined, .tentative, .noResponse].contains(meeting.myResponse) {
+                       [.accepted, .declined, .tentative].contains(meeting.myResponse) {
                         Button("Accept") { Task { try? await calendarManager.respond(to: meeting.id, status: .accepted) } }
                         Button("Tentative") { Task { try? await calendarManager.respond(to: meeting.id, status: .tentative) } }
                         Button("Decline") { Task { try? await calendarManager.respond(to: meeting.id, status: .declined) } }

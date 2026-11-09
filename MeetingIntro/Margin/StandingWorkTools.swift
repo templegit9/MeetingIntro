@@ -108,7 +108,7 @@ struct RecordingReadTool: AgentTool {
         let directory: URL
         if let raw = ToolArgs.string(a, "folder"), let resolved = roots.resolve(raw) { directory = resolved }
         else if ToolArgs.string(a, "folder") != nil { throw ToolArgumentError(message: "That folder is not granted.") }
-        else if let recordingConfig { directory = recordingConfig.resolveSaveDirectory() }
+        else if let saved = recordingConfig?.resolveSaveDirectory() { directory = saved }
         else { throw ToolArgumentError(message: "Specify a granted recording folder.") }
         defer { directory.stopAccessingSecurityScopedResource() }
         guard roots.isGranted(directory) else { throw ToolArgumentError(message: "Grant the recording folder first: \(directory.path)") }

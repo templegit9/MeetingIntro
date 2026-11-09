@@ -19,7 +19,12 @@ final class GraphCalendarProvider: CalendarProvider {
     /// path segment of an unparseable client_id as a tenant. Reproduced against the live
     /// authorize endpoint; `isPlausibleClientID` below is the guard that stops it
     /// recurring silently.
-    static let defaultClientID = "73eb19c6-e5b0-468d-a66e-2499269e33d1"
+    static let defaultClientID = "f2846765-c549-4afd-b60e-1330b8a56e20"
+
+    /// The registration shipped up to v2.23.2, before the move to a publisher-verified
+    /// app. Kept only so an upgrade can recognise tokens that predate
+    /// `graphTokenClientID` and explain the one-off re-sign-in.
+    static let legacyClientID = "73eb19c6-e5b0-468d-a66e-2499269e33d1"
 
     /// A client ID is always a GUID. Anything else reaches Microsoft as an unreadable
     /// AADSTS page instead of a sign-in, so catch it here and say what is wrong.
@@ -208,6 +213,7 @@ final class GraphCalendarProvider: CalendarProvider {
         self.tokenExpiration = tokens.expiration
         if let rt = tokens.refreshToken { self.refreshToken = rt }
         self.grantedScope = tokens.scope ?? Self.oauthScope
+        Self.tokenClientID = clientId
         await refreshAccountLabel()
         return true
     }
@@ -222,13 +228,89 @@ final class GraphCalendarProvider: CalendarProvider {
         self.tokenExpiration = token.expiration
         if let rt = token.refreshToken { self.refreshToken = rt }
         self.grantedScope = token.scope ?? Self.oauthScope
+        Self.tokenClientID = clientId
         return true
     }
 
     /// Returns a usable access token, transparently refreshing via the refresh token
     /// when the cached one has expired. Throws `.notAuthenticated` only when there's
     /// no way to obtain a valid token (no refresh token, or refresh failed).
+    /// The client ID that issued the tokens we're holding.
+    ///
+    /// A refresh token belongs to the registration that minted it. When the bundled
+    /// `defaultClientID` changes — as it did in v2.24.0, when the app moved to a
+    /// publisher-verifiable registration in a real Entra tenant — every stored refresh
+    /// token becomes unusable, and the failure surfaces as a bare "not connected" that
+    /// looks like a bug. Recording which registration the tokens came from lets us say
+    /// what actually happened and ask for one more sign-in.
+    static var tokenClientID: String? {
+        get { UserDefaults.standard.string(forKey: "graphTokenClientID") }
+        set { UserDefaults.standard.set(newValue, forKey: "graphTokenClientID") }
+    }
+
+    /// Set when the stored tokens were issued by a previous registration, so Settings can
+    /// explain the one-off re-sign-in rather than showing an unexplained disconnection.
+    private(set) var registrationChanged = false
+
+    /// Set when Graph answers 429 or 503. Until then no Graph request is sent: retrying
+    /// every 30 s through a throttle is what extends it.
+    private var throttledUntil: Date?
+
+    private func throttleGuard(_ path: String) throws {
+        guard let until = throttledUntil else { return }
+        if until > Date() { throw CalendarProviderError.networkError(underlying: URLError(.cannotLoadFromNetwork)) }
+        throttledUntil = nil
+        onDiagnostic?("Microsoft 365 throttle lifted; resuming requests")
+    }
+
+    /// Records a throttle from a 429/503 and returns true when it was one.
+    private func noteThrottle(_ http: HTTPURLResponse, path: String) -> Bool {
+        guard http.statusCode == 429 || http.statusCode == 503 else { return false }
+        let header = http.value(forHTTPHeaderField: "Retry-After") ?? ""
+        let seconds = Self.retryAfterSeconds(header)
+        throttledUntil = Date().addingTimeInterval(seconds)
+        onDiagnostic?("Microsoft 365 throttled (HTTP \(http.statusCode)) on \(path); pausing requests for \(Int(seconds)) s (Retry-After: \(header.isEmpty ? "none" : header))")
+        return true
+    }
+
+    /// Retry-After is seconds or an HTTP date. Missing or odd values fall back to 60 s,
+    /// and the pause is held between 5 s and 10 min.
+    static func retryAfterSeconds(_ header: String) -> TimeInterval {
+        let trimmed = header.trimmingCharacters(in: .whitespaces)
+        var seconds: TimeInterval = 60
+        if let n = TimeInterval(trimmed) {
+            seconds = n
+        } else {
+            let f = DateFormatter()
+            f.locale = Locale(identifier: "en_US_POSIX")
+            f.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
+            if let date = f.date(from: trimmed) { seconds = date.timeIntervalSinceNow }
+        }
+        return min(max(seconds, 5), 600)
+    }
+
     private func validToken() async throws -> String {
+        // Tokens from a previous registration can never be refreshed. Clear them once,
+        // deliberately, rather than letting every call fail against Microsoft.
+        //
+        // A build before v2.24.0 never wrote `graphTokenClientID`, so on the upgrade that
+        // matters most the key is absent — tokens with no recorded issuer are therefore
+        // treated as belonging to the previous registration, which is what they are.
+        // Reading the key as `nil` and skipping would miss exactly the users this exists
+        // for and hand them the unexplained "not connected" it was written to prevent.
+        if accessToken != nil || refreshToken != nil {
+            let issued = Self.tokenClientID ?? Self.legacyClientID
+            if issued != clientId {
+                accessToken = nil
+                refreshToken = nil
+                tokenExpiration = nil
+                registrationChanged = true
+                Self.tokenClientID = nil
+                onDiagnostic?("Microsoft registration changed (\(issued) -> \(clientId)); stored sign-in cleared, user must sign in again")
+                throw CalendarProviderError.notAuthenticated
+            }
+        }
+
         if let token = accessToken, !token.isEmpty, let exp = tokenExpiration, exp > Date().addingTimeInterval(60) {
             return token
         }
@@ -247,11 +329,25 @@ final class GraphCalendarProvider: CalendarProvider {
         request.httpBody = "grant_type=refresh_token&client_id=\(clientId)&refresh_token=\(refresh)&scope=\(Self.oauthScope)"
             .data(using: .utf8)
 
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await URLSession.shared.data(for: request)
         guard let tokenResponse = try? JSONDecoder().decode(TokenResponse.self, from: data) else {
-            // Refresh token rejected/expired — force a fresh sign-in.
-            signOut()
-            throw CalendarProviderError.notAuthenticated
+            let http = response as? HTTPURLResponse
+            if let http, noteThrottle(http, path: "token refresh") {
+                throw CalendarProviderError.networkError(underlying: URLError(.cannotLoadFromNetwork))
+            }
+            // Only Microsoft saying the grant is dead ends the sign-in. A 5xx or an
+            // unreadable body during an outage keeps the tokens and retries next poll;
+            // signing out there turned a 5-minute Microsoft incident into a manual
+            // sign-in.
+            let code = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["error"] as? String ?? ""
+            let fatal: Set<String> = ["invalid_grant", "interaction_required", "invalid_client", "unauthorized_client", "consent_required"]
+            if fatal.contains(code) {
+                onDiagnostic?("Microsoft 365 refused the refresh token (\(code)); sign in again")
+                signOut()
+                throw CalendarProviderError.notAuthenticated
+            }
+            onDiagnostic?("Microsoft 365 token refresh failed temporarily (HTTP \(http?.statusCode ?? 0)\(code.isEmpty ? "" : ", \(code)")); keeping the sign-in and retrying")
+            throw CalendarProviderError.networkError(underlying: URLError(.badServerResponse))
         }
         self.accessToken = tokenResponse.accessToken
         self.tokenExpiration = Date().addingTimeInterval(TimeInterval(tokenResponse.expiresIn))
@@ -261,6 +357,7 @@ final class GraphCalendarProvider: CalendarProvider {
     }
 
     func fetchUpcomingEvents(within interval: TimeInterval) async throws -> [MeetingEvent] {
+        try throttleGuard("calendarview")
         let token = try await validToken()
 
         let now = Date()
@@ -332,13 +429,15 @@ final class GraphCalendarProvider: CalendarProvider {
     /// One calendarview request. Split out so the multi-calendar loop above has a single
     /// place that owns status handling and decoding.
     private func fetchEvents(path: String, startStr: String, endStr: String, token: String) async throws -> [GraphEvent] {
-        let urlString = "https://graph.microsoft.com/v1.0/\(path)?startdatetime=\(startStr)&enddatetime=\(endStr)&$select=id,subject,start,end,location,isAllDay,organizer,body,attendees,onlineMeeting,isOnlineMeeting,isCancelled,responseStatus,type&$orderby=start/dateTime&$top=250"
+        let urlString = "https://graph.microsoft.com/v1.0/\(path)?startdatetime=\(startStr)&enddatetime=\(endStr)&$select=id,subject,start,end,location,isAllDay,organizer,body,attendees,onlineMeeting,isOnlineMeeting,isCancelled,responseStatus,allowNewTimeProposals,type&$orderby=start/dateTime&$top=250"
 
         guard let url = URL(string: urlString) else {
             throw CalendarProviderError.unknown(underlying: URLError(.badURL))
         }
 
+        try throttleGuard(path)
         var request = URLRequest(url: url)
+        request.timeoutInterval = 20
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
@@ -346,6 +445,10 @@ final class GraphCalendarProvider: CalendarProvider {
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw CalendarProviderError.networkError(underlying: URLError(.badServerResponse))
+        }
+
+        if noteThrottle(httpResponse, path: "/" + path) {
+            throw CalendarProviderError.networkError(underlying: URLError(.cannotLoadFromNetwork))
         }
 
         if httpResponse.statusCode == 401 {
@@ -403,10 +506,62 @@ final class GraphCalendarProvider: CalendarProvider {
                     isRecurring: event.type != nil && event.type != "singleInstance",
                     sourceProvider: .microsoftGraph,
                     myResponse: myResponse,
-                    responseCounts: counts
+                    responseCounts: counts,
+                    // You cannot counter-propose your own meeting, and an absent flag
+                    // means no. Both guards live here so the UI never has to ask twice.
+                    allowsNewTimeProposals: (event.allowNewTimeProposals ?? false) && myResponse != .organizer
                 )
             }
             .sorted { $0.startDate < $1.startDate }
+    }
+
+    /// Respond with a counter-proposal. Graph carries the proposal on the same
+    /// accept/decline/tentativelyAccept endpoints, under `proposedNewTime`.
+    ///
+    /// **Accepting with a proposal is not a thing** — a proposal only makes sense
+    /// alongside tentative or decline, because you're saying "not as scheduled". Graph
+    /// rejects it on `accept`, so we reject it here with a clearer error rather than
+    /// letting the server explain it.
+    ///
+    /// The time is sent as **wall-clock plus a named zone**, never a UTC instant with an
+    /// offset — the same rule as `createEvent`, and for the same reason: an offset
+    /// alongside a zone name double-applies and the proposal lands hours away.
+    func propose(_ status: ResponseStatus, to eventID: String, start: Date, end: Date) async throws {
+        let action: String
+        switch status {
+        case .declined:  action = "decline"
+        case .tentative: action = "tentativelyAccept"
+        default: throw CalendarProviderError.notSupported
+        }
+        guard supportsResponding else { throw CalendarProviderError.notSupported }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        formatter.timeZone = TimeZone.current
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+
+        let token = try await validToken()
+        let url = URL(string: "https://graph.microsoft.com/v1.0/me/events/\(eventID)/\(action)")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "sendResponse": true,
+            "proposedNewTime": [
+                "start": ["dateTime": formatter.string(from: start), "timeZone": TimeZone.current.identifier],
+                "end": ["dateTime": formatter.string(from: end), "timeZone": TimeZone.current.identifier]
+            ]
+        ])
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200...299).contains(code) else {
+            let body = String(data: data, encoding: .utf8) ?? ""
+            onDiagnostic?("Propose new time failed — HTTP \(code) on /me/events/{id}/\(action): \(body.prefix(300))")
+            if code == 401 { self.accessToken = nil; throw CalendarProviderError.notAuthenticated }
+            throw CalendarProviderError.networkError(underlying: URLError(.badServerResponse))
+        }
     }
 
     func availableCalendars() async throws -> [CalendarInfo] {
@@ -943,6 +1098,9 @@ struct GraphEvent: Codable {
     let organizer: GraphRecipient?
     let isCancelled: Bool?
     let responseStatus: GraphResponseStatus?
+    /// Whether the organizer permits a counter-proposal. Optional because older events
+    /// and some endpoints omit it — and absent must mean "not allowed", never "assume so".
+    let allowNewTimeProposals: Bool?
     /// `singleInstance` | `occurrence` | `exception` | `seriesMaster` — used to flag
     /// recurring events so time-change detection can skip them.
     let type: String?

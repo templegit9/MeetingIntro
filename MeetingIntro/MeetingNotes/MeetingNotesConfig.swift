@@ -9,6 +9,9 @@ final class MeetingNotesConfig: ObservableObject {
     enum Engine: String, CaseIterable, Identifiable {
         case whisperKit
         case groq
+        #if MAS
+        static var allCases: [Engine] { [.whisperKit] }
+        #endif
         var id: String { rawValue }
         var displayName: String {
             switch self {
@@ -57,12 +60,20 @@ final class MeetingNotesConfig: ObservableObject {
         } else {
             self.engine = (KeychainStore.get(Self.keychainAccount) ?? "").isEmpty ? .whisperKit : .groq
         }
+        #if MAS
+        self.engine = .whisperKit
+        #endif
     }
 
     func makeEngine() -> TranscriptionEngine {
         switch engine {
         case .whisperKit: return WhisperKitEngine(modelName: whisperModel)
-        case .groq: return GroqWhisperEngine(apiKey: groqKey)
+        case .groq:
+            #if MAS
+            return WhisperKitEngine(modelName: whisperModel)
+            #else
+            return GroqWhisperEngine(apiKey: groqKey)
+            #endif
         }
     }
 

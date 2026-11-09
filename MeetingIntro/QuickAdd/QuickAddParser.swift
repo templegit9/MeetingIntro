@@ -116,6 +116,9 @@ enum OpenRouterParser {
         guard let endpoint = URL(string: trimmedBase + "/chat/completions"), endpoint.scheme != nil else {
             throw ParseFailure(reason: "Invalid API base URL: \(baseURL)")
         }
+        guard EgressPolicy.permits(endpoint) else {
+            throw ParseFailure(reason: "This build only uses an AI model running on this Mac.")
+        }
 
         let systemPrompt = """
         You convert natural-language text into a calendar event. Reply with ONLY a JSON object, no prose, no code fences:

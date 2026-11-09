@@ -16,6 +16,7 @@ struct PopoverRootView: View {
     @ObservedObject var quickAddService: QuickAddService
     @ObservedObject var quickAddConfig: QuickAddConfig
     @ObservedObject var taskManager: TaskManager
+    @ObservedObject var invitations: InvitationCenter
 
     /// #13: inline compact New Event form embedded in the rich popover.
     @State private var showingNewEvent = false
@@ -49,7 +50,20 @@ struct PopoverRootView: View {
     /// The draft after hand-editing in Details. nil means "whatever the parser says".
     @State private var editedDraft: EventDraft?
 
+    /// Invitations section (#33). Collapsed state is per-open, not persisted — the
+    /// count is the whole point of the header, and a section you folded last week
+    /// silently hiding three unanswered invitations is exactly the failure mode.
+    @State private var invitationsCollapsed = false
+    @State private var showAllInvitations = false
+    /// The one invitation whose Decline is awaiting confirmation. Only Decline confirms.
+    /// The invitation whose Propose box is open. Its card expands in place and the
+    /// others dim — no sheet, no navigation away from the dropdown.
+    @State private var proposingID: String?
+
     private enum Tab { case today, upcoming, tasks }
+    /// The expanded calendar (#32). Deliberately **not** persisted: a single click has
+    /// to stay the fast glance, never a full calendar you must dismiss first.
+    @State private var expanded = false
     @State private var tab: Tab = .today
     @State private var dayOffset = 1   // upcoming starts at tomorrow
 
@@ -67,7 +81,15 @@ struct PopoverRootView: View {
     }
 
     var body: some View {
-        if showingNewEvent {
+        if expanded {
+            ExpandedCalendarView(
+                calendarManager: calendarManager,
+                taskManager: taskManager,
+                accent: accent,
+                onCollapse: { expanded = false },
+                onNewEvent: { expanded = false; showingNewEvent = true }
+            )
+        } else if showingNewEvent {
             newEventForm
         } else if editingTask != nil {
             taskComposer
@@ -130,6 +152,7 @@ struct PopoverRootView: View {
                         calloutCards
                     }
                 }
+                invitationsSection
                 errorBanner
                 if showSectionDivider { Divider() }
             }
@@ -146,6 +169,10 @@ struct PopoverRootView: View {
         .onAppear {
             let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
             let screenH = Int(NSScreen.main?.visibleFrame.height ?? 0)
+            invitations.prune()
+            // The invitations section must see beyond the reminder window; this is
+            // throttled to once per 10 min, so repeatedly opening the menu is free.
+            Task { await calendarManager.loadBrowseWindowIfStale() }
             diagnosticLog.info(.calendar, "Popover opened — v\(v) screenH=\(screenH) todaysMeetings=\(calendarManager.todaysMeetings.count) shownInTab=\(listEvents.count) upcomingWeek=\(calendarManager.upcomingWeek.count) next=\(calendarManager.nextMeeting?.title ?? "none")")
         }
     }
@@ -154,8 +181,12 @@ struct PopoverRootView: View {
     private var showSectionDivider: Bool {
         calendarManager.nextMeeting != nil
             || recordingController.isRecording
+            || recordingCoordinator.recordableMeeting != nil
             || !calendarManager.armedAutoJoinMeetings.isEmpty
             || !calendarManager.pendingCancellations.isEmpty
+            || !calendarManager.pendingReschedules.isEmpty
+            || !invitations.awaiting.isEmpty
+            || !invitations.recentlyAnswered.isEmpty
             || isUpdateAvailable
             || remindersMutedByCall
             || calendarManager.errorMessage != nil
@@ -622,12 +653,33 @@ struct PopoverRootView: View {
             segment("Upcoming", isOn: tab == .upcoming) { tab = .upcoming }
             segment("Tasks", isOn: tab == .tasks) { tab = .tasks }
             Spacer()
-            Text(syncedText)
-                .font(.system(size: 10)).foregroundStyle(.tertiary)
+            // Compact age, and it has to actually count. The header sits outside the
+            // body's 1s TimelineView, so a seconds display rendered here would freeze at
+            // whatever it read when the popover opened — "0s" forever. Only this one
+            // Text gets its own ticker; re-rendering the whole header every second would
+            // fight the layout the tabs depend on.
+            TimelineView(.periodic(from: .now, by: 1)) { _ in
+                Text(syncedText)
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                    .help(syncedHelp)
+            }
+            .layoutPriority(-1)
             Button { Task { await calendarManager.refreshEvents() } } label: {
                 Image(systemName: "arrow.clockwise").font(.system(size: 12))
             }
-            .buttonStyle(.borderless).help("Refresh").padding(.leading, 6)
+            .buttonStyle(.borderless).help("Refresh").padding(.leading, 4)
+            // Expand in place (#32). Two entry points, both from the design note: this
+            // control and ⌘⇧C. The originally-specced double-click on the menu bar icon
+            // is not reachable from a `.window` MenuBarExtra — see ExpandedCalendarView.
+            Button { expanded = true } label: {
+                Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 11))
+            }
+            .buttonStyle(.borderless)
+            .keyboardShortcut("c", modifiers: [.command, .shift])
+            .help("Full calendar (⌘⇧C)")
+            .padding(.leading, 1)
         }
         .padding(.horizontal, 14).padding(.top, 11).padding(.bottom, 8)
     }
@@ -637,18 +689,32 @@ struct PopoverRootView: View {
             Text(title)
                 .font(.system(size: 12, weight: isOn ? .semibold : .regular))
                 .foregroundStyle(isOn ? accent : .secondary)
-                .padding(.vertical, 5).padding(.horizontal, 12)
+                // Never wrap or compress: adding the expand control to this row made
+                // "Upcoming" break across two lines. The tabs hold their width and the
+                // synced label gives way instead.
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.vertical, 5).padding(.horizontal, 10)
                 .background(isOn ? accent.opacity(0.15) : .clear, in: RoundedRectangle(cornerRadius: 6))
         }
         .buttonStyle(.plain)
     }
 
+    /// Age of the last successful sync, as short as it can be read: 0s, 45s, 3m, 2h.
+    /// The word "synced" was costing more header width than it earned — the icon beside
+    /// it already says what this is, and the tooltip carries the long form.
     private var syncedText: String {
-        guard let date = calendarManager.lastRefreshDate else { return "" }
-        let secs = Int(Date().timeIntervalSince(date))
-        if secs < 60 { return "synced just now" }
-        if secs < 3600 { return "synced \(secs / 60)m ago" }
-        return "synced \(secs / 3600)h ago"
+        guard let date = calendarManager.lastRefreshDate else { return "—" }
+        let secs = max(0, Int(Date().timeIntervalSince(date)))
+        if secs < 60 { return "\(secs)s" }
+        if secs < 3600 { return "\(secs / 60)m" }
+        if secs < 86_400 { return "\(secs / 3600)h" }
+        return "\(secs / 86_400)d"
+    }
+
+    private var syncedHelp: String {
+        guard calendarManager.lastRefreshDate != nil else { return "Not synced yet" }
+        return syncedText == "0s" ? "Synced just now" : "Synced \(syncedText) ago"
     }
 
     // MARK: - Day timeline (Today)
@@ -703,10 +769,69 @@ struct PopoverRootView: View {
 
     // MARK: - Callout cards (Today)
 
+    // MARK: - Invitations (#33)
+
+    /// Pinned above Today's rows, where the cancellation and reschedule callouts already
+    /// live, so it's a pattern already learned rather than a new place to look.
+    ///
+    /// **Outside the `TimelineView` deliberately** — nothing in here counts down, and
+    /// inside it every card would re-render once a second for no reason.
+    @ViewBuilder private var invitationsSection: some View {
+        let awaiting = invitations.awaiting
+        let answered = invitations.recentlyAnswered
+        if !awaiting.isEmpty || !answered.isEmpty {
+            VStack(alignment: .leading, spacing: 7) {
+                if !awaiting.isEmpty {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.12)) { invitationsCollapsed.toggle() }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text("\(awaiting.count) INVITATION\(awaiting.count == 1 ? "" : "S") AWAITING A REPLY")
+                                .font(.system(size: 9, weight: .semibold))
+                                .tracking(0.9)
+                            Spacer(minLength: 0)
+                            Image(systemName: invitationsCollapsed ? "chevron.right" : "chevron.down")
+                                .font(.system(size: 8, weight: .semibold))
+                        }
+                        .foregroundStyle(.secondary)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+
+                    if !invitationsCollapsed {
+                        // Two cards, then a count. The section is a prompt to answer,
+                        // never a second event list that swallows the dropdown.
+                        let shown = showAllInvitations ? awaiting : Array(awaiting.prefix(2))
+                        ForEach(shown) { m in
+                            InvitationCardView(invitations: invitations, calendarManager: calendarManager,
+                                               meeting: m, accent: accent, proposingID: $proposingID)
+                                // The expanded card owns the moment; its siblings step back.
+                                .opacity(proposingID == nil || proposingID == m.id ? 1 : 0.4)
+                                .allowsHitTesting(proposingID == nil || proposingID == m.id)
+                        }
+                        if awaiting.count > shown.count {
+                            Button("+ \(awaiting.count - shown.count) more") { showAllInvitations = true }
+                                .buttonStyle(.plain)
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                ForEach(answered) { AnsweredInvitationRow(invitations: invitations, answered: $0, accent: accent) }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+        }
+    }
+
     @ViewBuilder private var calloutCards: some View {
         if recordingController.isRecording, let title = recordingController.currentMeetingTitle {
             calloutCard(icon: "record.circle.fill", tint: .red, title: "Recording — \(title)", actionLabel: "Stop") {
                 Task { await recordingCoordinator.stopManually() }
+            }
+        } else if let meeting = recordingCoordinator.recordableMeeting {
+            calloutCard(icon: "record.circle", tint: .red, title: meeting.title, actionLabel: "Record") {
+                Task { await recordingCoordinator.recordWithConsent(meeting) }
             }
         }
         ForEach(calendarManager.armedAutoJoinMeetings) { m in
@@ -724,6 +849,15 @@ struct PopoverRootView: View {
             calloutCard(icon: "xmark.circle.fill", tint: .orange,
                         title: "\(m.formattedStartTime)  \(m.title)", actionLabel: "Dismiss") {
                 calendarManager.dismissCancellation(m.id)
+            }
+        }
+        // Reschedules (#28). Cancellations already persisted and surfaced here; a moved
+        // meeting fired one notification and left no trace, so missing the banner meant
+        // missing the move. Same treatment, same dismiss gesture.
+        ForEach(calendarManager.pendingReschedules) { change in
+            calloutCard(icon: "calendar.badge.clock", tint: .orange,
+                        title: "\(change.title) · \(change.summary)", actionLabel: "Dismiss") {
+                calendarManager.acknowledgeScheduleChange(change.id)
             }
         }
         if remindersMutedByCall {
@@ -1001,18 +1135,41 @@ struct PopoverRootView: View {
                 .foregroundStyle(meeting.isCancelled ? .secondary : .primary)
                 .lineLimit(1)
             Spacer(minLength: 4)
-            if let glyph = meeting.myResponse.todayGlyph, !meeting.isCancelled {
-                Image(systemName: glyph).font(.caption2)
-                    .foregroundStyle(meeting.myResponse == .declined ? .red : .secondary)
+            if !meeting.isCancelled {
+                if meeting.myResponse == .noResponse {
+                    // Awaiting a reply: **state only, no controls.** The buttons live in
+                    // the invitations section above, and the two surfaces must never
+                    // compete for the same click.
+                    Circle().strokeBorder(Color.orange, lineWidth: 1.5).frame(width: 8, height: 8)
+                        .help("Awaiting your reply")
+                } else if let glyph = meeting.myResponse.todayGlyph {
+                    Image(systemName: glyph).font(.caption2)
+                        .foregroundStyle(meeting.myResponse == .declined ? .red : .secondary)
+                }
             }
             if let url = meeting.url, !meeting.isCancelled {
-                Button { NSWorkspace.shared.open(url) } label: { Image(systemName: "video.fill").foregroundStyle(.green) }
+                Button { calendarManager.markJoined(meeting.id); NSWorkspace.shared.open(url) } label: { Image(systemName: "video.fill").foregroundStyle(.green) }
                     .buttonStyle(.borderless).help("Join")
             }
             if !meeting.isCancelled {
                 Menu {
+                    // Copy actions (#31 copy link, #25 copy details). Each is hidden
+                    // when the meeting has nothing of that kind, so no item ever
+                    // silently copies an empty string.
+                    if MeetingClipboard.has(.link, meeting) {
+                        Button("Copy Join Link") { MeetingClipboard.copy(.link, of: meeting) }
+                    }
+                    Button("Copy Details") { MeetingClipboard.copy(.details, of: meeting) }
+                    if MeetingClipboard.has(.notes, meeting) {
+                        Button("Copy Notes") { MeetingClipboard.copy(.notes, of: meeting) }
+                    }
+                    Divider()
+                    // **Unanswered invitations are not here** — the invitations section
+                    // owns those. What stays is changing an answer you already gave,
+                    // which that section (by definition) no longer lists. Disjoint sets,
+                    // so no meeting ever offers the same action in two places.
                     if calendarManager.canRespond(to: meeting),
-                       [.accepted, .declined, .tentative, .noResponse].contains(meeting.myResponse) {
+                       [.accepted, .declined, .tentative].contains(meeting.myResponse) {
                         Button("Accept") { Task { try? await calendarManager.respond(to: meeting.id, status: .accepted) } }
                         Button("Tentative") { Task { try? await calendarManager.respond(to: meeting.id, status: .tentative) } }
                         Button("Decline") { Task { try? await calendarManager.respond(to: meeting.id, status: .declined) } }

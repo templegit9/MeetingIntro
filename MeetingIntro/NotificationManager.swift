@@ -386,7 +386,9 @@ final class NotificationManager: ObservableObject {
         let content = UNMutableNotificationContent()
         content.title = "Recording started"
         content.subtitle = meeting.title
-        content.body = "Audio is being captured to ~/Movies/MeetingIntro/. Click the menu bar icon to stop."
+        // Don't name a hardcoded path — the sandboxed build saves wherever the user
+        // chose, and ~/Movies/MeetingIntro/ would be a lie there.
+        content.body = "Audio is being captured to your recordings folder. Click the menu bar icon to stop."
         content.sound = .default
 
         let request = UNNotificationRequest(identifier: key, content: content, trigger: nil)

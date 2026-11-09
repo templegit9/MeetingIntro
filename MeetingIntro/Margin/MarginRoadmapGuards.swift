@@ -12,6 +12,7 @@ import Foundation
     December 25, 2026 – Christmas Day (Federal / National)
     December 31, 2026 – New Year's Eve (Observance)
     """
+    #if !MAS
     static func run() async -> Bool {
         var passed = 0, total = 0
         func check(_ value: Bool, _ label: String) { total += 1; if value { passed += 1 }; print("  \(value ? "✓" : "✗") \(label)") }
@@ -176,4 +177,5 @@ import Foundation
         print("  \(passed)/\(total) roadmap guards held")
         return passed == total
     }
+    #endif
 }

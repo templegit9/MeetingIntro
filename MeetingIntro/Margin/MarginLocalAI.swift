@@ -116,6 +116,11 @@ struct MarginAIManifest: Decodable {
             try Task.checkCancellation(); state = .ready; detail = "Using your existing local AI. No download needed."; return
         }
         try Task.checkCancellation()
+        #if MAS
+        // The store build downloads no code and no model; the model will arrive through
+        // Apple's Background Assets and run inside the app.
+        throw ToolArgumentError(message: "Local AI isn't installed on this Mac yet.")
+        #endif
         guard config.aiSetupApproved else { state = .needsApproval; detail = "Prepare local AI once to use Margin. No extra app or account is needed."; return }
         let manifest = try manifestOverride ?? MarginAIManifest.load()
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])

@@ -20,6 +20,10 @@ enum DictionaryService {
     static func lookup(_ raw: String, preferOffline: Bool = false) async throws -> [WordEntry] {
         let word = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !word.isEmpty else { return [] }
+        #if MAS
+        if let sys = systemDefinition(word) { return [sys] }
+        throw DictionaryError.notFound(word)
+        #else
         if preferOffline, let local = systemDefinition(word) { return [local] }
         do {
             return try await fetchOnline(word)
@@ -28,10 +32,12 @@ enum DictionaryService {
             if let sys = systemDefinition(word) { return [sys] }
             throw e
         }
+        #endif
     }
 
     // MARK: - Web (dictionaryapi.dev)
 
+    #if !MAS
     private static func fetchOnline(_ word: String) async throws -> [WordEntry] {
         guard let enc = word.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
               let url = URL(string: "https://api.dictionaryapi.dev/api/v2/entries/en/\(enc)") else {
@@ -47,6 +53,7 @@ enum DictionaryService {
         guard code == 200 else { throw DictionaryError.network("HTTP \(code)") }
         return try parse(data, word: word)
     }
+    #endif
 
     private static func parse(_ data: Data, word: String) throws -> [WordEntry] {
         guard let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {

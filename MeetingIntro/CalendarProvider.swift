@@ -70,6 +70,27 @@ struct MeetingEvent: Identifiable, Equatable {
     /// Everyone's RSVP breakdown, or nil when no response data is available.
     var responseCounts: ResponseCounts? = nil
 
+    /// Whether the organizer permits a counter-proposal of a different time.
+    /// **Defaults false on purpose**: absent means not allowed, so the Propose action is
+    /// simply not rendered rather than offered and then rejected by the server. Only the
+    /// Graph boundary can ever set it true — EventKit exposes nothing equivalent.
+    var allowsNewTimeProposals: Bool = false
+
+    /// Where a reply for this meeting must actually be sent, when the copy we kept
+    /// can't send one.
+    ///
+    /// A work or personal account frequently reaches us **twice** — through macOS
+    /// Calendar and through its own API. The EventKit copy wins the merge deliberately:
+    /// armed auto-joins, dismissed reminders and notified cancellations are all keyed to
+    /// its id, and preferring the other copy would orphan every one of them. But EventKit
+    /// **cannot RSVP**, so without carrying the capable twin's identity a dual-synced
+    /// account loses the ability to answer invitations entirely — which is the exact
+    /// state the feature shipped in for Microsoft 365 users in v2.22.1.
+    ///
+    /// Identity stays with the copy that won; only the reply takes the capable path.
+    var replyProvider: CalendarProviderType? = nil
+    var replyEventID: String? = nil
+
     /// Time remaining until the meeting starts, relative to now.
     var timeUntilStart: TimeInterval {
         startDate.timeIntervalSinceNow
@@ -129,6 +150,11 @@ extension ResponseStatus {
 enum CalendarProviderType: String, CaseIterable, Identifiable {
     case eventKit = "EventKit"
     case microsoftGraph = "Microsoft Graph"
+    case googleCalendar = "Google Calendar"
+
+    #if MAS
+    static var allCases: [CalendarProviderType] { [.eventKit, .microsoftGraph] }
+    #endif
 
     var id: String { rawValue }
 
@@ -140,6 +166,8 @@ enum CalendarProviderType: String, CaseIterable, Identifiable {
             return "Uses calendars configured in macOS System Settings (iCloud, Exchange, Google, etc.)"
         case .microsoftGraph:
             return "Connects directly to Microsoft 365 via Graph API (requires Azure App Registration)"
+        case .googleCalendar:
+            return "Connects directly to Google Calendar, so you can reply to Gmail invitations — which macOS Calendar can't do (requires your own Google OAuth client)"
         }
     }
 }
@@ -186,6 +214,12 @@ protocol CalendarProvider {
     /// Whether this provider can write an RSVP response. EventKit can't (Apple
     /// blocks programmatic invitation responses); Graph can, once write-scoped.
     var supportsResponding: Bool { get }
+
+    /// Respond while proposing a different time. Graph only, and only for an event whose
+    /// organizer allowed proposals — see `MeetingEvent.allowsNewTimeProposals`. Declared
+    /// with a `.notSupported` default so a provider that can't do it says so rather than
+    /// silently dropping the proposed time and sending a bare reply.
+    func propose(_ status: ResponseStatus, to eventID: String, start: Date, end: Date) async throws
 
     /// Respond to an invitation (accept / decline / tentativelyAccept). Throws
     /// `.notSupported` on backends that can't write the response.
@@ -235,6 +269,9 @@ extension CalendarProvider {
     /// the user. This is a *default for a declared requirement* — see the protocol.
     var requiresInteractiveSignIn: Bool { false }
     var canCreateEvents: Bool { false }
+    func propose(_ status: ResponseStatus, to eventID: String, start: Date, end: Date) async throws {
+        throw CalendarProviderError.notSupported
+    }
     func createEvent(from draft: EventDraft, calendarID: String?) async throws {
         throw CalendarProviderError.notSupported
     }

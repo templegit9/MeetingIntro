@@ -41,7 +41,9 @@ final class ReleaseNotesManager: ObservableObject {
     private static let cacheKey = "releaseNotesCache"
     private static let cacheDateKey = "releaseNotesCacheDate"
     private static let cacheMaxAge: TimeInterval = 3600
+    #if !MAS
     private static let apiURL = URL(string: "https://api.github.com/repos/templegit9/MeetingIntro/releases?per_page=20")!
+    #endif
 
     init() {
         loadFromCache()
@@ -53,6 +55,9 @@ final class ReleaseNotesManager: ObservableObject {
             UserDefaults.standard.object(forKey: Self.cacheDateKey) as? Date ?? .distantPast
         )
         guard force || releases.isEmpty || cacheAge > Self.cacheMaxAge else { return }
+        #if MAS
+        return
+        #else
 
         isLoading = true
         defer { isLoading = false }
@@ -78,6 +83,7 @@ final class ReleaseNotesManager: ObservableObject {
                 errorMessage = "Couldn't load release notes: \(error.localizedDescription)"
             }
         }
+        #endif
     }
 
     private func loadFromCache() {

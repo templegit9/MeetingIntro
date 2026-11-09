@@ -1,4 +1,5 @@
 import AppKit
+import EventKit
 import SwiftUI
 import ServiceManagement
 
@@ -84,6 +85,9 @@ struct SettingsView: View {
     @State private var showMirrorSheet = false
 
     @AppStorage("nextMeetingHighlightHex") private var nextMeetingHighlightHex: String = defaultNextMeetingHighlightHex
+    @AppStorage(MeetingStatusItem.enabledKey) private var menuBarMeetingStatusEnabled: Bool = false
+    @AppStorage(MeetingStatusItem.leadKey) private var menuBarMeetingStatusLead: Int = 15
+    @AppStorage(MeetingStatusItem.lateKey) private var menuBarMeetingStatusLate: Int = 10
     @AppStorage("popoverFitToContent") private var popoverFitToContent: Bool = false
 
     @State private var diagCategoryFilter: DiagnosticLog.Category?
@@ -126,11 +130,14 @@ struct SettingsView: View {
     @AppStorage(AppUpdater.autoCheckKey) private var autoUpdateEnabled: Bool = true
     @State private var launchAtLogin: Bool = LaunchAtLogin.isEnabled
     @AppStorage("cancellationShowInTodayView") private var cancellationShowInTodayView: Bool = true
+    @AppStorage("invitationWorkdayStartHour") private var invitationWorkdayStart: Int = 9
+    @AppStorage("invitationWorkdayEndHour") private var invitationWorkdayEnd: Int = 18
     @AppStorage("cancellationShowOverlay") private var cancellationShowOverlay: Bool = false
     @AppStorage("cancellationOverlayPosition") private var cancellationOverlayPosition: String = OverlayWindowController.CancellationOverlayPosition.topRight.rawValue
 
     @StateObject private var releaseNotes = ReleaseNotesManager()
     @ObservedObject var updater: AppUpdater
+    @ObservedObject var meetingStatusItem: MeetingStatusItem
 
     @State private var showRecordingDisclaimer = false
     @State private var showMarginIntroduction = false
@@ -158,7 +165,15 @@ struct SettingsView: View {
     @State private var accountLookupFailed = false
     @State private var graphAuthMessage: String?
     @State private var isSigningIn: Bool = false
+    @State private var isSigningInGoogle: Bool = false
+    @State private var googleAuthMessage: String?
+    @AppStorage("googleClientID") private var googleClientID: String = ""
     @State private var availableCalendars: [CalendarInfo] = []
+    /// How many webcal subscriptions are still waiting on macOS Calendar. A COUNT, not
+    /// a flag: you can hand off a second link while the first is still being confirmed,
+    /// and with a Bool whichever wait finished first would clear the indicator out from
+    /// under the one still running.
+    @State private var pendingSubscriptions = 0
     @State private var selectedCalendarIDs: Set<String> = []
     @State private var volume: Float = 0.7
 
@@ -167,7 +182,7 @@ struct SettingsView: View {
             List(selection: $selectedSection) {
                 ForEach(SettingsGroup.allCases, id: \.self) { group in
                     Section(group.title) {
-                        ForEach(SettingsSection.allCases.filter { $0.group == group && ($0 != .diagnostics || diagnosticsUnlocked) }, id: \.self) { section in
+                        ForEach(SettingsSection.allCases.filter { $0.group == group && $0.isInThisBuild && ($0 != .diagnostics || diagnosticsUnlocked) }, id: \.self) { section in
                             Label(section.title, systemImage: section.systemImage)
                                 .tag(section)
                         }
@@ -247,12 +262,27 @@ struct SettingsView: View {
                         // Account details live behind a chevron on the source's own row,
                         // rather than as a separate section further down the tab: the
                         // account belongs to the source, not to the page.
+                        if type == .googleCalendar, enabledProviders.contains(type) {
+                            DisclosureGroup("Account") {
+                                googleAccountDetails
+                            }
+                            .font(.caption)
+                        }
+
                         if type == .microsoftGraph, enabledProviders.contains(type),
                            calendarManager.graphCalendarProvider.isAuthorized {
                             DisclosureGroup("Account") {
                                 graphAccountDetails
                             }
                             .font(.caption)
+                        }
+
+                        // A registration change is not the same as never having connected,
+                        // and saying so turns an alarming disconnection into a one-off task.
+                        if type == .microsoftGraph, calendarManager.graphCalendarProvider.registrationChanged {
+                            Text("MeetingIntro's Microsoft registration changed in this update, so your previous sign-in no longer works. Sign in once more and it will stay signed in.")
+                                .font(.caption).foregroundStyle(.orange)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
 
                         if enabledProviders.contains(type), !calendarManager.provider(for: type).isAuthorized {
@@ -266,6 +296,12 @@ struct SettingsView: View {
                                     }
                                     .controlSize(.small)
                                     .disabled(isSigningIn)
+                                case .googleCalendar:
+                                    Button(isSigningInGoogle ? "Waiting for browser…" : "Sign in with Google") {
+                                        Task { await signInGoogle() }
+                                    }
+                                    .controlSize(.small)
+                                    .disabled(isSigningInGoogle)
                                 case .eventKit:
                                     Button("Grant calendar access") {
                                         Task { _ = try? await calendarManager.eventKitProvider.requestAccess() }
@@ -299,11 +335,15 @@ struct SettingsView: View {
                 SettingsSectionHeader("Calendar Sources", info: "Turn on both to see everything at once — Google, iCloud and anything else in macOS Calendar through EventKit, plus a work Outlook calendar through Microsoft 365.\n\nA meeting that appears in both (a work calendar synced into macOS *and* read from Microsoft 365) is shown once. If one source fails, the other still loads.\n\nWhen both are on, \"Create new events in\" decides where Quick Add writes.")
             }
 
-            if selectedProvider == .microsoftGraph {
+            // Gate on the source being ENABLED, not on it being the write target.
+            // These settings configure how Microsoft 365 is read; where Quick Add
+            // writes is a separate choice and must not hide them.
+            if enabledProviders.contains(.microsoftGraph) {
                 graphVerifierSection
+                invitationsSection
             }
 
-            Section("Calendars to Monitor") {
+            Section {
                 if availableCalendars.isEmpty {
                     Button("Load Calendars") {
                         Task { await loadCalendars() }
@@ -338,9 +378,42 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+
+                if pendingSubscriptions > 0 {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.small)
+                        Text(pendingSubscriptions == 1
+                             ? "Waiting for macOS Calendar to finish subscribing…"
+                             : "Waiting for macOS Calendar to finish \(pendingSubscriptions) subscriptions…")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            } header: {
+                // A refresh that is always reachable. The list used to be loadable only
+                // while it was empty, so once populated there was no way to pick up a
+                // calendar added afterwards — including the one you just subscribed to.
+                HStack {
+                    Text("Calendars to Monitor")
+                    Spacer()
+                    Button {
+                        Task { await loadCalendars() }
+                    } label: {
+                        Label("Refresh", systemImage: "arrow.clockwise")
+                            .labelStyle(.iconOnly)
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Reload the calendar list")
+                }
             }
 
-            if selectedProvider == .eventKit {
+            // Subscribing hands a webcal link to macOS Calendar, which is possible
+            // whenever EventKit is an enabled SOURCE. This used to read
+            // `selectedProvider == .eventKit`, written when one provider was active at
+            // a time and that property really did mean "the source I'm using". Since
+            // both sources run at once it means "where Quick Add writes" — so picking
+            // Microsoft 365 or Google as the write target made this box vanish, with
+            // EventKit still enabled and subscribing still perfectly possible.
+            if enabledProviders.contains(.eventKit) {
                 Section {
                     HStack(spacing: 8) {
                         TextField("https://…/calendar.ics  or  webcal://…", text: $subscribeURL)
@@ -359,6 +432,13 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
+        .task { await loadCalendars() }
+        // macOS posts this when the calendar database changes — which is exactly what a
+        // finished webcal subscription is. Without it the Settings list is a snapshot
+        // taken once and never corrected.
+        .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged)) { _ in
+            Task { await loadCalendars() }
+        }
     }
 
     /// Normalize an http(s)/webcal calendar link to `webcal://` and hand it to macOS
@@ -387,10 +467,20 @@ struct SettingsView: View {
         NSWorkspace.shared.open(url)
         subscribeError = nil
         subscribeURL = ""
-        // After macOS finishes subscribing, reload so the new calendar shows above.
+        // Subscribing is a conversation with Calendar.app — pick an account, pick a
+        // refresh interval, confirm — and then it still has to fetch the feed. A single
+        // reload 2.5s later (what this used to do) fired while that sheet was still on
+        // screen, found nothing new, and left the calendar invisible with no way to look
+        // again. Poll until it shows up instead, with a bound so this can't spin forever.
         Task {
-            try? await Task.sleep(nanoseconds: 2_500_000_000)
-            await loadCalendars()
+            pendingSubscriptions += 1
+            defer { pendingSubscriptions -= 1 }
+            let before = Set(availableCalendars.map(\.id))
+            for _ in 0..<40 {                                   // 40 x 3s = 2 minutes
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                await loadCalendars()
+                if !Set(availableCalendars.map(\.id)).subtracting(before).isEmpty { return }
+            }
         }
     }
 
@@ -417,6 +507,21 @@ struct SettingsView: View {
             }
         } header: {
             SettingsSectionHeader("Verify against Microsoft 365", info: "macOS Calendar's Exchange sync can leave a meeting behind after it has been cancelled on the server. A real case had a meeting cancelled a week earlier still firing reminders, and auto-join opening a Zoom for it. Nothing in the local calendar marks that event as different, so the only way to catch it is to ask the server.\n\nWith this on, meetings on Exchange calendars are cross-checked against Microsoft 365 every 5 minutes. Anything the server says is cancelled, or no longer has at all, stops firing reminders and won't auto-join. Your other calendars are untouched and nothing about them is sent anywhere.\n\nIt is deliberately cautious: a failed or empty response from Microsoft 365 is ignored rather than read as \"everything is cancelled\", and a meeting must fail two checks in a row before it is silenced.\n\nRequires signing in under Microsoft Graph API above. EventKit stays your calendar source — this only adds a second opinion.")
+        }
+    }
+
+    // MARK: - Invitations Section (#33)
+
+    private var invitationsSection: some View {
+        Section {
+            Stepper("Day starts at \(invitationWorkdayStart):00", value: $invitationWorkdayStart, in: 0...23)
+            Stepper("Day ends at \(invitationWorkdayEnd):00", value: $invitationWorkdayEnd, in: 1...24)
+            if invitationWorkdayEnd <= invitationWorkdayStart {
+                Text("The end of the day has to come after the start, or no slot can ever be suggested.")
+                    .font(.caption).foregroundStyle(.orange)
+            }
+        } header: {
+            SettingsSectionHeader("Invitations", info: "Invitations awaiting a reply appear at the top of the menu bar dropdown, where you can accept, decline, or propose a different time.\n\n**Proposing a time only works for Microsoft 365**, and only when the organizer allowed it — when they didn't, the option simply isn't offered. Invitations on iCloud or Google calendars are still listed so you know they're waiting, but Apple gives apps no way to reply to them, so those offer **Open in Calendar** instead.\n\nThe suggested slot is the soonest gap of the same length **on your own calendar**, inside the hours below and never at a weekend. It knows nothing about anyone else's availability, which is why the card says so before you send.")
         }
     }
 
@@ -920,6 +1025,28 @@ struct SettingsView: View {
                 }
             } header: {
                 SettingsSectionHeader("Upcoming Days", info: "How far ahead the Upcoming view (and the compact menu's Upcoming list) loads.")
+            }
+
+            Section {
+                Toggle("Show meeting status in the menu bar", isOn: $menuBarMeetingStatusEnabled)
+                    .onChange(of: menuBarMeetingStatusEnabled) { _, _ in meetingStatusItem.settingsChanged() }
+                Stepper(value: $menuBarMeetingStatusLead, in: 1...60) {
+                    Text("Appear \(menuBarMeetingStatusLead) min before a meeting")
+                }
+                .disabled(!menuBarMeetingStatusEnabled)
+                .onChange(of: menuBarMeetingStatusLead) { _, _ in meetingStatusItem.settingsChanged() }
+                Stepper(value: $menuBarMeetingStatusLate, in: 1...60) {
+                    Text("Keep showing \(menuBarMeetingStatusLate) min after the start")
+                }
+                .disabled(!menuBarMeetingStatusEnabled)
+                .onChange(of: menuBarMeetingStatusLate) { _, _ in meetingStatusItem.settingsChanged() }
+                // Stated inline, not behind the ⓘ: it's a limit of what the app can
+                // know, and finding out by being called late is worse than reading it.
+                Text("\"Late\" means the app hasn't seen you join. If you open the link from Calendar or dial in from your phone, it can't tell, and will still say late.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } header: {
+                SettingsSectionHeader("Meeting Status", info: "Adds a **separate** item to the menu bar showing the next meeting as it approaches, and an orange warning once it has started if you haven't joined from here.\n\nThe app icon itself never changes — it stays a steady clock so it's always easy to find. This item appears only when there's something to say and disappears again afterwards.")
             }
 
             Section {
@@ -1499,6 +1626,7 @@ struct SettingsView: View {
                 SettingsSectionHeader("Quick Add & Meeting Notes", info: "The AI model for the natural-language event parser (Quick Add) and AI meeting-notes generation. A local provider (Ollama) needs no key; without one, Quick Add still works on-device with the built-in date detector.")
             }
 
+            #if !MAS
             Section {
                 LabeledContent("Model", value: "whisper-large-v3-turbo")
                 SecureField("gsk_…", text: $notesConfig.groqKey).textFieldStyle(.roundedBorder)
@@ -1513,6 +1641,7 @@ struct SettingsView: View {
             } header: {
                 SettingsSectionHeader("Transcription (Groq)", info: "API key for the Groq cloud transcription engine used by meeting recording → notes (model is fixed). Not needed if you transcribe on-device with WhisperKit — choose the engine in the Recording tab.")
             }
+            #endif
         }
         .formStyle(.grouped)
         .padding()
@@ -1538,7 +1667,14 @@ struct SettingsView: View {
         }
     }
 
+    #if MAS
+    static let onDeviceTranscriptionNote = "Audio never leaves this Mac. Transcription runs on the Neural Engine, roughly 3 to 5 minutes per hour of audio."
+    #else
+    static let onDeviceTranscriptionNote = "Audio never leaves this Mac. The model downloads once on first use and runs on the Neural Engine — roughly 3–5 minutes per hour of audio."
+    #endif
+
     /// Validates the Groq key against the models endpoint (transcription itself needs audio).
+#if !MAS
     private func testTranscription() {
         transcriptionTesting = true; transcriptionTest = nil
         let key = notesConfig.groqKey
@@ -1556,6 +1692,7 @@ struct SettingsView: View {
             transcriptionTesting = false
         }
     }
+#endif
 
     // MARK: - Margin
 
@@ -1677,7 +1814,9 @@ struct SettingsView: View {
     private var recordingTab: some View {
         Form {
             Section {
-                Toggle("Record meetings with conference links automatically",
+                Toggle(MeetingRecordingCoordinator.autoStarts
+                       ? "Record meetings with conference links automatically"
+                       : "Allow recording meetings with conference links (you start each one, after confirming everyone knows)",
                        isOn: Binding(
                         get: { recordingConfig.isEnabled },
                         set: { newValue in
@@ -1723,28 +1862,46 @@ struct SettingsView: View {
             }
 
             Section("Save Location") {
-                HStack {
-                    Image(systemName: "folder")
-                    Text(recordingConfig.resolveSaveDirectory().path)
-                        .font(.system(.caption, design: .monospaced))
-                        .truncationMode(.middle)
-                        .lineLimit(1)
-                    Spacer()
-                }
-                HStack(spacing: 12) {
-                    Button("Show in Finder") {
-                        let url = recordingConfig.resolveSaveDirectory()
-                        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-                        NSWorkspace.shared.activateFileViewerSelecting([url])
+                if let dir = recordingConfig.resolveSaveDirectory() {
+                    HStack {
+                        Image(systemName: "folder")
+                        Text(dir.path)
+                            .font(.system(.caption, design: .monospaced))
+                            .truncationMode(.middle)
+                            .lineLimit(1)
+                        Spacer()
                     }
-                    Button("Change…") { pickSaveLocation() }
-                    if recordingConfig.saveDirectoryBookmark != nil {
-                        Button("Reset to default") { recordingConfig.saveDirectoryBookmark = nil }
+                    HStack(spacing: 12) {
+                        Button("Show in Finder") {
+                            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+                            NSWorkspace.shared.activateFileViewerSelecting([dir])
+                        }
+                        Button("Change…") { pickSaveLocation() }
+                        // No "Reset to default" in the sandboxed build — there is no
+                        // default to go back to, only a folder the user picked.
+                        if recordingConfig.saveDirectoryBookmark != nil,
+                           !RecordingConfig.requiresChosenDirectory {
+                            Button("Reset to default") { recordingConfig.saveDirectoryBookmark = nil }
+                        }
                     }
+                    Text("\(recordingStats.count) recording\(recordingStats.count == 1 ? "" : "s"), \(formatBytes(recordingStats.sizeBytes))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    // Sandboxed build, nothing chosen yet. Stated inline rather than
+                    // behind the section ⓘ — recording cannot run until this is answered.
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Text("No folder chosen yet")
+                            .foregroundStyle(.orange)
+                    }
+                    Text("Recordings are saved wherever you choose, so you can find them in Finder. Nothing is recorded until you pick a folder.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button("Choose Folder…") { pickSaveLocation() }
+                        .buttonStyle(.borderedProminent)
                 }
-                Text("\(recordingStats.count) recording\(recordingStats.count == 1 ? "" : "s"), \(formatBytes(recordingStats.sizeBytes))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
 
             Section("Transcription & Notes") {
@@ -1757,7 +1914,7 @@ struct SettingsView: View {
                     }
                 }
                 Text(notesConfig.engine == .whisperKit
-                     ? "Audio never leaves this Mac. The model downloads once on first use and runs on the Neural Engine — roughly 3–5 minutes per hour of audio."
+                     ? Self.onDeviceTranscriptionNote
                      : "Audio is uploaded to Groq for transcription — roughly 30 seconds per hour of audio. Free tier available.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -1790,11 +1947,13 @@ struct SettingsView: View {
                             .tint(.red)
                         }
                         Spacer()
+                        #if !MAS
                         Button("Get a key ↗") {
                             if let url = URL(string: "https://console.groq.com/keys") { NSWorkspace.shared.open(url) }
                         }
                         .buttonStyle(.link)
                         .font(.caption)
+                        #endif
                     }
                     if !notesConfig.groqKey.isEmpty {
                         Label("Key saved in Keychain", systemImage: "checkmark.circle.fill")
@@ -1899,6 +2058,7 @@ struct SettingsView: View {
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false
         panel.prompt = "Choose"
+        panel.message = "Choose where MeetingIntro saves recordings, transcripts and notes."
         if panel.runModal() == .OK, let url = panel.url {
             recordingConfig.saveDirectoryBookmark = try? url.bookmarkData(
                 options: [.withSecurityScope],
@@ -1910,7 +2070,10 @@ struct SettingsView: View {
     }
 
     private func refreshRecordingStats() {
-        let dir = recordingConfig.resolveSaveDirectory()
+        guard let dir = recordingConfig.resolveSaveDirectory() else {
+            recordingStats = (0, 0)
+            return
+        }
         guard let items = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.fileSizeKey], options: [.skipsHiddenFiles]) else {
             recordingStats = (0, 0)
             return
@@ -2165,8 +2328,20 @@ struct SettingsView: View {
     }
 
     /// Icon button beside the version: check for / install updates via Homebrew.
+    ///
+    /// Absent entirely in the App Store build — updates come from the store there, and an
+    /// "install update" control that cannot install anything is worse than none.
     @ViewBuilder
     private var updateControl: some View {
+        if !AppUpdater.selfUpdateAvailable {
+            EmptyView()
+        } else {
+            updateStates
+        }
+    }
+
+    @ViewBuilder
+    private var updateStates: some View {
         switch updater.state {
         case .checking, .updating:
             ProgressView().controlSize(.small)
@@ -2205,6 +2380,15 @@ struct SettingsView: View {
     /// One-line status under the version for the states worth spelling out.
     @ViewBuilder
     private var updateStatusLine: some View {
+        if !AppUpdater.selfUpdateAvailable {
+            EmptyView()
+        } else {
+            updateStatusStates
+        }
+    }
+
+    @ViewBuilder
+    private var updateStatusStates: some View {
         switch updater.state {
         case .available(let v):
             Button("Update available — install v\(v)") { Task { await updater.update() } }
@@ -2468,12 +2652,18 @@ struct SettingsView: View {
 
                 updateStatusLine
 
-                Toggle("Check for updates automatically", isOn: $autoUpdateEnabled)
-                    .toggleStyle(.checkbox)
-                    .font(.caption)
-                    .fixedSize()
-                    .onChange(of: autoUpdateEnabled) { _, _ in updater.refreshAutoChecks() }
-                    .padding(.top, 2)
+                if AppUpdater.selfUpdateAvailable {
+                    Toggle("Check for updates automatically", isOn: $autoUpdateEnabled)
+                        .toggleStyle(.checkbox)
+                        .font(.caption)
+                        .fixedSize()
+                        .onChange(of: autoUpdateEnabled) { _, _ in updater.refreshAutoChecks() }
+                        .padding(.top, 2)
+                } else {
+                    Text("Updates arrive through the App Store.")
+                        .font(.caption2).foregroundStyle(.secondary)
+                        .padding(.top, 2)
+                }
 
                 Toggle("Open at login", isOn: Binding(
                     get: { launchAtLogin },
@@ -2521,16 +2711,20 @@ struct SettingsView: View {
                 // Form front door (no GitHub account needed; it auto-bridges to Issues —
                 // see docs/feedback-form-bridge.md).
                 HStack(spacing: 20) {
+                    #if !MAS
                     aboutLink("GitHub", "chevron.left.forwardslash.chevron.right", "https://github.com/templegit9/MeetingIntro")
                     aboutLink("Releases", "shippingbox", "https://github.com/templegit9/MeetingIntro/releases")
                     aboutLink("Feedback", "exclamationmark.bubble", "https://forms.gle/9ueTH3vZq71TpDD86")
+                    #endif
                 }
                 .padding(.top, 2)
             }
 
             Spacer()
 
-            Text("© \(Calendar.current.component(.year, from: Date())) TempleGit · MIT License")
+            // String(year), not the bare Int — SwiftUI's Text interpolation formats an
+            // Int with the locale's grouping separator, which shipped "© 2,026".
+            Text("© \(String(Calendar.current.component(.year, from: Date()))) TempleGit · MIT License")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
                 .padding(.bottom, 12)
@@ -2541,6 +2735,7 @@ struct SettingsView: View {
             // leave a stale `.upToDate` from before a newer release shipped; opening
             // About is an explicit "is there an update?" so it should hit GitHub fresh
             // (unless an update is already in flight).
+            guard AppUpdater.selfUpdateAvailable else { return }
             if case .updating = updater.state {} else { await updater.check() }
         }
     }
@@ -2628,6 +2823,67 @@ struct SettingsView: View {
             availableCalendars = await calendarManager.availableCalendarsFromEnabledSources()
         } catch {
             availableCalendars = []
+        }
+    }
+
+    /// Google needs an OAuth client the user creates, because Google will not let an app
+    /// ship one for other people to use without passing its verification review — an
+    /// unverified app is capped at 100 users. So rather than an instruction to go and
+    /// find the console, this hands over the exact link and the exact app type.
+    @ViewBuilder private var googleAccountDetails: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if calendarManager.googleProvider.isAuthorized {
+                if let email = calendarManager.googleProvider.accountEmail {
+                    Label(email, systemImage: "person.crop.circle.fill").foregroundStyle(.secondary)
+                }
+                Button("Sign out") {
+                    calendarManager.googleProvider.signOut()
+                    googleAuthMessage = nil
+                }
+                .controlSize(.small)
+            } else {
+                Text("Sign in above to connect your Google account. Nothing to set up first.")
+                    .foregroundStyle(.secondary)
+                // Almost nobody needs this, so it stays folded. It's here for anyone
+                // whose organization requires the app to run under their own Google
+                // Cloud project.
+                DisclosureGroup("Use your own Google client ID") {
+                    VStack(alignment: .leading, spacing: 6) {
+                        TextField("1234567890-abc.apps.googleusercontent.com", text: $googleClientID)
+                            .textFieldStyle(.roundedBorder)
+                        if calendarManager.googleProvider.hasUnusableClientIDOverride {
+                            Text("That doesn't look like a Google client ID, so the one built into MeetingIntro is being used instead. A client ID ends in .apps.googleusercontent.com")
+                                .foregroundStyle(.orange)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        if let setup = URL(string: GoogleCalendarProvider.setupURL) {
+                            Link("Create one in the Google Cloud console", destination: setup)
+                        }
+                        Text("Choose **iOS** as the application type — a Web application client is rejected at sign-in. Bundle ID: com.oluyinka.MeetingIntro")
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.top, 4)
+                }
+            }
+            if let message = googleAuthMessage {
+                Text(message).foregroundStyle(message.hasPrefix("Signed in") ? .green : .orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func signInGoogle() async {
+        isSigningInGoogle = true
+        googleAuthMessage = nil
+        defer { isSigningInGoogle = false }
+        do {
+            _ = try await calendarManager.googleProvider.requestAccess()
+            googleAuthMessage = "Signed in."
+            await calendarManager.refreshEvents()
+        } catch {
+            googleAuthMessage = error.localizedDescription
         }
     }
 
@@ -2866,6 +3122,14 @@ enum SettingsSection: String, CaseIterable, Hashable {
     case diagnostics
     case guide
     case about
+
+    var isInThisBuild: Bool {
+        #if MAS
+        return self != .whatsNew && self != .sounds
+        #else
+        return true
+        #endif
+    }
 
     var title: String {
         switch self {

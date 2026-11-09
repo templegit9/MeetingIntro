@@ -149,9 +149,9 @@ struct MeetingDetailsPanel: View {
     }
 
     private func copyURL() {
-        guard let url = meeting.url else { return }
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(url.absoluteString, forType: .string)
+        // Goes through MeetingClipboard so this panel and the dropdown rows can't drift
+        // apart in what "copy the link" produces.
+        guard MeetingClipboard.copy(.link, of: meeting) else { return }
         didCopy = true
         Task {
             try? await Task.sleep(nanoseconds: 1_500_000_000)

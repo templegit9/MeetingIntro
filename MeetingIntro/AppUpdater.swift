@@ -23,7 +23,14 @@ final class AppUpdater: ObservableObject {
     /// We query the releases LIST (not /releases/latest) and pick the highest semver —
     /// /releases/latest lags behind on GitHub's CDN and depends on a "latest" pointer
     /// that can be wrong. per_page=30 comfortably covers our release cadence.
+    #if MAS
+    // Store builds never check: no GitHub address is compiled in.
+    private static let listURL = URL(fileURLWithPath: "/dev/null")
+    static let releasesPage = ""
+    #else
     private static let listURL = URL(string: "https://api.github.com/repos/templegit9/MeetingIntro/releases?per_page=30")!
+    static let releasesPage = "https://github.com/templegit9/MeetingIntro/releases/latest"
+    #endif
     private static let caskRef = "templegit9/tap/meetingintro"
 
     /// Ephemeral session = no persistent URL cache. GitHub sends `max-age=60`, so a
@@ -54,7 +61,20 @@ final class AppUpdater: ObservableObject {
     /// Start proactive checks: once now, then every 6 hours, plus on wake. Silent —
     /// background failures don't surface an error icon. Idempotent. No-op if the user
     /// disabled auto-checks.
+    /// True when this build updates itself. **False for the App Store build**: an App
+    /// Store app may not install software, and the sandbox couldn't spawn `brew` anyway.
+    /// Updates arrive through the store, so every surface that offers one is hidden
+    /// rather than left to fail at the moment someone presses it.
+    static var selfUpdateAvailable: Bool {
+        #if MAS
+        false
+        #else
+        true
+        #endif
+    }
+
     func startAutoChecks() {
+        guard Self.selfUpdateAvailable else { return }
         guard autoCheckEnabled, !autoChecksStarted else { return }
         autoChecksStarted = true
         Task { await checkSilently() }
@@ -78,11 +98,13 @@ final class AppUpdater: ObservableObject {
 
     /// Re-evaluate after the user toggles the preference: start or stop accordingly.
     func refreshAutoChecks() {
+        guard Self.selfUpdateAvailable else { return }
         if autoCheckEnabled { startAutoChecks() } else { stopAutoChecks() }
     }
 
     /// User-initiated check — shows the spinner and surfaces failures.
     func check() async {
+        guard Self.selfUpdateAvailable else { state = .idle; return }
         state = .checking
         await performCheck(silent: false)
     }
@@ -91,6 +113,7 @@ final class AppUpdater: ObservableObject {
     /// (so a flaky network doesn't flip a known result to an error). Won't interrupt an
     /// in-progress update.
     func checkSilently() async {
+        guard Self.selfUpdateAvailable else { return }
         if case .updating = state { return }
         await performCheck(silent: true)
     }
@@ -122,10 +145,12 @@ final class AppUpdater: ObservableObject {
 
     /// Run the Homebrew upgrade, then relaunch. Only valid from `.available`.
     func update() async {
-        guard case .available = state else { return }
+        guard Self.selfUpdateAvailable else { return }
+        guard case .available(let version) = state else { return }
         state = .updating
         guard let brew = Self.brewPath() else {
-            state = .failed("Homebrew wasn't found. Update manually in Terminal:\nbrew upgrade --cask meetingintro")
+            // No Homebrew at all — the download is the only route, so lead with it.
+            state = .failed("Homebrew isn't installed, so this copy can't update itself.\n\nDownload \(version) from:\n\(Self.releasesPage)")
             return
         }
         // `brew upgrade` auto-refreshes the tap first, so it sees the new cask version.
@@ -133,10 +158,62 @@ final class AppUpdater: ObservableObject {
         if result.ok {
             state = .updated
             Self.relaunch()
-        } else {
-            let tail = String(result.output.suffix(280)).trimmingCharacters(in: .whitespacesAndNewlines)
-            state = .failed("Update failed. Run this in Terminal:\nbrew upgrade --cask meetingintro\n\n\(tail)")
+            return
         }
+
+        let output = result.output
+        let tail = String(output.suffix(280)).trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // "not installed" means Homebrew has no record of this app, which is what you
+        // get when it was installed by unzipping a GitHub release rather than through
+        // the cask. **No brew command can fix that** — the old copy told the user to run
+        // `brew upgrade` anyway, which fails with the same error forever. Reported from a
+        // 2.20.6 install trying to reach 2.20.7.
+        let notAHomebrewInstall = output.localizedCaseInsensitiveContains("is not installed")
+            || output.localizedCaseInsensitiveContains("No available cask")
+            || output.localizedCaseInsensitiveContains("No installed keg")
+        if notAHomebrewInstall {
+            state = .failed("""
+                This copy wasn't installed with Homebrew, so it can't update itself.
+
+                Download \(version) directly:
+                \(Self.releasesPage)
+
+                Or switch to Homebrew so future updates are one click:
+                brew install --cask \(Self.caskRef)
+                """)
+            return
+        }
+
+        // Homebrew had to escalate to `sudo`, which happens when the copy in
+        // /Applications isn't writable by this user. We run brew through `zsh -lc` with
+        // **no TTY**, so sudo has nothing to prompt on, fails with "a terminal is
+        // required to read the password", and brew rolls back — the user sees
+        // "Purging files for version X" and a message about askpass helpers.
+        // **No in-app retry can fix this**: the password has to be typed somewhere that
+        // has a terminal. Reported 2026-09-17 from a genuine cask install of 2.20.7 that
+        // could not reach 2.21.0 — note this is a *different* failure from the
+        // not-a-Homebrew-install case above and matches none of its markers, which is
+        // why the generic message sent the user chasing the wrong problem.
+        let needsPassword = output.localizedCaseInsensitiveContains("terminal is required to read the password")
+            || output.localizedCaseInsensitiveContains("askpass")
+            || output.localizedCaseInsensitiveContains("sudo:")
+        if needsPassword {
+            state = .failed("""
+                This update needs your Mac password, and it can't be typed inside the app.
+
+                Run this once in Terminal:
+                brew upgrade --cask \(Self.caskRef)
+
+                It only asks because this copy of MeetingIntro isn't owned by your user                 account. The upgrade replaces it with one that is, so updates after this                 won't ask again.
+                """)
+            return
+        }
+
+        // Any other failure is a real brew problem. Name the FULL cask reference — the
+        // old message said `brew upgrade --cask meetingintro`, which fails for anyone
+        // who hasn't tapped templegit9/tap.
+        state = .failed("Update failed. Run this in Terminal:\nbrew upgrade --cask \(Self.caskRef)\n\n\(tail)")
     }
 
     // MARK: - Helpers

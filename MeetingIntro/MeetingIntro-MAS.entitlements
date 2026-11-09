@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Mandatory for the Mac App Store. Everything below exists because the sandbox
+         removes it by default, and each one is a capability the app already has in the
+         Developer ID build. -->
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+
+    <!-- Reading and writing calendars: the whole product. -->
+    <key>com.apple.security.personal-information.calendars</key>
+    <true/>
+
+    <!-- Outgoing only: Microsoft Graph, the GitHub releases API, AI endpoints, and a
+         local Ollama on 127.0.0.1. The app never listens. -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+
+    <!-- Folders the user picks in an NSOpenPanel (File Organizer, a custom recording
+         directory). -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+
+    <!-- REQUIRED for the security-scoped bookmarks those pickers create. Without it a
+         bookmark resolves but grants nothing after relaunch, and the File Organizer's
+         saved folders silently stop working. -->
+    <key>com.apple.security.files.bookmarks.app-scope</key>
+    <true/>
+
+    <!-- The microphone track of a meeting recording. -->
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
+
+    <!-- NOT declared: com.apple.security.assets.movies.read-write.
+         App Review rejected 2.20.6 under 2.4.5(i) for an entitlement with no matching
+         functionality. It was never reachable: under the sandbox the recording folder is
+         always one the user picked in an NSOpenPanel, which is covered by
+         files.user-selected.read-write above. Do not add it back. -->
+</dict>
+</plist>

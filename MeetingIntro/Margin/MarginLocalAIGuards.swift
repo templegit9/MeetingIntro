@@ -1,3 +1,4 @@
+#if !MAS
 import Foundation
 
 /// Headless setup checks use isolated preferences and never approve a download.
@@ -96,3 +97,4 @@ import Foundation
         return checks.allSatisfy(\.1)
     }
 }
+#endif

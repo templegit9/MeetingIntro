@@ -214,7 +214,6 @@ final class MarginAgent: ObservableObject {
             RSVPTool(calendarManager: calendarManager),
             MoveEventTool(calendarManager: calendarManager),
             CancelEventTool(calendarManager: calendarManager),
-            WebResearchTool(config: marginConfig, progress: { [weak self] in self?.beginActivity($0) }),
             ListJobsTool(jobs: jobs, organizer: assistantConfig),
             PauseJobTool(jobs: jobs, organizer: assistantConfig),
             ResumeJobTool(jobs: jobs, manager: calendarManager, defaultMinutes: quickAddConfig.defaultDurationMinutes),
@@ -224,6 +223,10 @@ final class MarginAgent: ObservableObject {
             RecordingReadTool(operation: .search, recordingConfig: recordingConfig, pipeline: notesPipeline, roots: marginRoots),
             RecordingReadTool(operation: .notes, recordingConfig: recordingConfig, pipeline: notesPipeline, roots: marginRoots)
         ])
+        // The App Store build reaches no search service; research is Homebrew only.
+        #if !MAS
+        tools.append(WebResearchTool(config: marginConfig, progress: { [weak self] in self?.beginActivity($0) }))
+        #endif
     }
 
     private(set) var lastDecisionText: String?
@@ -823,12 +826,20 @@ final class MarginAgent: ObservableObject {
         return calls.count == 1 ? calls.first.map { Self.bindPublicQuery($0, prompt: prompt) } : nil
     }
 
+    private static var researchInstructions: String {
+        #if MAS
+        ""
+        #else
+        WebResearchTool.briefingInstructions
+        #endif
+    }
+
     /// Developer-only export: exact production prompt and registry, without provider actions.
     func comparisonSnapshot() -> [String: Any] {
         let fixtures = MarginFixtures.cases + MarginFixtures.contextualCases
         return ["system": systemPrompt, "tools": availableTools.map(\.wireFormat),
                 "learning_system": MarginConfig.learningSystemPrompt, "learning_schema": MarginConfig.learningSchema,
-                "research_system": WebResearchTool.briefingInstructions,
+                "research_system": Self.researchInstructions,
                 "cases": fixtures.enumerated().map { index, fixture -> [String: Any] in
                     var row: [String: Any] = ["id": "routing-\(index + 1)", "prompt": fixture.utterance,
                         "category": fixture.category, "context": fixture.context, "note": fixture.note,

@@ -121,6 +121,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 enum MeetingIntroEntry {
     @MainActor static func main() async {
         let environment = ProcessInfo.processInfo.environment
+        // Test entry points are developer tooling; the store binary carries none of them.
+        #if !MAS
         if let manifestPath = environment["MARGIN_MANAGED_CANDIDATE_TEST"],
            let rootPath = environment["MARGIN_MANAGED_TEST_ROOT"],
            let reportPath = environment["MARGIN_MANAGED_TEST_REPORT"] {
@@ -171,6 +173,7 @@ enum MeetingIntroEntry {
             defaults.removePersistentDomain(forName: suite)
             exit(files && calendar && behavior && roadmap && routing ? 0 : 1)
         }
+        #endif
         if let bundleID = Bundle.main.bundleIdentifier,
            let existing = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
             .first(where: { $0.processIdentifier != ProcessInfo.processInfo.processIdentifier }) {
@@ -205,6 +208,7 @@ struct MeetingIntroApp: App {
     @StateObject private var taskConfig: TaskConfig
     @StateObject private var taskManager: TaskManager
     @StateObject private var taskReminderCoordinator = TaskReminderCoordinator()
+    @StateObject private var invitations = InvitationCenter()
     @StateObject private var graphVerifierConfig = GraphVerifierConfig()
     @StateObject private var graphVerifier = GraphVerifier()
     @StateObject private var cameraDetector = CameraUseDetector()
@@ -226,6 +230,9 @@ struct MeetingIntroApp: App {
     @StateObject private var mirrorConfig = MirrorConfigManager()
     @StateObject private var mirrorEngine = CalendarMirrorEngine()
     @StateObject private var menuBarCountdown = MenuBarCountdownModel()
+    /// Meeting state in its own status item (#26/#27/#30). Off by default; see
+    /// MeetingStatusItem for why this is a separate item and not a badge on the app icon.
+    @StateObject private var meetingStatusItem = MeetingStatusItem()
     @StateObject private var lifecycleManager = AppLifecycleManager()
     @StateObject private var updater = AppUpdater()
 
@@ -291,6 +298,7 @@ struct MeetingIntroApp: App {
             taskManager: taskManager,
             taskConfig: taskConfig,
             taskReminderCoordinator: taskReminderCoordinator,
+            invitations: invitations,
             assistantConfig: assistantConfig,
             margin: margin,
             marginConfig: marginConfig,
@@ -312,13 +320,15 @@ struct MeetingIntroApp: App {
             diagnosticLog: diagnosticLog,
             mirrorConfig: mirrorConfig,
             mirrorEngine: mirrorEngine,
-            menuBarCountdown: menuBarCountdown
+            menuBarCountdown: menuBarCountdown,
+            meetingStatusItem: meetingStatusItem
         )
     }
 
     /// The always-present status-bar label. observe() (the single wiring point) runs on
     /// its onAppear so it fires in both menu and popover styles. Red while recording.
     private var isUpdateAvailable: Bool {
+        guard AppUpdater.selfUpdateAvailable else { return false }
         if case .available = updater.state { return true }
         return false
     }
@@ -370,7 +380,8 @@ struct MeetingIntroApp: App {
                 contextMonitor: contextMonitor,
                 quickAddService: quickAddService,
                 quickAddConfig: quickAddConfig,
-                taskManager: taskManager
+                taskManager: taskManager,
+                invitations: invitations
             )
         } else {
             CompactMenuView(
@@ -382,7 +393,8 @@ struct MeetingIntroApp: App {
                 contextMonitor: contextMonitor,
                 quickAddService: quickAddService,
                 quickAddConfig: quickAddConfig,
-                taskManager: taskManager
+                taskManager: taskManager,
+                invitations: invitations
             )
         }
     }
@@ -430,7 +442,8 @@ struct MeetingIntroApp: App {
                 diagnosticLog: diagnosticLog,
                 mirrorConfig: mirrorConfig,
                 mirrorEngine: mirrorEngine,
-                updater: updater
+                updater: updater,
+                meetingStatusItem: meetingStatusItem
             )
         }
 
@@ -526,6 +539,7 @@ final class AppLifecycleManager: ObservableObject {
         taskManager: TaskManager,
         taskConfig: TaskConfig,
         taskReminderCoordinator: TaskReminderCoordinator,
+        invitations: InvitationCenter,
         assistantConfig: AssistantConfig,
         margin: MarginAgent,
         marginConfig: MarginConfig,
@@ -547,7 +561,8 @@ final class AppLifecycleManager: ObservableObject {
         diagnosticLog: DiagnosticLog,
         mirrorConfig: MirrorConfigManager,
         mirrorEngine: CalendarMirrorEngine,
-        menuBarCountdown: MenuBarCountdownModel
+        menuBarCountdown: MenuBarCountdownModel,
+        meetingStatusItem: MeetingStatusItem
     ) {
         guard !hasObserved else { return }
         hasObserved = true
@@ -555,6 +570,7 @@ final class AppLifecycleManager: ObservableObject {
         // Wire the config manager into CalendarManager
         calendarManager.countdownConfigs = countdownConfig
         menuBarCountdown.configure(calendarManager: calendarManager, countdownConfig: countdownConfig)
+        meetingStatusItem.attach(calendarManager: calendarManager, diagnosticLog: diagnosticLog)
         calendarManager.diagnosticLog = diagnosticLog
         calendarManager.eventKitProvider.diagnosticLog = diagnosticLog
         calendarManager.graphProvider.diagnosticLog = diagnosticLog
@@ -602,6 +618,34 @@ final class AppLifecycleManager: ObservableObject {
         marginNudges.attach(config: marginConfig, calendarManager: calendarManager,
                             taskManager: taskManager, log: diagnosticLog)
 
+        // Showcase hook: put the countdown overlay on screen with a realistic meeting so
+        // store screenshots can be captured without waiting for a real one, and without
+        // anybody clicking through Settings. Same shape as MEETINGINTRO_SELFTEST.
+        if ProcessInfo.processInfo.environment["MEETINGINTRO_SHOWCASE"] != nil {
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 2_500_000_000)
+                let meeting = MeetingEvent(
+                    id: "showcase",
+                    title: "Quarterly Roadmap Review",
+                    startDate: Date().addingTimeInterval(125),
+                    endDate: Date().addingTimeInterval(125 + 2700),
+                    calendarName: "Work",
+                    location: "Zoom",
+                    isAllDay: false,
+                    url: URL(string: "https://zoom.us/j/0000000000"),
+                    notes: "Walk through the Q3 roadmap, then open the floor for blockers.",
+                    attendeeNames: ["Alice Wong", "Ben Patel", "Chiamaka Eze", "Diego Ortiz",
+                                    "Emma Schultz", "Fatima Bello"],
+                    attendeeCount: 6,
+                    organizerName: "Alice Wong",
+                    isCancelled: false,
+                    myResponse: .accepted,
+                    responseCounts: ResponseCounts(accepted: 4, declined: 0, tentative: 1, noResponse: 1)
+                )
+                overlayController.show(for: meeting)
+            }
+        }
+
         // File Organizer (Issue #17): wire the organizer to its config + log.
         fileOrganizer.marginRoots = marginRoots
         fileOrganizer.attach(config: assistantConfig)
@@ -628,6 +672,12 @@ final class AppLifecycleManager: ObservableObject {
                                  contextMonitor: contextMonitor,
                                  recordingController: recordingController,
                                  diagnosticLog: diagnosticLog)
+        // Invitations (#33). Owns the answering of invitations and, crucially, the
+        // visibility of a failed one — see InvitationCenter for why that had to exist
+        // before any of the UI could.
+        invitations.attach(calendarManager: calendarManager)
+        invitations.diagnosticLog = diagnosticLog
+
         taskReminderCoordinator.attach(taskManager: taskManager,
                                        notificationManager: notificationManager,
                                        voiceReminder: voiceReminder,

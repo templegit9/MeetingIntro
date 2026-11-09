@@ -6,6 +6,7 @@ struct PageSource: Identifiable {
     let url: URL
 }
 
+#if !MAS
 /// Brave is the only outbound search destination. No page script, cookie or returned instruction is executed.
 enum BraveSearchClient {
     struct Result: Equatable { let title: String; let url: URL; let snippet: String }
@@ -100,3 +101,4 @@ struct WebResearchTool: AgentTool {
         agentReadable: true, run: { _ in "Research results read." })
     }
 }
+#endif

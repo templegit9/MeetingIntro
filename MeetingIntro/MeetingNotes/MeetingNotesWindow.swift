@@ -58,7 +58,11 @@ struct MeetingNotesWindow: View {
     }
 
     private func refresh() {
-        documents = RecordingDocument.scan(directory: recordingConfig.resolveSaveDirectory())
+        guard let dir = recordingConfig.resolveSaveDirectory() else {
+            documents = []
+            return
+        }
+        documents = RecordingDocument.scan(directory: dir)
         if selectedID == nil { selectedID = documents.first?.id }
     }
 
@@ -152,7 +156,7 @@ struct MeetingNotesWindow: View {
                 .help("Copy the current tab's markdown")
 
                 Button {
-                    NSWorkspace.shared.activateFileViewerSelecting([doc.audioURL])
+                    NSWorkspace.shared.activateFileViewerSelecting([doc.hasAudio ? doc.audioURL : doc.transcriptURL])
                 } label: {
                     Label("Show in Finder", systemImage: "folder")
                 }
