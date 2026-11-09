@@ -1,0 +1,34 @@
+"""Render separately reviewed findings without changing frozen screening results."""
+import pathlib,json,hashlib,html,collections,statistics,datetime
+from zoneinfo import ZoneInfo
+p=pathlib.Path(__file__).resolve().parents[2]/'docs/evals/margin-vision/full-empero-20260913'
+d=json.loads((p/'results.json').read_text()); reviews=json.loads((p/'semantic-review.json').read_text()); rows=d['results'];e=html.escape
+lookup={(x['case_id'],x['response_sha256']):x for x in reviews['reviews']}
+reviewed=[lookup.get((r['case_id'],hashlib.sha256(r.get('raw_response','').encode()).hexdigest())) for r in rows]
+counts=collections.Counter(x['classification'] if x else 'review_pending' for x in reviewed)
+formats=collections.Counter(x['diagnostics']['format'] for x in rows)
+eligible=[x for x in rows if x['diagnostics'].get('facts_eligible')]
+summary={'generated_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'run_complete':d['complete'],'responses':len(rows),'planned':114,'strict':d['counts'],'formats':dict(formats),'exact_facts':sum(x['diagnostics']['facts_exact'] for x in eligible),'fact_eligible':len(eligible),'semantic_classifications':dict(counts),'median_seconds':statistics.median(x['latency_seconds'] for x in rows),'p95_seconds':sorted(x['latency_seconds'] for x in rows)[max(0,__import__('math').ceil(len(rows)*.95)-1)],'review_pending':sum(x is None for x in reviewed)}
+variants=collections.defaultdict(set)
+for row in rows: variants[row['case_id']].add(hashlib.sha256(row.get('raw_response','').encode()).hexdigest())
+summary['unique_cases']=len(variants)
+summary['cases_with_output_variation']=sum(len(v)>1 for v in variants.values())
+summary['budget_exhausted']=sum(r.get('budget_exhausted',False) for r in rows)
+summary['pixel_tensor_responses']=sum(r.get('image_tensor_present',False) for r in rows)
+summary['peak_torch_allocated_gib']=max(r['peak_allocated_bytes'] for r in rows)/2**30
+(p/'assessment.json').write_text(json.dumps(summary,indent=2))
+stamp=datetime.datetime.fromisoformat(d['updated_at']).astimezone(ZoneInfo('America/Los_Angeles')).strftime('%b %d, %Y at %I:%M:%S %p %Z')
+b='<h1>Can Empero power Margin’s image workflow?</h1><p class="lead">Promising image reader. Not yet a reliable task agent.</p><p>'+('Completed' if d['complete'] else 'Running')+' · '+str(len(rows))+'/114 responses · Updated '+e(stamp)+'</p><nav><a href="index.html">Live run and raw responses</a> · <a href="semantic-review.json">Review notes</a> · <a href="assessment.json">Summary data</a></nav>'
+b+='<h2>What the numbers mean</h2><table><tr><th>Measure</th><th>Result</th><th>Interpretation</th></tr>'
+for title,value,meaning in [('Strict contract passes',str(d['counts']['screen_pass_review_pending'])+'/'+str(len(rows)),'Requires plain JSON and exact annotated fields. This is not an OCR accuracy score.'),('Markdown-wrapped JSON',str(formats['markdown_fenced_json']),'The parser rejects this; most responses are readable after removing a fence.'),('Exact image-fact fields',str(summary['exact_facts'])+'/'+str(len(eligible)),'Secondary diagnostic. Wording, number types and list order can fail exact matching. Empty rubrics excluded.'),('Unreviewed responses',str(summary['review_pending']),'Reviewed notes match the exact response hash; new variants need inspection.'),('Median / p95',f"{summary['median_seconds']:.1f}s / {summary['p95_seconds']:.1f}s",'RTX 5070 Ti BF16 runtime. Not a 16 GB Mac benchmark.')]:b+='<tr><td>'+e(title)+'</td><td>'+e(value)+'</td><td>'+e(meaning)+'</td></tr>'
+b+='</table><h2>What already works</h2><p>In the reviewed first pass, the model reads receipt amounts, invoice dates, directed diagram edges, checklist state and all eight full holiday dates, including all-day status. The holiday workflow still fails planning: it invents a folder destination for calendar events.</p><h2>What must improve before shipping</h2><ol><li><b>Intent and honest outcomes:</b> answer the latest request; never claim a search or task creation happened without a tool result.</li><li><b>Action planning:</b> select the requested operation, preserve item filters, and keep calendar arguments separate from file destinations.</li><li><b>Authority and uncertainty:</b> clarify essential ambiguous dates; treat image instructions and approval claims as untrusted source content.</li><li><b>Output contract:</b> produce complete, typed tool arguments without Markdown wrappers. Measure native tool calls separately.</li></ol>'
+b+='<h2>Fix the evaluation before using failures as training labels</h2><p>Keep this run frozen. For a versioned follow-up, allow equivalent arrow spacing and subject wording; distinguish invoice due dates from reminder dates; do not infer Downloads when the user supplied no destination. Inline notes or CSV can satisfy ambiguous “prepare” requests. These are rubric issues, not reasons to teach unnecessary writes.</p><h2>Reviewed findings by category</h2>'
+for category in sorted({r['category'] for r in rows}):
+ b+='<h3>'+e(category)+'</h3><table><tr><th>Case</th><th>Finding</th><th>Assessment</th></tr>'
+ for review in reviews['reviews']:
+  matches=[r for r in rows if r['case_id']==review['case_id']]
+  if matches and matches[0]['category']==category:b+='<tr><td>'+review['case_id']+'</td><td>'+e(review['classification'].replace('_',' '))+'</td><td>'+e(review['review_note'])+'</td></tr>'
+ b+='</table>'
+b+='<h2>Training direction</h2><p>Start with a mixed image/text language-layer LoRA on the full vision-capable Empero checkpoint. Preserve and initially freeze vision weights. Build new, independently labeled document families; do not train on these eval PNGs. Reuse the actual Margin tool schemas and teach preview, uncertainty and truthful outcomes. First validate a multimodal save/reload/export on real pixels, then run a bounded pilot and both image and text regressions.</p><p><b>Evidence limits:</b> 38 synthetic cases, three deterministic repeats, not 114 independent images. This run evaluates normalized proposals, not native tool execution. Semantic review is assistant inspection, not independent human sign-off. No image training or deployment has happened.</p>'
+(p/'assessment.html').write_text('<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Margin image eval assessment</title><style>body{max-width:1080px;margin:40px auto;padding:0 24px 60px;background:#f7f5ed;color:#243c2d;font:16px/1.65 system-ui}h1,h2,h3{font-family:Georgia}h1{font-size:36px}.lead{font-size:23px}h2{margin-top:40px;border-top:2px solid #52775b;padding-top:18px}table{width:100%;border-collapse:collapse}td,th{padding:12px;vertical-align:top;text-align:left;border-bottom:1px solid #ccd0c1}a{color:#246844}td:first-child{white-space:nowrap}nav{padding:15px;background:#e5ebdf}</style>'+b+'</html>')
+print(json.dumps(summary))
