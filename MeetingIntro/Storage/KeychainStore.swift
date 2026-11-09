@@ -16,10 +16,32 @@ enum KeychainStore {
 
     static let service = "com.oluyinka.MeetingIntro"
 
+    // Every SecItemCopyMatching on the file based keychain leaves a page securityd sent
+    // mapped in this process (Apple's leak, measured: 6 pages per 20 reads). The poll
+    // re-read the Graph token several times every 30 s, which grew the footprint to
+    // 1.4 GB after 73 h. This app is the only writer of its items, so values are read
+    // once and kept here; set and delete write through.
+    private static var cache: [String: String?] = [:]
+    private static let lock = NSLock()
+
+    private static func cached(_ account: String) -> String?? {
+        lock.lock(); defer { lock.unlock() }
+        return cache[account]
+    }
+
+    private static func remember(_ value: String?, for account: String) {
+        lock.lock(); cache[account] = .some(value); lock.unlock()
+    }
+
+    private static func forget(_ account: String) {
+        lock.lock(); cache[account] = nil; lock.unlock()
+    }
+
     /// Set the value for `account`. Replaces any existing item.
     @discardableResult
     static func set(_ value: String, for account: String) -> Bool {
         debugMirrorSet(value, account)
+        if case .some(.some(let current)) = cached(account), current == value { return true }
         let data = Data(value.utf8)
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -28,17 +50,20 @@ enum KeychainStore {
         ]
         let updateAttributes: [String: Any] = [kSecValueData as String: data]
         let updateStatus = SecItemUpdate(query as CFDictionary, updateAttributes as CFDictionary)
-        if updateStatus == errSecSuccess { return true }
-        guard updateStatus == errSecItemNotFound else { return false }
+        if updateStatus == errSecSuccess { remember(value, for: account); return true }
+        guard updateStatus == errSecItemNotFound else { forget(account); return false }
 
         var addQuery = query
         addQuery[kSecValueData as String] = data
         addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
-        return SecItemAdd(addQuery as CFDictionary, nil) == errSecSuccess
+        let added = SecItemAdd(addQuery as CFDictionary, nil) == errSecSuccess
+        if added { remember(value, for: account) } else { forget(account) }
+        return added
     }
 
     /// Fetch the value for `account`, or nil if not present.
     static func get(_ account: String) -> String? {
+        if let hit = cached(account) { return hit ?? debugMirrorGet(account) }
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -49,8 +74,12 @@ enum KeychainStore {
         var item: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &item)
         if status == errSecSuccess, let data = item as? Data, let s = String(data: data, encoding: .utf8) {
+            remember(s, for: account)
             return s
         }
+        // Only a definite "not there" is cached. A locked keychain or a denied read can
+        // succeed later, so those are asked again next time.
+        if status == errSecItemNotFound { remember(nil, for: account) }
         return debugMirrorGet(account)
     }
 
@@ -64,7 +93,9 @@ enum KeychainStore {
             kSecAttrAccount as String: account,
         ]
         let status = SecItemDelete(query as CFDictionary)
-        return status == errSecSuccess || status == errSecItemNotFound
+        let deleted = status == errSecSuccess || status == errSecItemNotFound
+        if deleted { remember(nil, for: account) } else { forget(account) }
+        return deleted
     }
 
     // MARK: - Debug persistence fallback
