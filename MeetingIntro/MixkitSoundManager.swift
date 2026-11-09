@@ -7,9 +7,11 @@ struct MixkitSound: Identifiable, Codable {
     let name: String
     let category: String
 
+    #if !MAS
     var downloadURL: URL {
         URL(string: "https://assets.mixkit.co/active_storage/sfx/\(id)/\(id).wav")!
     }
+    #endif
 
     var localFileName: String {
         "\(id).wav"
@@ -58,6 +60,7 @@ final class MixkitSoundManager: ObservableObject {
 
     /// Download a sound from Mixkit.
     func download(_ sound: MixkitSound) {
+        #if !MAS
         guard !downloadedSoundIDs.contains(sound.id) else { return }
         downloadingIDs.insert(sound.id)
 
@@ -79,9 +82,9 @@ final class MixkitSoundManager: ObservableObject {
                 print("Failed to download sound \(sound.id): \(error)")
             }
         }
+        #endif
     }
 
-    /// Delete a downloaded sound.
     func delete(_ sound: MixkitSound) {
         let path = soundsDirectory.appendingPathComponent(sound.localFileName)
         try? FileManager.default.removeItem(at: path)

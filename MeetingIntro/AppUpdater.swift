@@ -23,9 +23,15 @@ final class AppUpdater: ObservableObject {
     /// We query the releases LIST (not /releases/latest) and pick the highest semver —
     /// /releases/latest lags behind on GitHub's CDN and depends on a "latest" pointer
     /// that can be wrong. per_page=30 comfortably covers our release cadence.
+    #if MAS
+    // Store builds never check: no GitHub address is compiled in.
+    private static let listURL = URL(fileURLWithPath: "/dev/null")
+    static let releasesPage = ""
+    #else
     private static let listURL = URL(string: "https://api.github.com/repos/templegit9/MeetingIntro/releases?per_page=30")!
-    private static let caskRef = "templegit9/tap/meetingintro"
     static let releasesPage = "https://github.com/templegit9/MeetingIntro/releases/latest"
+    #endif
+    private static let caskRef = "templegit9/tap/meetingintro"
 
     /// Ephemeral session = no persistent URL cache. GitHub sends `max-age=60`, so a
     /// shared/cached session can serve a stale "latest" and falsely report up-to-date

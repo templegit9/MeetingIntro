@@ -176,7 +176,7 @@ struct SettingsView: View {
             List(selection: $selectedSection) {
                 ForEach(SettingsGroup.allCases, id: \.self) { group in
                     Section(group.title) {
-                        ForEach(SettingsSection.allCases.filter { $0.group == group && ($0 != .diagnostics || diagnosticsUnlocked) }, id: \.self) { section in
+                        ForEach(SettingsSection.allCases.filter { $0.group == group && $0.isInThisBuild && ($0 != .diagnostics || diagnosticsUnlocked) }, id: \.self) { section in
                             Label(section.title, systemImage: section.systemImage)
                                 .tag(section)
                         }
@@ -1617,6 +1617,7 @@ struct SettingsView: View {
                 SettingsSectionHeader("Quick Add & Meeting Notes", info: "The AI model for the natural-language event parser (Quick Add) and AI meeting-notes generation. A local provider (Ollama) needs no key; without one, Quick Add still works on-device with the built-in date detector.")
             }
 
+            #if !MAS
             Section {
                 LabeledContent("Model", value: "whisper-large-v3-turbo")
                 SecureField("gsk_…", text: $notesConfig.groqKey).textFieldStyle(.roundedBorder)
@@ -1631,6 +1632,7 @@ struct SettingsView: View {
             } header: {
                 SettingsSectionHeader("Transcription (Groq)", info: "API key for the Groq cloud transcription engine used by meeting recording → notes (model is fixed). Not needed if you transcribe on-device with WhisperKit — choose the engine in the Recording tab.")
             }
+            #endif
         }
         .formStyle(.grouped)
         .padding()
@@ -1656,7 +1658,14 @@ struct SettingsView: View {
         }
     }
 
+    #if MAS
+    static let onDeviceTranscriptionNote = "Audio never leaves this Mac. Transcription runs on the Neural Engine, roughly 3 to 5 minutes per hour of audio."
+    #else
+    static let onDeviceTranscriptionNote = "Audio never leaves this Mac. The model downloads once on first use and runs on the Neural Engine — roughly 3–5 minutes per hour of audio."
+    #endif
+
     /// Validates the Groq key against the models endpoint (transcription itself needs audio).
+#if !MAS
     private func testTranscription() {
         transcriptionTesting = true; transcriptionTest = nil
         let key = notesConfig.groqKey
@@ -1674,6 +1683,7 @@ struct SettingsView: View {
             transcriptionTesting = false
         }
     }
+#endif
 
     // MARK: - Plugins Tab (Issue #17)
 
@@ -1888,7 +1898,7 @@ struct SettingsView: View {
                     }
                 }
                 Text(notesConfig.engine == .whisperKit
-                     ? "Audio never leaves this Mac. The model downloads once on first use and runs on the Neural Engine — roughly 3–5 minutes per hour of audio."
+                     ? Self.onDeviceTranscriptionNote
                      : "Audio is uploaded to Groq for transcription — roughly 30 seconds per hour of audio. Free tier available.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -1921,11 +1931,13 @@ struct SettingsView: View {
                             .tint(.red)
                         }
                         Spacer()
+                        #if !MAS
                         Button("Get a key ↗") {
                             if let url = URL(string: "https://console.groq.com/keys") { NSWorkspace.shared.open(url) }
                         }
                         .buttonStyle(.link)
                         .font(.caption)
+                        #endif
                     }
                     if !notesConfig.groqKey.isEmpty {
                         Label("Key saved in Keychain", systemImage: "checkmark.circle.fill")
@@ -2660,9 +2672,11 @@ struct SettingsView: View {
                 // Form front door (no GitHub account needed; it auto-bridges to Issues —
                 // see docs/feedback-form-bridge.md).
                 HStack(spacing: 20) {
+                    #if !MAS
                     aboutLink("GitHub", "chevron.left.forwardslash.chevron.right", "https://github.com/templegit9/MeetingIntro")
                     aboutLink("Releases", "shippingbox", "https://github.com/templegit9/MeetingIntro/releases")
                     aboutLink("Feedback", "exclamationmark.bubble", "https://forms.gle/9ueTH3vZq71TpDD86")
+                    #endif
                 }
                 .padding(.top, 2)
             }
@@ -2803,7 +2817,9 @@ struct SettingsView: View {
                                 .foregroundStyle(.orange)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-                        Link("Create one in the Google Cloud console", destination: URL(string: GoogleCalendarProvider.setupURL)!)
+                        if let setup = URL(string: GoogleCalendarProvider.setupURL) {
+                            Link("Create one in the Google Cloud console", destination: setup)
+                        }
                         Text("Choose **iOS** as the application type — a Web application client is rejected at sign-in. Bundle ID: com.oluyinka.MeetingIntro")
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -3065,6 +3081,14 @@ enum SettingsSection: String, CaseIterable, Hashable {
     case diagnostics
     case guide
     case about
+
+    var isInThisBuild: Bool {
+        #if MAS
+        return self != .whatsNew && self != .sounds
+        #else
+        return true
+        #endif
+    }
 
     var title: String {
         switch self {

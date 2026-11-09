@@ -1,3 +1,4 @@
+#if !MAS
 import Foundation
 
 /// Google Calendar via the REST API v3.
@@ -527,3 +528,24 @@ struct GoogleFreeBusyCalendar: Decodable {
 }
 struct GoogleFreeBusyInterval: Decodable { let start: String; let end: String }
 struct GoogleFreeBusyError: Decodable { let domain: String?; let reason: String? }
+#else
+import Foundation
+
+// The App Store build carries no Google endpoints at all; this stub keeps the call
+// sites compiling while `CalendarProviderType.allCases` hides the source.
+@MainActor
+final class GoogleCalendarProvider: ObservableObject, CalendarProvider {
+    static let setupURL = ""
+    var onDiagnostic: ((String) -> Void)?
+    var accountEmail: String? { nil }
+    var hasUnusableClientIDOverride: Bool { false }
+    var providerType: CalendarProviderType { .googleCalendar }
+    var isAuthorized: Bool { false }
+    var supportsResponding: Bool { false }
+    func requestAccess() async throws -> Bool { throw CalendarProviderError.notSupported }
+    func signOut() {}
+    func availableCalendars() async throws -> [CalendarInfo] { [] }
+    func fetchUpcomingEvents(within interval: TimeInterval) async throws -> [MeetingEvent] { [] }
+    func respond(to eventID: String, status: ResponseStatus) async throws { throw CalendarProviderError.notSupported }
+}
+#endif

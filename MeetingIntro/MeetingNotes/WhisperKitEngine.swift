@@ -53,10 +53,21 @@ final class WhisperKitEngine: TranscriptionEngine {
         }
         cacheLock.unlock()
 
-        await progress("Loading model \(model) (downloads on first use)…")
         let kit: WhisperKit
+        #if MAS
+        // The App Store build never downloads: the model must already be on this Mac.
+        let folder = localModelFolder(for: model)
+        guard FileManager.default.fileExists(atPath: folder.path) else {
+            throw TranscriptionError.engineFailure("The speech model \"\(model)\" isn't installed on this Mac yet.")
+        }
+        await progress("Loading model \(model)…")
+        let config = WhisperKitConfig(model: model, modelFolder: folder.path, tokenizerFolder: folder, download: false)
+        #else
+        await progress("Loading model \(model) (downloads on first use)…")
+        let config = WhisperKitConfig(model: model)
+        #endif
         do {
-            kit = try await WhisperKit(WhisperKitConfig(model: model))
+            kit = try await WhisperKit(config)
         } catch {
             throw TranscriptionError.engineFailure(
                 "Couldn't load WhisperKit model \"\(model)\": \(error.localizedDescription). Check the model name in Settings → Recording, or pick a smaller model."
@@ -66,5 +77,10 @@ final class WhisperKitEngine: TranscriptionEngine {
         cached = (model, kit)
         cacheLock.unlock()
         return kit
+    }
+
+    static func localModelFolder(for model: String) -> URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("MeetingIntro/SpeechModels/openai_whisper-\(model)", isDirectory: true)
     }
 }

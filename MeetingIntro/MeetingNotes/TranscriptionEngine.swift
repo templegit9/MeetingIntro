@@ -37,6 +37,7 @@ enum TranscriptionError: LocalizedError {
     }
 }
 
+#if !MAS
 // MARK: - Groq (online)
 
 /// Whisper-large-v3-turbo via Groq's OpenAI-compatible audio endpoint.
@@ -95,3 +96,4 @@ struct GroqWhisperEngine: TranscriptionEngine {
         }
     }
 }
+#endif

@@ -68,6 +68,7 @@
 		4E41D3ECBF56651567F23DE8 /* CalendarManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A99A9D2EE9624DA582CD8D5 /* CalendarManager.swift */; };
 		4E6A5A5F90A070BF4C8B858B /* DictionaryWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3B08B967919790FF813AD95 /* DictionaryWindow.swift */; };
 		4FAA179DD289F0BA7A5C83E8 /* ConferenceLinkExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28D229B727F2C87F6712FCC4 /* ConferenceLinkExtractor.swift */; };
+		51A4A4B9D3FD5B125CD65A1A /* EgressPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65ECD0A7C7D7FCBC6E2B1D33 /* EgressPolicy.swift */; };
 		52D01A3E12FEC5E9CD7E014D /* DirectoryWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46285F9A0A9CF6C655F10FE5 /* DirectoryWatcher.swift */; };
 		52E3A860EC8A1BA2804CBF85 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5673A02C0FAC799726EA0BCF /* Assets.xcassets */; };
 		53B3C2A5DB5E2DDB2292150A /* PluginGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DA13D3684D8A428FE7348A9 /* PluginGrid.swift */; };
@@ -156,6 +157,7 @@
 		BC3209D8C8CC3570A12EA998 /* MeetingHoverCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F613B171FEEAEE9AF448698 /* MeetingHoverCard.swift */; };
 		BC72815E4D4994DF17BC52E0 /* ScreenCaptureDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0884058017A627B40452B5E /* ScreenCaptureDetector.swift */; };
 		C02348FCACD90D6B40D0A6EA /* PopoverRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B13DD9777C3BA467B874853 /* PopoverRootView.swift */; };
+		C0C7B8983146C17D177A8955 /* EgressPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65ECD0A7C7D7FCBC6E2B1D33 /* EgressPolicy.swift */; };
 		C13F7B2B4C696639B999205C /* CameraUseDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CAC3CAF14343B9EBCFA50C /* CameraUseDetector.swift */; };
 		C1E8129140CC40187BF1FB15 /* TickerLeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC444235069286A1DD2FEA6 /* TickerLeader.swift */; };
 		C46798CEEC21E0BE8FB3F5C5 /* FocusModeDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B8186D8004986233B28EE7F /* FocusModeDetector.swift */; };
@@ -241,6 +243,7 @@
 		5D459BC4E36C04094F795A19 /* MeetingIntro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MeetingIntro.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5F613B171FEEAEE9AF448698 /* MeetingHoverCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingHoverCard.swift; sourceTree = "<group>"; };
 		65AA4DF0A8F95DD6C9C2EBE4 /* CompactMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactMenuView.swift; sourceTree = "<group>"; };
+		65ECD0A7C7D7FCBC6E2B1D33 /* EgressPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EgressPolicy.swift; sourceTree = "<group>"; };
 		675F9C5FC04AEF4EF60B3806 /* TemplateEditSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateEditSheet.swift; sourceTree = "<group>"; };
 		67C9C4B04514972B0139B4A6 /* MeetingRecordingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingRecordingCoordinator.swift; sourceTree = "<group>"; };
 		68E04A0A0326198310A91568 /* MeetingContextMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingContextMonitor.swift; sourceTree = "<group>"; };
@@ -478,6 +481,7 @@
 				28D229B727F2C87F6712FCC4 /* ConferenceLinkExtractor.swift */,
 				2BA29FA390A4A1D580C895A8 /* CountdownConfig.swift */,
 				B4D81EBB57F5E6FDD478BC43 /* CountdownOverlayView.swift */,
+				65ECD0A7C7D7FCBC6E2B1D33 /* EgressPolicy.swift */,
 				1B73976360782F9155FDD238 /* EventKitProvider.swift */,
 				0FAF4345E309F9DA8D20C726 /* ExpandedCalendarView.swift */,
 				8C2776DA3D3177B60D9C80E8 /* GoogleCalendarAuth.swift */,
@@ -671,6 +675,7 @@
 				13DB22F7D352761787331EE1 /* DictionaryService.swift in Sources */,
 				4E6A5A5F90A070BF4C8B858B /* DictionaryWindow.swift in Sources */,
 				52D01A3E12FEC5E9CD7E014D /* DirectoryWatcher.swift in Sources */,
+				C0C7B8983146C17D177A8955 /* EgressPolicy.swift in Sources */,
 				7ED2557749FC1DDB68203F28 /* EventDraft.swift in Sources */,
 				A37C805D6770F7294432E384 /* EventKitProvider.swift in Sources */,
 				3A1747BDC5360912768B6BE1 /* ExpandedCalendarView.swift in Sources */,
@@ -775,6 +780,7 @@
 				AA7541516790323C05B75071 /* DictionaryService.swift in Sources */,
 				579D66CA870AE4B0025BB1B7 /* DictionaryWindow.swift in Sources */,
 				8974FA747AB3912B45EA3940 /* DirectoryWatcher.swift in Sources */,
+				51A4A4B9D3FD5B125CD65A1A /* EgressPolicy.swift in Sources */,
 				411DF639E6BD60D5069EDA49 /* EventDraft.swift in Sources */,
 				0A06CD8EDA8F4708543A8F5E /* EventKitProvider.swift in Sources */,
 				7D9B0967BEB3BCDDCE8E9527 /* ExpandedCalendarView.swift in Sources */,

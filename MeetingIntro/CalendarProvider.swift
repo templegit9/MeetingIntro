@@ -152,6 +152,10 @@ enum CalendarProviderType: String, CaseIterable, Identifiable {
     case microsoftGraph = "Microsoft Graph"
     case googleCalendar = "Google Calendar"
 
+    #if MAS
+    static var allCases: [CalendarProviderType] { [.eventKit, .microsoftGraph] }
+    #endif
+
     var id: String { rawValue }
 
     var displayName: String { rawValue }

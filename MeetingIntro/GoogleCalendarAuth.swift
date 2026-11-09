@@ -1,3 +1,4 @@
+#if !MAS
 import AuthenticationServices
 import CryptoKit
 import Foundation
@@ -229,3 +230,4 @@ extension GoogleCalendarAuth: ASWebAuthenticationPresentationContextProviding {
         MainActor.assumeIsolated { NSApplication.shared.windows.first ?? ASPresentationAnchor() }
     }
 }
+#endif

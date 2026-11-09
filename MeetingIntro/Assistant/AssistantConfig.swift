@@ -56,8 +56,14 @@ final class AssistantConfig: ObservableObject {
 
     init() {
         let d = UserDefaults.standard
+        #if MAS
+        self.provider = .ollama
+        let storedBase = d.string(forKey: Self.k_baseURL) ?? QuickAddConfig.defaultBaseURL
+        self.apiBaseURL = EgressPolicy.isLocal(storedBase) ? storedBase : QuickAddConfig.defaultBaseURL
+        #else
         self.provider = QuickAddProvider(rawValue: d.string(forKey: Self.k_provider) ?? "") ?? .openRouter
         self.apiBaseURL = d.string(forKey: Self.k_baseURL) ?? (QuickAddProvider.openRouter.baseURL ?? QuickAddConfig.defaultBaseURL)
+        #endif
         self.modelID = d.string(forKey: Self.k_model) ?? "anthropic/claude-haiku-4.5"
         self.key = KeychainStore.get(Self.keychainAccount) ?? ""
         self.jobs = Self.load([OrganizeJob].self, key: Self.k_jobs) ?? []
