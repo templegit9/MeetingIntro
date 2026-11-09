@@ -1116,6 +1116,19 @@ final class CalendarManager: ObservableObject {
         await refreshEvents()
     }
 
+    /// Margin previews a concrete destination. Never fall back to a different calendar at execution.
+    func createMarginEvent(_ draft: EventDraft, calendarID: String, providerType: CalendarProviderType) async throws {
+        guard enabledProviderTypes.contains(providerType) else { throw CalendarProviderError.accessDenied }
+        let source = provider(for: providerType)
+        guard source.isAuthorized, source.canCreateEvents,
+              try await source.availableCalendars().contains(where: { $0.id == calendarID && $0.canEdit }) else {
+            throw CalendarProviderError.accessDenied
+        }
+        try Task.checkCancellation()
+        try await source.createEvent(from: draft, calendarID: calendarID)
+        await refreshEvents()
+    }
+
     /// Which enabled source owns this calendar id, if any. Calendar ids from the two
     /// backends are unrelated strings, so ownership is settled by asking each source.
     private func providerOwning(_ calendarID: String?) async -> CalendarProviderType? {
@@ -1140,7 +1153,7 @@ final class CalendarManager: ObservableObject {
             let source = provider(for: type)
             guard source.isAuthorized, source.canCreateEvents else { continue }
             if let calendars = try? await source.availableCalendars() {
-                all.append(contentsOf: calendars)
+                all.append(contentsOf: calendars.filter(\.canEdit))
             }
         }
         return all
@@ -1194,6 +1207,52 @@ final class CalendarManager: ObservableObject {
     /// write, otherwise EventKit. This is the truth the Settings copy must state.
     var eventCreationProvider: CalendarProviderType {
         activeProvider.canCreateEvents ? activeProviderType : .eventKit
+    }
+
+    /// Whether THIS meeting can be changed — routed by the source it came from, the same
+    /// way RSVP is. With a merged list, asking the primary provider would offer to move a
+    /// meeting the other backend owns.
+    func canModify(_ meeting: MeetingEvent) -> Bool {
+        provider(for: meeting.sourceProvider).canModifyEvents
+    }
+
+    /// Validate provider authority before preview, and again at execution.
+    func validateEventChange(_ meeting: MeetingEvent, moving: Bool) async throws {
+        if meeting.sourceProvider == .microsoftGraph {
+            guard try await graphProvider.isOrganizer(of: meeting.id) else {
+                throw ToolArgumentError(message: "Only the organiser can move or cancel this meeting. Use RSVP to decline an invitation.")
+            }
+        } else if moving && meeting.attendeeCount > 0 && meeting.myResponse != .organizer {
+            throw ToolArgumentError(message: "Move this invitation through its organiser or Calendar app.")
+        }
+    }
+
+    /// Move one meeting, then refresh so the new time is on screen immediately.
+    func moveEvent(_ meeting: MeetingEvent, to start: Date, end: Date) async throws {
+        try await validateEventChange(meeting, moving: true)
+        let source = provider(for: meeting.sourceProvider)
+        try await source.moveEvent(id: meeting.id, occurrenceDate: meeting.occurrenceDate,
+                                   to: start, end: end)
+        diagnosticLog?.info(.calendar, "Moved \"\(meeting.title)\" to \(start) via \(meeting.sourceProvider.rawValue)")
+        // The armed-auto-join set is keyed by id and re-reads the live start time, so a
+        // moved meeting still opens at its new time — nothing to re-arm here.
+        await refreshEvents()
+    }
+
+    /// Cancel or remove one meeting. **What this does differs by backend** — Graph can
+    /// cancel for everyone when you organise it; EventKit removes it and the calendar service controls notifications. `cancelMeansRemoveOnly` is what the confirmation page uses to say which.
+    func cancelEvent(_ meeting: MeetingEvent) async throws {
+        try await validateEventChange(meeting, moving: false)
+        let source = provider(for: meeting.sourceProvider)
+        try await source.cancelEvent(id: meeting.id, occurrenceDate: meeting.occurrenceDate)
+        diagnosticLog?.info(.calendar, "Cancelled/removed \"\(meeting.title)\" via \(meeting.sourceProvider.rawValue)")
+        await refreshEvents()
+    }
+
+    /// True when "cancel" can only mean "remove it from my calendar" — EventKit, always,
+    /// using EventKit removal; this does not imply that notifications are suppressed.
+    func cancelMeansRemoveOnly(_ meeting: MeetingEvent) -> Bool {
+        meeting.sourceProvider == .eventKit
     }
 
     /// Respond to an invitation, then refresh so the new status shows immediately.

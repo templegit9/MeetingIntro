@@ -19,20 +19,44 @@ final class MarginPanelController: NSObject, ObservableObject {
     private var hotKey: MarginHotKey?
     private var cancellables = Set<AnyCancellable>()
 
-    private let agent: MarginAgent
+    let agent: MarginAgent
     private let config: MarginConfig
     let nudges: MarginNudgeEngine
     let roots: MarginRoots
 
     @Published private(set) var isOpen = false
     @Published private(set) var hovering = false
+    @Published private(set) var isIdle = false
+    @Published var draft = ""
+    private var lastInteraction = Date()
+    private var idleTimer: Timer?
+    private var inputMonitor: Any?
+
+    static func shouldRest(elapsed: TimeInterval, timeout: Int, busy: Bool) -> Bool {
+        !busy && timeout > 0 && elapsed >= Double(timeout)
+    }
+
+    private func checkIdle() {
+        guard isOpen else { return }
+        if agent.isBusy || (isOpen && agent.imageDraft.active) { lastInteraction = Date(); isIdle = false; return }
+        if Self.shouldRest(elapsed: Date().timeIntervalSince(lastInteraction), timeout: config.idleSeconds, busy: false) {
+            isIdle = true
+            isOpen = false
+            panel?.resignKey()
+            panel?.acceptsKey = false
+            resize()
+        }
+    }
 
     /// A folded page that goes unanswered folds back down and counts as an ignore. Left
     /// on screen forever it would be a notification, which is the thing it isn't.
     private static let foldTimeout: TimeInterval = 180
     private var foldTimer: Timer?
 
+    let games = MarginPocketGames()
+    @Published var showingGames = false { didSet { if showingGames { games.discover() }; resize() } }
     @Published var showingWatches = false
+    @Published var showingHistory = false { didSet { resize() } }
 
     init(agent: MarginAgent, config: MarginConfig, nudges: MarginNudgeEngine, roots: MarginRoots) {
         self.agent = agent
@@ -40,6 +64,10 @@ final class MarginPanelController: NSObject, ObservableObject {
         self.nudges = nudges
         self.roots = roots
         super.init()
+
+        agent.imageDraft.objectWillChange.sink { [weak self] _ in
+            Task { @MainActor in self?.resize() }
+        }.store(in: &cancellables)
 
         // A corner folds itself: the panel grows to show one page, WITHOUT taking focus
         // or activating the app. Whatever you were typing stays where it was.
@@ -53,16 +81,28 @@ final class MarginPanelController: NSObject, ObservableObject {
             }
             .store(in: &cancellables)
 
+        agent.localAI.$state.removeDuplicates().sink { [weak self] _ in
+            Task { @MainActor in if self?.isOpen == true { self?.resize() } }
+        }.store(in: &cancellables)
+
         nudges.$folded
             .sink { [weak self] nudge in
                 Task { @MainActor in self?.presentFold(nudge) }
             }
             .store(in: &cancellables)
 
-        // Visibility follows the plugin switch, live.
+        NotificationCenter.default.publisher(for: Notification.Name("MarginOpenNotebook"))
+            .sink { [weak self] _ in Task { @MainActor in self?.open() } }
+            .store(in: &cancellables)
+
+        // Visibility follows the notebook switch, live.
         config.$isEnabled
             .sink { [weak self] enabled in
-                Task { @MainActor in enabled ? self?.show() : self?.hide() }
+                Task { @MainActor in
+                    guard let self else { return }
+                    if enabled { self.show(); self.agent.localAI.start() }
+                    else { self.agent.cancelRequest(); self.agent.localAI.stop(); self.hide() }
+                }
             }
             .store(in: &cancellables)
 
@@ -97,12 +137,32 @@ final class MarginPanelController: NSObject, ObservableObject {
         // the agent and the controller directly instead.
         panel.contentView = NSHostingView(rootView: rootView)
         self.panel = panel
+        inputMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .leftMouseDown, .rightMouseDown, .scrollWheel, .leftMouseDragged]) { [weak self] event in
+            guard let self, event.window === self.panel, self.isOpen else { return event }
+            self.lastInteraction = Date()
+            if event.type == .keyDown, event.keyCode == 9,
+               event.modifierFlags.contains(.command),
+               !event.modifierFlags.contains(.control), !event.modifierFlags.contains(.option),
+               MarginImageDraft.canPasteImage {
+                self.showingGames = false; self.showingWatches = false; self.showingHistory = false
+                self.agent.imageDraft.paste()
+                return nil
+            }
+            return event
+        }
+        let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.checkIdle() }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        idleTimer = timer
         reposition()
         panel.orderFrontRegardless()
         if config.summonShortcutEnabled { registerHotKey() }
     }
 
     func hide() {
+        idleTimer?.invalidate(); idleTimer = nil
+        if let inputMonitor { NSEvent.removeMonitor(inputMonitor) }; inputMonitor = nil
         close()
         hotKey?.unregister()
         hotKey = nil
@@ -127,6 +187,8 @@ final class MarginPanelController: NSObject, ObservableObject {
         guard config.isEnabled else { return }
         if panel == nil { show() }
         isOpen = true
+        isIdle = false
+        lastInteraction = Date()
         resize()
         // Only while open does it take focus — a closed notebook must never steal a key
         // press from what you were doing.
@@ -138,6 +200,7 @@ final class MarginPanelController: NSObject, ObservableObject {
     func close() {
         guard isOpen else { return }
         isOpen = false
+        isIdle = false
         panel?.acceptsKey = false
         panel?.resignKey()
         resize()
@@ -191,8 +254,11 @@ final class MarginPanelController: NSObject, ObservableObject {
     /// Recomputed only when the content changes, never on every publish: measuring on
     /// each tick is what would make the panel twitch under the pointer.
     private var openSize: NSSize {
+        if agent.imageDraft.active { return NSSize(width: MarginTheme.openWidth, height: 620) }
+        if showingGames { return NSSize(width: MarginTheme.openWidth, height: 620) }
+        if showingHistory { return NSSize(width: MarginTheme.openWidth, height: 560) }
         let measured = MarginPageView.fittingHeight(agent: agent, config: config, ribbon: nudges.onRibbon)
-        return NSSize(width: MarginTheme.openWidth, height: min(max(measured, 170), 620))
+        return NSSize(width: MarginTheme.openWidth, height: min(max(measured + 18, 310), 620))
     }
 
     private func resize() {
@@ -200,7 +266,7 @@ final class MarginPanelController: NSObject, ObservableObject {
         let size: NSSize
         if isOpen {
             size = openSize
-        } else if nudges.folded != nil {
+        } else if nudges.folded != nil && !isIdle {
             size = NSSize(width: MarginTheme.openWidth, height: 150)
         } else {
             size = closedSize
@@ -252,41 +318,61 @@ private struct MarginRootView: View {
     @ObservedObject var controller: MarginPanelController
 
     @State private var hovering = false
+    @State private var imageHover = false
 
     var body: some View {
         Group {
             if controller.isOpen {
-                if controller.showingWatches {
+                if controller.showingGames {
+                    MarginGamesPage(games: controller.games) { controller.showingGames = false }
+                } else if controller.showingWatches {
                     MarginWatchesView(engine: nudges, config: config, roots: controller.roots) {
                         controller.showingWatches = false
                     }
                 } else {
-                    MarginPageView(agent: agent, config: config,
+                    MarginPageView(agent: agent, config: config, images: agent.imageDraft,
                                    ribbon: nudges.onRibbon,
-                                   roots: controller.roots,
+                                   roots: controller.roots, games: controller.games,
                                    onWatches: { controller.showingWatches = true },
-                                   onClose: { controller.close() })
+                                   onGames: { controller.showingGames = true },
+                                   onClose: { controller.close() },
+                                   input: $controller.draft, showingHistory: $controller.showingHistory)
                 }
-            } else if let nudge = nudges.folded {
+            } else if let nudge = nudges.folded, !controller.isIdle {
                 MarginFoldedCornerView(
                     nudge: nudge,
                     onPrimary: { controller.actOnFold(nudge) },
                     onDismiss: { controller.dismissFold(nudge) })
             } else {
                 Button { controller.open() } label: {
-                    MarginCoverView(state: controller.coverState, hovering: hovering)
+                    MarginCoverView(state: controller.coverState, hovering: hovering && !controller.isIdle)
                 }
                 .buttonStyle(.plain)
                 // Resting at 30%, full strength as the pointer arrives. Anything waiting
                 // on the ribbon stays legible regardless — it is the one state that has
                 // earned your attention.
-                .opacity(hovering || isWaiting ? 1 : config.restingOpacity)
+                .opacity(!controller.isIdle && (hovering || isWaiting) ? 1 : config.restingOpacity)
                 .animation(.easeOut(duration: 0.18), value: hovering)
                 .onHover { hovering = $0 }
                 .help("Margin — ⌥Space")
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+        .overlay {
+            if imageHover {
+                RoundedRectangle(cornerRadius: 6).stroke(MarginTheme.cloth, style: StrokeStyle(lineWidth: 2, dash: [5]))
+                    .background(MarginTheme.cloth.opacity(0.08)).allowsHitTesting(false)
+                    .overlay { Text("Drop image here").font(.caption).padding(5).background(MarginTheme.paper).fixedSize().allowsHitTesting(false) }
+            }
+        }
+        .onDrop(of: MarginImageDraft.dropTypes, isTargeted: $imageHover) { providers in
+            controller.showingGames = false; controller.showingWatches = false; controller.showingHistory = false
+            let accepted = agent.imageDraft.receive(providers)
+            controller.open()
+            return accepted
+        }
+
+
     }
 
     private var isWaiting: Bool {

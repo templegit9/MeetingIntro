@@ -25,6 +25,7 @@ final class MeetingNotesPipeline: ObservableObject {
     var notificationManager: NotificationManager?
     var diagnosticLog: DiagnosticLog?
 
+    private var permissions: [String: @MainActor () -> Bool] = [:]
     private var queue: [RecordingDocument] = []
     private var isProcessing = false
 
@@ -38,11 +39,12 @@ final class MeetingNotesPipeline: ObservableObject {
     }
 
     /// Enqueue a recording. No-ops if it's already queued or running.
-    func enqueue(_ document: RecordingDocument) {
+    func enqueue(_ document: RecordingDocument, permission: (@MainActor () -> Bool)? = nil) {
         switch jobs[document.id] {
         case .queued, .running: return
         default: break
         }
+        if let permission { permissions[document.id] = permission }
         jobs[document.id] = .queued
         queue.append(document)
         processNextIfIdle()
@@ -70,7 +72,12 @@ final class MeetingNotesPipeline: ObservableObject {
             self?.jobs[document.id] = .running(stage)
             self?.diagnosticLog?.info(.notes, "[\(document.baseName)] \(stage)")
         }
+        func checkAccess() throws {
+            if let permission = permissions[document.id], !permission() { throw ToolArgumentError(message: "The Margin folder grant or output state changed. Notes generation stopped.") }
+        }
+        defer { permissions.removeValue(forKey: document.id) }
         do {
+            try checkAccess()
             // 1. Split the dual-track recording into per-speaker mono files.
             setStage("Splitting audio tracks…")
             let tracks = try await AudioTrackExporter.split(document.audioURL)
@@ -84,11 +91,13 @@ final class MeetingNotesPipeline: ObservableObject {
             var segments: [TranscriptSegment] = []
             if let themURL = tracks.them {
                 setStage("Transcribing meeting audio (\(engine.displayName))…")
+                try checkAccess()
                 let raw = try await engine.transcribe(themURL) { stage in setStage("Them: \(stage)") }
                 segments += raw.map { TranscriptSegment(start: $0.start, end: $0.end, speaker: .them, text: $0.text) }
             }
             if let meURL = tracks.me {
                 setStage("Transcribing your microphone (\(engine.displayName))…")
+                try checkAccess()
                 let raw = try await engine.transcribe(meURL) { stage in setStage("You: \(stage)") }
                 segments += raw.map { TranscriptSegment(start: $0.start, end: $0.end, speaker: .me, text: $0.text) }
             }
@@ -100,16 +109,19 @@ final class MeetingNotesPipeline: ObservableObject {
             setStage("Writing transcript…")
             let transcriptBody = segments.renderedMarkdown()
             let transcriptDoc = "# Transcript — \(document.displayTitle)\n\n" + transcriptBody + "\n"
+            try checkAccess()
             try transcriptDoc.write(to: document.transcriptURL, atomically: true, encoding: .utf8)
 
             // 4. Generate + write the notes sidecar.
             setStage("Generating notes (\(quickAddConfig.modelID))…")
+            try checkAccess()
             let notes = try await NotesGenerator.generate(
                 transcriptMarkdown: transcriptBody,
                 meetingTitle: document.displayTitle,
                 meetingDate: document.displayDate,
                 config: quickAddConfig
             )
+            try checkAccess()
             try notes.write(to: document.notesURL, atomically: true, encoding: .utf8)
 
             jobs[document.id] = .done

@@ -109,10 +109,17 @@ final class MarginNudgeEngine: ObservableObject {
     // MARK: Evaluation
 
     func evaluate() {
-        guard let config, config.isEnabled, !config.banded else { folded = nil; return }
+        guard let config, config.isEnabled, !config.banded, config.proactivity != .quiet else {
+            folded = nil; onRibbon = []; return
+        }
         guard let calendarManager else { return }
 
         let found = findings(calendarManager)
+        if config.proactivity == .ribbon {
+            folded = nil
+            onRibbon = found
+            return
+        }
         // Ribbon items are simply the ones not loud enough to show themselves.
         onRibbon = found.filter { $0.volume == .ribbonOnly }
 

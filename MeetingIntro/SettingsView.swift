@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import ServiceManagement
 
 /// Brings the Settings window to the front and activates the app. `SettingsLink`
 /// reliably *opens* the Settings scene, but on an `LSUIElement` (menu-bar) app it
@@ -123,6 +124,7 @@ struct SettingsView: View {
     @AppStorage("upcomingDaysAhead") private var upcomingDaysAhead: Int = 7
     @AppStorage(MenuBarPresentation.storageKey) private var menuBarPresentationRaw: String = MenuBarPresentation.popover.rawValue
     @AppStorage(AppUpdater.autoCheckKey) private var autoUpdateEnabled: Bool = true
+    @State private var launchAtLogin: Bool = LaunchAtLogin.isEnabled
     @AppStorage("cancellationShowInTodayView") private var cancellationShowInTodayView: Bool = true
     @AppStorage("cancellationShowOverlay") private var cancellationShowOverlay: Bool = false
     @AppStorage("cancellationOverlayPosition") private var cancellationOverlayPosition: String = OverlayWindowController.CancellationOverlayPosition.topRight.rawValue
@@ -131,6 +133,8 @@ struct SettingsView: View {
     @ObservedObject var updater: AppUpdater
 
     @State private var showRecordingDisclaimer = false
+    @State private var showMarginIntroduction = false
+    @State private var showMarginSettings = false
     @State private var showTickerSettings = false
     @State private var showCameraCoverSettings = false
     @State private var recordingStats: (count: Int, sizeBytes: Int64) = (0, 0)
@@ -187,7 +191,9 @@ struct SettingsView: View {
                 case .handoff:   handoffTab
                 case .tasks:     tasksTab
                 case .models:    modelsTab
-                case .plugins:   pluginsTab
+                case .margin:    marginTab
+                case .ticker:    tickerTab
+                case .cameraCover: cameraCoverTab
                 case .recording: recordingTab
                 case .whatsNew:  whatsNewTab
                 case .diagnostics: diagnosticsTab
@@ -198,7 +204,8 @@ struct SettingsView: View {
             .navigationTitle(selectedSection.title)
         }
         .frame(minWidth: 760, idealWidth: 820, minHeight: 540, idealHeight: 600)
-        .onAppear { loadSettings() }
+        .onAppear { loadSettings(); if UserDefaults.standard.bool(forKey: "openMarginSettings") { selectedSection = .margin; UserDefaults.standard.removeObject(forKey: "openMarginSettings") } }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MarginShowSettings"))) { _ in selectedSection = .margin }
         .background(SettingsWindowActivator())
     }
 
@@ -1466,7 +1473,7 @@ struct SettingsView: View {
                     Text(assistantTest).font(.caption2).foregroundStyle(assistantTest.hasPrefix("✓") ? .green : .red).lineLimit(2)
                 }
             } header: {
-                SettingsSectionHeader("File Organizer", info: "The AI model the File Organizer plugin uses to organize files. Local providers (Ollama) need no key and keep everything on-device.")
+                SettingsSectionHeader("File Organizer", info: "The AI model Margin’s file workspace uses to organize files. Local providers (Ollama) need no key and keep everything on-device.")
             }
 
             Section {
@@ -1550,76 +1557,80 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Plugins Tab (Issue #17)
+    // MARK: - Margin
 
-    private var pluginsTab: some View {
+    private var marginTab: some View {
         Form {
-            Section {
-                LazyVGrid(columns: PluginGridLayout.columns, spacing: 10) {
-                    PluginTile(
-                        symbol: "folder.badge.gearshape", tint: .purple,
-                        name: "File Organizer",
-                        blurb: "Sorts a chosen folder into tidy subfolders — move and rename, with a preview and undo.",
-                        status: assistantEnabled
-                            ? (assistantConfig.jobs.isEmpty
-                               ? .idle("No folders yet")
-                               : .active("\(assistantConfig.jobs.count) folder\(assistantConfig.jobs.count == 1 ? "" : "s")"))
-                            : nil,
-                        isEnabled: $assistantEnabled,
-                        onOpen: { openWindow(id: "assistant"); NSApp.activate(ignoringOtherApps: true) }
-                    )
-
-                    PluginTile(
-                        symbol: "character.book.closed", tint: .blue,
-                        name: "Dictionary",
-                        blurb: "Meaning, part of speech, examples, synonyms and pronunciation. No key; works offline.",
-                        status: dictionaryEnabled ? .idle("Ready") : nil,
-                        isEnabled: $dictionaryEnabled,
-                        onOpen: { openWindow(id: "dictionary"); NSApp.activate(ignoringOtherApps: true) }
-                    )
-
-                    PluginTile(
-                        symbol: "text.line.first.and.arrowtriangle.forward", tint: .orange,
-                        name: "Ticker",
-                        blurb: "A news-style crawl across the top of your screen. Click-through, so it never steals a click.",
-                        status: tickerStatus,
-                        isEnabled: $tickerConfig.isEnabled,
-                        onOpen: { showTickerSettings = true }
-                    )
-
-                    PluginTile(
-                        symbol: "web.camera", tint: .teal,
-                        name: "Camera Cover",
-                        blurb: "For a physical lens cover: a nudge to close it once you're out of meetings.",
-                        status: cameraCoverConfig.isEnabled
-                            ? .idle("After meetings, \(cameraCoverConfig.delayMinutes) min")
-                            : nil,
-                        isEnabled: $cameraCoverConfig.isEnabled,
-                        onOpen: { showCameraCoverSettings = true }
-                    )
-
-                    PluginTile(
-                        symbol: "sparkles", tint: .pink,
-                        name: "Margin",
-                        blurb: "A notebook that sits on your desktop. Ask it for a meeting, a task or a free slot; it writes the answer on a page you approve before anything happens.",
-                        status: marginConfig.isEnabled ? .idle("⌥Space · \(marginConfig.model)") : nil,
-                        isEnabled: $marginConfig.isEnabled,
-                        onOpen: { marginPanel.open() }
-                    )
-                }
-                .padding(.vertical, 2)
-            } header: {
-                SettingsSectionHeader("Plugins", info: "Optional add-ons, off by default. Each one is self-contained — enabling a plugin doesn't touch your reminders or meetings.\n\nThe dot on each tile shows what it's doing right now. Click a tile to open it or its settings; the switch turns it on and off.")
+            Section("Notebook") {
+                Toggle("Enable Margin", isOn: Binding(get: { marginConfig.isEnabled }, set: { enabled in
+                    if enabled && !marginConfig.introductionSeen { showMarginIntroduction = true }
+                    else { marginConfig.isEnabled = enabled }
+                }))
+                Text("Your notebook for files, definitions, tasks and calendar. Open it from the menu bar or with ⌥Space.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Button("Open notebook") { marginPanel.open() }.disabled(!marginConfig.isEnabled)
+                Button("Personality, memory and AI setup…") { showMarginSettings = true }
+            }
+            Section("Files") {
+                Button("Open Margin · Files…") { openWindow(id: "assistant"); NSApp.activate(ignoringOtherApps: true) }
+                Text("Manage folders, rules, previews and undo. In the notebook, ask to find, move or rename files. Only granted folders are available.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Toggle("Enable standing folder work", isOn: $assistantEnabled)
+                Text("Existing schedules and folder watches keep their own switch and model settings. Turning off the notebook does not pause them.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Section("Dictionary") {
+                Text("Write a word, or ‘define onomatopoeia’, in the notebook. Definitions use the Mac’s dictionary first, with an online fallback. Unknown spellings offer suggestions.")
+                Text("No separate switch or AI model is needed for lookup.").font(.caption).foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
         .padding()
+        .sheet(isPresented: $showMarginIntroduction) {
+            MarginIntroductionView(notNow: { showMarginIntroduction = false }, prepare: {
+                marginConfig.aiSetupApproved = true; marginConfig.introductionSeen = true
+                marginConfig.isEnabled = true; showMarginIntroduction = false
+                marginPanel.agent.localAI.start(); marginPanel.open()
+            })
+        }
+        .sheet(isPresented: $showMarginSettings) {
+            MarginSettingsView(config: marginConfig, agent: marginPanel.agent,
+                               nudges: marginPanel.nudges, history: marginPanel.agent.history,
+                               openNotebook: { showMarginSettings = false; marginPanel.open() },
+                               done: { showMarginSettings = false })
+        }
         .sheet(isPresented: $showTickerSettings) {
             TickerSettingsSheet(config: tickerConfig) { showTickerSettings = false }
         }
         .sheet(isPresented: $showCameraCoverSettings) {
             cameraCoverSheet
         }
+    }
+
+    private var tickerTab: some View {
+        Form {
+            Section("Ticker") {
+                Toggle("Show the ticker", isOn: $tickerConfig.isEnabled)
+                Text("Meeting information across the top of the screen. Works independently of Margin.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Button("Configure ticker…") { showTickerSettings = true }
+            }
+        }.formStyle(.grouped).padding()
+            .sheet(isPresented: $showTickerSettings) {
+                TickerSettingsSheet(config: tickerConfig) { showTickerSettings = false }
+            }
+    }
+
+    private var cameraCoverTab: some View {
+        Form {
+            Section("Camera Cover") {
+                Toggle("Remind me to close my camera cover", isOn: $cameraCoverConfig.isEnabled)
+                Text("A reminder after calls for a physical lens cover. MeetingIntro cannot detect whether the cover is open.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Button("Configure camera reminders…") { showCameraCoverSettings = true }
+            }
+        }.formStyle(.grouped).padding()
+            .sheet(isPresented: $showCameraCoverSettings) { cameraCoverSheet }
     }
 
     /// Live status for the Ticker tile — reuses the coordinator's own reason string, so
@@ -2463,6 +2474,29 @@ struct SettingsView: View {
                     .fixedSize()
                     .onChange(of: autoUpdateEnabled) { _, _ in updater.refreshAutoChecks() }
                     .padding(.top, 2)
+
+                Toggle("Open at login", isOn: Binding(
+                    get: { launchAtLogin },
+                    set: { want in
+                        LaunchAtLogin.set(want)
+                        launchAtLogin = LaunchAtLogin.isEnabled
+                    }
+                ))
+                .toggleStyle(.checkbox)
+                .font(.caption)
+                .fixedSize()
+                .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                    launchAtLogin = LaunchAtLogin.isEnabled
+                }
+
+                if LaunchAtLogin.needsApproval {
+                    Button("Allow in System Settings → Login Items") {
+                        SMAppService.openSystemSettingsLoginItems()
+                    }
+                    .buttonStyle(.link)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                }
             }
 
             Text("Never be late to a meeting again.\nGet countdown overlays and voice reminders\nbefore your meetings start.")
@@ -2825,7 +2859,9 @@ enum SettingsSection: String, CaseIterable, Hashable {
     case audio
     case handoff
     case recording
-    case plugins
+    case margin
+    case ticker
+    case cameraCover
     case whatsNew
     case diagnostics
     case guide
@@ -2846,7 +2882,9 @@ enum SettingsSection: String, CaseIterable, Hashable {
         case .handoff:   return "Handoff"
         case .tasks:     return "Tasks"
         case .recording: return "Recording"
-        case .plugins:   return "Plugins"
+        case .margin:    return "Margin"
+        case .ticker:    return "Ticker"
+        case .cameraCover: return "Camera Cover"
         case .whatsNew:  return "What's New"
         case .diagnostics: return "Diagnostics"
         case .guide:     return "Guide"
@@ -2869,7 +2907,9 @@ enum SettingsSection: String, CaseIterable, Hashable {
         case .handoff:   return "arrow.left.arrow.right.circle"
         case .tasks:     return "checklist"
         case .recording: return "record.circle"
-        case .plugins:   return "puzzlepiece.extension"
+        case .margin:    return "book.closed.fill"
+        case .ticker:    return "text.line.first.and.arrowtriangle.forward"
+        case .cameraCover: return "web.camera"
         case .whatsNew:  return "sparkles"
         case .diagnostics: return "stethoscope"
         case .guide:     return "book"
@@ -2879,10 +2919,10 @@ enum SettingsSection: String, CaseIterable, Hashable {
 
     var group: SettingsGroup {
         switch self {
-        case .calendar, .quickAdd, .calendarSync, .models: return .sources
-        case .countdown, .menuBar, .smart, .voice, .sounds, .tasks: return .reminders
-        case .audio, .handoff, .recording:               return .inMeeting
-        case .plugins, .whatsNew, .diagnostics, .guide, .about: return .help
+        case .calendar, .quickAdd, .calendarSync, .models, .margin: return .sources
+        case .countdown, .menuBar, .smart, .voice, .sounds, .tasks, .ticker: return .reminders
+        case .audio, .handoff, .recording, .cameraCover:               return .inMeeting
+        case .whatsNew, .diagnostics, .guide, .about: return .help
         }
     }
 }

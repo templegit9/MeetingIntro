@@ -13,6 +13,7 @@ final class FileOrganizer: ObservableObject {
 
     private weak var config: AssistantConfig?
     var diagnosticLog: DiagnosticLog?
+    weak var marginRoots: MarginRoots?
 
     func attach(config: AssistantConfig) { self.config = config }
 
@@ -34,7 +35,9 @@ final class FileOrganizer: ObservableObject {
         guard let dir = resolveSource(job) else { lastError = "Can't access that folder — re-pick it."; return [] }
         defer { dir.stopAccessingSecurityScopedResource() }
 
+        guard job.marginManaged != true || marginRoots?.isGranted(dir) == true else { lastError = "Margin folder grant was revoked."; return [] }
         let files = gather(in: dir, mode: mode, ignoreNewerThan: ignoreNewerThan)
+            .filter { job.marginManaged != true || marginRoots?.isGranted($0) == true }
         guard !files.isEmpty else { lastError = "No files to organize in this folder."; return [] }
         let previews = files.map { FilePreviewExtractor.extract($0) }
 
@@ -278,6 +281,13 @@ final class FileOrganizer: ObservableObject {
         guard let dir = resolveSource(job) else { lastError = "Can't access that folder — re-pick it."; return nil }
         defer { dir.stopAccessingSecurityScopedResource() }
 
+        guard job.marginManaged != true || marginRoots?.isGranted(dir) == true else { lastError = "Margin folder grant was revoked."; return nil }
+        if job.marginManaged == true {
+            guard proposals.filter(\.include).allSatisfy({ p in
+                let target = dir.appendingPathComponent(sanitizeComponent(p.proposedFolder), isDirectory: true)
+                return marginRoots?.isGranted(p.originalURL) == true && (p.action == .trash || marginRoots?.isGranted(target) == true)
+            }) else { lastError = "A source or destination is outside Margin's grants."; return nil }
+        }
         var moves: [FileMove] = []
         var trashed: [FileMove] = []
         var createdFolders: [String] = []
@@ -313,18 +323,22 @@ final class FileOrganizer: ObservableObject {
 
         // Re-organize flattens the tree — clean up the now-empty original subfolders.
         var removedFolders: [String] = []
-        if mode == .reorganize { removedFolders = pruneEmptyDirectories(under: dir) }
+        if mode == .reorganize && job.marginManaged != true { removedFolders = pruneEmptyDirectories(under: dir) }
 
         guard !moves.isEmpty || !trashed.isEmpty else { return nil }
         let batch = UndoBatch(jobName: job.name.isEmpty ? "Folder" : job.name, timestamp: Date(),
                               moves: moves, createdFolders: createdFolders,
                               trashed: trashed.isEmpty ? nil : trashed,
-                              removedFolders: removedFolders.isEmpty ? nil : removedFolders)
+                              removedFolders: removedFolders.isEmpty ? nil : removedFolders, marginManaged: job.marginManaged)
         config?.recordUndo(batch)
         return batch
     }
 
     func undo(_ batch: UndoBatch) {
+        if batch.marginManaged == true {
+            let paths = batch.moves.flatMap { [$0.from, $0.to] } + (batch.trashed ?? []).map(\.from) + batch.createdFolders
+            guard paths.allSatisfy({ marginRoots?.isGranted(URL(fileURLWithPath: $0)) == true }) else { lastError = "Restore the Margin folder grant before undoing this job."; return }
+        }
         // Recreate folders a Re-organize removed, so files can move back into them.
         for f in batch.removedFolders ?? [] {
             try? FileManager.default.createDirectory(at: URL(fileURLWithPath: f), withIntermediateDirectories: true)

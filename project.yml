@@ -24,6 +24,14 @@ targets:
         excludes:
           - "*.entitlements"
           - "Info.plist"
+    postBuildScripts:
+      - name: Build Margin runtime supervisor
+        script: /bin/sh "$SRCROOT/scripts/build-margin-supervisor.sh"
+        inputFiles:
+          - $(SRCROOT)/scripts/build-margin-supervisor.sh
+          - $(SRCROOT)/scripts/margin-runtime-supervisor.c
+        outputFiles:
+          - $(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/MacOS/MarginRuntimeSupervisor
     dependencies:
       - package: WhisperKit
     info:

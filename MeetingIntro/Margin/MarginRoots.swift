@@ -27,7 +27,8 @@ final class MarginRoots: ObservableObject {
     /// Resolved URLs currently holding a security scope, so it can be released on removal.
     private var scoped: [String: URL] = [:]
 
-    init() { resolveAll() }
+    private let defaults: UserDefaults
+    init(defaults: UserDefaults = .standard) { self.defaults = defaults; resolveAll() }
 
     // MARK: Granting
 
@@ -52,7 +53,7 @@ final class MarginRoots: ObservableObject {
                                                    relativeTo: nil) else { return nil }
         var stored = storedBookmarks()
         stored.append(bookmark)
-        UserDefaults.standard.set(stored, forKey: Self.key)
+        defaults.set(stored, forKey: Self.key)
         resolveAll()
         return roots.first { Self.sameFolder($0.url, url) }
     }
@@ -65,7 +66,7 @@ final class MarginRoots: ObservableObject {
                                      relativeTo: nil, bookmarkDataIsStale: &stale) else { return false }
             return Self.sameFolder(url, root.url)
         }
-        UserDefaults.standard.set(stored, forKey: Self.key)
+        defaults.set(stored, forKey: Self.key)
         if let url = scoped.removeValue(forKey: root.id) { url.stopAccessingSecurityScopedResource() }
         resolveAll()
     }
@@ -107,11 +108,14 @@ final class MarginRoots: ObservableObject {
         if expanded.pathComponents.count > 1, isGranted(expanded) { return expanded }
         // A bare name — "Downloads" — matches a granted root, or a folder directly inside one.
         let needle = name.lowercased()
-        if let root = roots.first(where: { $0.name.lowercased() == needle }) { return root.url }
-        for root in roots {
-            let child = root.url.appendingPathComponent(name)
-            if FileManager.default.fileExists(atPath: child.path) { return child }
+        let named = roots.filter { $0.name.lowercased() == needle }
+        if named.count == 1 { return named[0].url }
+        if named.count > 1 { return nil }
+        let children = roots.map { $0.url.appendingPathComponent(name) }.filter {
+            FileManager.default.fileExists(atPath: $0.path) && isGranted($0)
         }
+        let distinct = Dictionary(grouping: children, by: { $0.resolvingSymlinksInPath().standardizedFileURL.path })
+        if distinct.count == 1 { return children.first }
         return nil
     }
 
@@ -123,7 +127,7 @@ final class MarginRoots: ObservableObject {
     // MARK: Storage
 
     private func storedBookmarks() -> [Data] {
-        UserDefaults.standard.array(forKey: Self.key) as? [Data] ?? []
+        defaults.array(forKey: Self.key) as? [Data] ?? []
     }
 
     private func resolveAll() {
@@ -149,7 +153,7 @@ final class MarginRoots: ObservableObject {
             }
         }
         if refreshed.count == storedBookmarks().count, refreshed != storedBookmarks() {
-            UserDefaults.standard.set(refreshed, forKey: Self.key)
+            defaults.set(refreshed, forKey: Self.key)
         }
         roots = resolved
     }

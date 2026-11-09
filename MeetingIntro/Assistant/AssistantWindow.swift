@@ -68,7 +68,7 @@ struct AssistantWindow: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Label("File Organizer", systemImage: "folder.badge.gearshape").font(.title2.weight(.semibold))
+            Label("Margin · Files", systemImage: "folder.badge.gearshape").font(.title2.weight(.semibold))
             Text("AI file organizer — proposes a tidy structure; nothing moves until you approve.")
                 .font(.caption).foregroundStyle(.secondary)
         }

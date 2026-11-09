@@ -12,6 +12,7 @@ struct OrganizeJob: Codable, Identifiable, Equatable {
     /// When an automated run fires (schedule/watch): true = apply immediately (with undo),
     /// false = notify + open the preview to review first. Manual "Organize now" always previews.
     var autoApply: Bool = false
+    var marginManaged: Bool? = nil
     // MARK: Phase 2 automation triggers (v2.13.0)
     /// Run on a recurring interval.
     var scheduleEnabled: Bool = false
@@ -87,6 +88,7 @@ struct UndoBatch: Codable, Identifiable, Equatable {
     var trashed: [FileMove]? = nil
     /// Empty folders removed during a Re-organize (recreated on undo).
     var removedFolders: [String]? = nil
+    var marginManaged: Bool? = nil
 
     var totalActions: Int { moves.count + (trashed?.count ?? 0) }
 }

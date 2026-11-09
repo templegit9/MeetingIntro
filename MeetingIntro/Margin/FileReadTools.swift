@@ -80,14 +80,14 @@ struct FindFilesTool: AgentTool {
                 kind: .answer, title: "Nothing found",
                 details: ["No files in \(folder.lastPathComponent) match that."],
                 provenance: Self.provenance(folder: folder, match: match, count: 0),
-                run: { _ in "" })
+                agentReadable: true, run: { _ in "" })
         }
         return ProposedAction(
             kind: .answer,
             title: "\(files.count) file\(files.count == 1 ? "" : "s") · \(FilePages.totalSize(files))",
             groups: FilePages.groups(files),
             provenance: Self.provenance(folder: folder, match: match, count: files.count),
-            confirmLabel: "Reveal in Finder",
+            agentReadable: true, confirmLabel: "Reveal in Finder",
             run: { picked in
                 guard let picked else { return "Pick a file first." }
                 NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: picked)])
@@ -159,14 +159,14 @@ struct FindByContentTool: AgentTool {
         guard !hits.isEmpty else {
             return ProposedAction(kind: .answer, title: "No match",
                                   details: ["Nothing containing “\(needle)”."],
-                                  provenance: evidence, run: { _ in "" })
+                                  provenance: evidence, agentReadable: true, run: { _ in "" })
         }
         return ProposedAction(
             kind: .answer,
             title: "\(hits.count) mention\(hits.count == 1 ? "" : "s") “\(needle)”",
             groups: FilePages.groups(hits),
             provenance: evidence,
-            confirmLabel: "Reveal in Finder",
+            agentReadable: true, confirmLabel: "Reveal in Finder",
             run: { picked in
                 guard let picked else { return "Pick a file first." }
                 NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: picked)])
@@ -201,7 +201,7 @@ struct FolderSummaryTool: AgentTool {
         guard !files.isEmpty else {
             return ProposedAction(kind: .answer, title: folder.lastPathComponent,
                                   details: ["Empty, as far as I can see."],
-                                  provenance: "Looked in \(folder.lastPathComponent).", run: { _ in "" })
+                                  provenance: "Looked in \(folder.lastPathComponent).", agentReadable: true, run: { _ in "" })
         }
 
         let byKind = Dictionary(grouping: files) { $0.url.pathExtension.lowercased() }
@@ -221,7 +221,7 @@ struct FolderSummaryTool: AgentTool {
             title: folder.lastPathComponent,
             details: details,
             provenance: "Counted files in \(folder.lastPathComponent)\(match.recursive ? " and its subfolders" : " (not subfolders)").",
-            run: { _ in "" })
+            agentReadable: true, run: { _ in "" })
     }
 }
 
@@ -256,14 +256,14 @@ struct WhereIsTool: AgentTool {
             return ProposedAction(kind: .answer, title: "Not found",
                                   details: ["Nothing called “\(needle)” in \(roots.summary)."],
                                   provenance: "Searched every granted folder, subfolders included.",
-                                  run: { _ in "" })
+                                  agentReadable: true, run: { _ in "" })
         }
         return ProposedAction(
             kind: .answer,
             title: files.count == 1 ? "Found it" : "\(files.count) matches",
             groups: FilePages.groups(files),
             provenance: "Searched \(roots.roots.count) granted folder\(roots.roots.count == 1 ? "" : "s"), subfolders included.",
-            confirmLabel: "Reveal in Finder",
+            agentReadable: true, confirmLabel: "Reveal in Finder",
             run: { picked in
                 guard let picked else { return "Pick one first." }
                 NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: picked)])

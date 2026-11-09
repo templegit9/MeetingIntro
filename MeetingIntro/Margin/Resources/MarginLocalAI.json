@@ -1,0 +1,14 @@
+{
+  "runtimeVersion": "0.30.10",
+  "runtimeURL": "https://github.com/ollama/ollama/releases/download/v0.30.10/ollama-darwin.tgz",
+  "runtimeSHA256": "ad8a4d2918ed09480b8160419570602b4f49e48c9e3792efb601c0f54619e48e",
+  "runtimeBytes": 143171908,
+  "model": "margin-lora-pilot:final",
+  "modelManifestURL": null,
+  "modelSHA256": "e3de95b06ad469c48e26d66c02e44f3f81fb7586a9da25d8aaecab4eb1c18998",
+  "modelBytes": 2783446336,
+  "minimumMemoryBytes": 17179869184,
+  "minimumFreeBytes": 17000000000,
+  "modelGGUFURL": "https://huggingface.co/olluyeancah/margin-pilot1-gguf/resolve/245704da10dfc9cb769926e197f1f540e0b21fa1/margin-pilot1-Q4_K_M.gguf",
+  "modelGGUFSHA256": "863fcfd8486b2681f83034ca178d188bbb682920ebc9103ab6bbf3691831026a"
+}

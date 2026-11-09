@@ -23,6 +23,7 @@ final class FileOrganizerCoordinator: ObservableObject {
     private weak var organizer: FileOrganizer?
     private weak var notificationManager: NotificationManager?
     var diagnosticLog: DiagnosticLog?
+    weak var marginRoots: MarginRoots?
 
     private var timer: Timer?
     private var watchers: [UUID: DirectoryWatcher] = [:]
@@ -102,6 +103,14 @@ final class FileOrganizerCoordinator: ObservableObject {
 
     private func runJob(_ job: OrganizeJob, reason: String) {
         guard !running.contains(job.id), let organizer else { return }
+        if job.marginManaged == true {
+            guard let folder = organizer.resolveSource(job) else { return }
+            defer { folder.stopAccessingSecurityScopedResource() }
+            guard marginRoots?.isGranted(folder) == true else {
+                diagnosticLog?.warn(.assistant, "Margin folder job paused: grant revoked")
+                return
+            }
+        }
         running.insert(job.id)
         config?.markRun(job.id)   // stamp now so a scheduled job doesn't re-fire while it runs
         // Watch runs may catch a file mid-download — skip anything modified in the last 15s.
@@ -118,7 +127,7 @@ final class FileOrganizerCoordinator: ObservableObject {
             // any Trash, routes to review so a big/destructive change is never unattended.
             let hasTrash = proposals.contains { $0.action == .trash }
             let overCap = proposals.count > cap
-            if job.autoApply && !hasTrash && !overCap {
+            if job.autoApply && job.marginManaged != true && !hasTrash && !overCap {
                 let n = organizer.apply(proposals, job: job)?.moves.count ?? 0
                 if n > 0 { notificationManager?.sendAssistantOrganizedNotification(folder: displayName(job), count: n) }
                 diagnosticLog?.info(.assistant, "Auto-organized \"\(job.name)\" (\(reason)): \(n) files")

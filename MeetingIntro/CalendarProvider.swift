@@ -207,9 +207,8 @@ protocol CalendarProvider {
     /// Cancel or remove an existing event.
     ///
     /// **The two backends do genuinely different things here**, and the UI says which:
-    /// Graph can *cancel* a meeting you organise (attendees are told); EventKit can only
-    /// *remove it from your calendar* — Apple exposes no cancellation API — so nobody
-    /// else finds out.
+    /// Graph can *cancel* a meeting you organise (attendees are told); EventKit removes the event;
+    /// its calendar service determines any attendee notifications.
     func cancelEvent(id: String, occurrenceDate: Date?) async throws
 }
 
@@ -253,6 +252,7 @@ struct CalendarInfo: Identifiable, Hashable {
     let id: String
     let name: String
     let color: String  // Hex color string for UI display
+    var canEdit: Bool = true
     let source: String // e.g., "iCloud", "Exchange", "Google"
     /// Which backend produced this calendar. With both sources readable at once, the
     /// list mixes them, and a row must toggle **its own** provider's selection — the two

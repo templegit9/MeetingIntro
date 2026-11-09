@@ -13,13 +13,13 @@ struct CreateEventTool: AgentTool {
     var parameters: [String: Any] {
         Self.schema([
             "title": Self.string("What the event is called"),
-            "start": Self.string("Start time, ISO 8601 local, e.g. 2026-09-09T13:00:00"),
+            "start": Self.string("Start time, ISO 8601 local, e.g. 2026-09-09T13:00:00. If no date can be resolved, omit it; the tool asks for a date without creating anything."),
             "duration_minutes": Self.integer("Length in minutes. Omit for the default."),
             "all_day": Self.boolean("True for an all-day event"),
             "attendees": Self.stringArray("Email addresses to invite. ONLY addresses the user actually typed — never guess one from a name."),
             "location": Self.string("Where it is, if stated"),
             "repeat": Self.string("One of: daily, weekly, monthly, yearly. Omit for a one-off.")
-        ], required: ["title", "start"])
+        ], required: ["title"])
     }
 
     let calendarManager: CalendarManager
@@ -35,12 +35,11 @@ struct CreateEventTool: AgentTool {
         if let parsed = ToolArgs.date(arguments, "start") {
             start = parsed
         } else {
-            start = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0,
-                                          of: Date().addingTimeInterval(86_400)) ?? Date()
-            assumptions.append("No start time I could read — assumed tomorrow at 9:00 AM")
+            throw ToolArgumentError(message: "Which date should this event use? Nothing has been created. Include a time unless it is all-day.")
         }
         let allDay = ToolArgs.bool(arguments, "all_day") ?? false
         let minutes = ToolArgs.int(arguments, "duration_minutes") ?? defaultDurationMinutes
+        guard (1...10080).contains(minutes) else { throw ToolArgumentError(message: "Use a duration between 1 minute and 7 days.") }
         if ToolArgs.int(arguments, "duration_minutes") == nil && !allDay {
             assumptions.append("No length given — assumed \(defaultDurationMinutes) minutes")
         }
@@ -63,7 +62,12 @@ struct CreateEventTool: AgentTool {
         }
         draft.recurrence = Self.recurrence(ToolArgs.string(arguments, "repeat"), start: draft.startDate)
 
-        var details = [Self.when(draft)]
+        let calendars = await calendarManager.writableCalendarsFromEnabledSources()
+        try Task.checkCancellation()
+        guard let destination = calendarID.flatMap({ id in calendars.first { $0.id == id } }) ?? (calendarID == nil ? calendars.first(where: { $0.providerType == calendarManager.eventCreationProvider }) : nil) else {
+            throw ToolArgumentError(message: "Choose an available writable calendar in settings. Nothing has been created.")
+        }
+        var details = [Self.when(draft), "Calendar: \(destination.name) · \(destination.source)"]
         if let location = draft.location { details.append(location) }
         if !draft.attendees.isEmpty { details.append("Inviting \(draft.attendees.joined(separator: ", "))") }
         if let repeats = draft.recurrence { details.append(repeats.label()) }
@@ -73,23 +77,22 @@ struct CreateEventTool: AgentTool {
         if let first = overlaps.first {
             warnings.append("Overlaps “\(first.title)”" + (overlaps.count > 1 ? " and \(overlaps.count - 1) more" : ""))
         }
-        if !draft.attendees.isEmpty, calendarManager.eventCreationProvider != .microsoftGraph {
+        if !draft.attendees.isEmpty, destination.providerType != .microsoftGraph {
             warnings.append("Invitations can't be sent from macOS Calendar — pick a Microsoft 365 calendar to invite people")
         }
 
         let manager = calendarManager
-        let target = calendarID
         return ProposedAction(
-            kind: .change, title: "Create event", details: details,
+            kind: .change, title: "Create event", details: [draft.title] + details,
             assumptions: assumptions, warnings: warnings, confirmLabel: "Create",
             run: { _ in
-                try await manager.createEvent(from: draft, calendarID: target)
+                try await manager.createMarginEvent(draft, calendarID: destination.id, providerType: destination.providerType)
                 return "Created “\(draft.title)”."
             })
     }
 
-    private static func when(_ draft: EventDraft) -> String {
-        let day = draft.startDate.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
+    static func when(_ draft: EventDraft) -> String {
+        let day = draft.startDate.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().year())
         if draft.isAllDay { return "\(day) · all day" }
         return "\(day) · \(draft.startDate.formatted(date: .omitted, time: .shortened))–\(draft.endDate.formatted(date: .omitted, time: .shortened))"
     }
@@ -225,7 +228,7 @@ struct FindTimeTool: AgentTool {
                 kind: .answer, title: "No free time",
                 details: ["Nothing \(minutes) minutes long between \(earliest):00 and \(latest):00 in the next \(days) days."],
                 provenance: Self.provenance(calendarManager, from: from, days: days, earliest: earliest, latest: latest),
-                run: { _ in "" })
+                agentReadable: true, run: { _ in "" })
         }
 
         // Fix 5: grouped by day and ranked, with the thing you'd otherwise have to work
@@ -257,7 +260,7 @@ struct FindTimeTool: AgentTool {
             title: "\(minutes) min",
             groups: groups,
             provenance: Self.provenance(calendarManager, from: from, days: days, earliest: earliest, latest: latest),
-            confirmLabel: "Hold it",
+            agentReadable: true, confirmLabel: "Hold it",
             secondary: ("Ask for a change", { _ in "Tell me what to change." }),
             run: { picked in
                 // The action is a hold, not an invitation: Margin has nobody to send this

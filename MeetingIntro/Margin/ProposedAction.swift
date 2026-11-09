@@ -54,11 +54,15 @@ struct ProposedAction: Identifiable {
     /// carries its evidence, and it is the line that makes the answer checkable.
     var provenance: String?
     /// Anything invented to fill a gap — the same contract Quick Add has.
+    var sources: [PageSource] = []
     var assumptions: [String] = []
     var warnings: [String] = []
+    /// Read evidence may return to the agent; optional UI actions are never executed by the loop.
+    var agentReadable: Bool = false
     var confirmLabel: String = "Do it"
     /// True when confirming sends something to another person — an invitation, a reply.
     /// Only those get "Tear out & send": the page physically leaves the pad.
+    var multipleSelection: Bool = false
     var tearOut: Bool = false
     /// The one alternative. Two actions is the ceiling.
     var secondary: (label: String, run: @MainActor (String?) async throws -> String)?
@@ -68,12 +72,13 @@ struct ProposedAction: Identifiable {
 
     /// The pre-selected line: the recommendation, or the first.
     var defaultChoice: String? {
-        groups.flatMap(\.choices).first { $0.tone == .best }?.id
+        if multipleSelection { return groups.flatMap(\.choices).map(\.id).joined(separator: ",") }
+        return groups.flatMap(\.choices).first { $0.tone == .best }?.id
             ?? groups.flatMap(\.choices).first?.id
     }
 
     static func answer(_ title: String, _ details: [String]) -> ProposedAction {
-        ProposedAction(kind: .answer, title: title, details: details, run: { _ in title })
+        ProposedAction(kind: .answer, title: title, details: details, agentReadable: true, run: { _ in title })
     }
 }
 
@@ -87,6 +92,7 @@ struct AssistantTurn: Identifiable {
     /// Which line is selected on this page.
     var picked: String?
     var outcome: String?
+    var performed: Bool = false
     var undone: Bool = false
 }
 
@@ -100,4 +106,40 @@ struct MarginTick: Identifiable {
 
     /// One hour, from the spec. After that it is history, not a decision.
     var crossable: Bool { undo != nil && !crossed && Date().timeIntervalSince(at) < 3600 }
+}
+
+
+extension AssistantTurn {
+    /// Tool results must be visible to the model; an empty assistant message loses the thread.
+    var contextText: String {
+        var parts = [text]
+        if let action {
+            parts += [action.title] + action.details
+            parts += action.groups.flatMap { $0.choices.map { $0.label } }
+            parts += action.warnings
+            if outcome == nil { parts.append(action.kind == .change || !action.agentReadable ? "Proposal only; not confirmed." : "Read observation; no write executed.") }
+        }
+        for source in action?.sources ?? [] { parts.append("[\(source.id)] \(source.title): \(source.url.absoluteString)") }
+        if let outcome { parts.append(outcome) }
+        return String(parts.filter { !$0.isEmpty }.joined(separator: "\n").prefix(4000))
+    }
+}
+
+/// Stable, data-only contract shared by the agent transcript and approval journal.
+extension ProposedAction {
+    var agentObservation: [String: Any] {
+        ["status": kind == .change ? "proposal" : "observation", "title": title,
+         "details": details, "warnings": warnings, "assumptions": assumptions,
+         "provenance": provenance ?? "",
+         "groups": groups.map { group in ["label": group.label, "choices": group.choices.map {
+             ["id": $0.id, "label": $0.label, "note": $0.note ?? ""]
+         }] },
+         "sources": sources.map { ["id": $0.id, "title": $0.title, "url": $0.url.absoluteString] },
+         "confirmation": confirmLabel, "multiple_selection": multipleSelection]
+    }
+    func approvalSignature(choice: String?) throws -> Data {
+        var value = agentObservation
+        value["selection"] = choice ?? ""
+        return try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys])
+    }
 }

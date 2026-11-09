@@ -64,6 +64,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         // into is "active" constantly, so reminders + cancellation notices never
         // appeared. Setting this delegate + opting in via willPresent is the fix.
         UNUserNotificationCenter.current().delegate = self
+        LaunchAtLogin.applyDefaultOnce()
     }
 
     /// Show notifications even when MeetingIntro is the active app.
@@ -115,7 +116,71 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 }
 
 /// Main entry point for the MeetingIntro menu bar app.
+/// Tests branch before SwiftUI creates scenes or starts background services.
 @main
+enum MeetingIntroEntry {
+    @MainActor static func main() async {
+        let environment = ProcessInfo.processInfo.environment
+        if let manifestPath = environment["MARGIN_MANAGED_CANDIDATE_TEST"],
+           let rootPath = environment["MARGIN_MANAGED_TEST_ROOT"],
+           let reportPath = environment["MARGIN_MANAGED_TEST_REPORT"] {
+            exit(await MarginLocalAIGuards.managedCandidate(manifestPath: manifestPath, rootPath: rootPath, reportPath: reportPath) ? 0 : 1)
+        }
+        if environment["MARGIN_LOCAL_AI_SELFTEST"] == "1" {
+            exit(await MarginLocalAIGuards.run() ? 0 : 1)
+        }
+        if environment["MARGIN_FILE_JOURNEY"] == "1" { exit(await MarginHarnessSelfTest.fileJourney() ? 0 : 1) }
+        if environment["MARGIN_CALENDAR_IMAGE_TEST"] != nil { exit(await MarginHarnessSelfTest.calendarScreenshot() ? 0 : 1) }
+        if environment["MARGIN_HARNESS_JOURNEYS"] == "1" { exit(await MarginHarnessSelfTest.journeys() ? 0 : 1) }
+        if environment["MARGIN_HARNESS_LIVE"] == "1" { exit(await MarginHarnessSelfTest.live() ? 0 : 1) }
+        if environment["MARGIN_HARNESS_SELFTEST"] == "1" { exit(await MarginHarnessSelfTest.run() ? 0 : 1) }
+        if environment["MARGIN_EVENT_SELFTEST"] == "1" {
+            let calendar = await MarginFixtures.eventChangeGuards()
+            let behavior = await MarginFixtures.behaviorGuards()
+            let roadmap = await MarginRoadmapGuards.run()
+            exit(calendar && behavior && roadmap ? 0 : 1)
+        }
+        if environment["MARGIN_FIXTURES"] != nil || environment["MARGIN_SUITE_EXPORT"] != nil {
+            let liveConfig = MarginConfig()
+            let suite = "margin-routing-eval-\(UUID().uuidString)"
+            let defaults = UserDefaults(suiteName: suite)!
+            let config = MarginConfig(defaults: defaults)
+            config.baseURL = environment["MARGIN_EVAL_BASE_URL"] ?? liveConfig.baseURL
+            config.model = environment["MARGIN_EVAL_MODEL"] ?? liveConfig.model
+            config.timeoutSeconds = liveConfig.timeoutSeconds
+            let historyURL = FileManager.default.temporaryDirectory.appendingPathComponent("margin-eval-history-\(UUID().uuidString).json")
+            let agent = MarginAgent(config: config, history: MarginHistory(url: historyURL), jobs: MarginJobStore(url: historyURL.appendingPathExtension("jobs")))
+            let tasks = TaskConfig()
+            agent.registerStandardTools(calendarManager: CalendarManager(),
+                                        taskManager: TaskManager(config: tasks), taskConfig: tasks,
+                                        quickAddConfig: QuickAddConfig(), marginConfig: config,
+                                        marginRoots: MarginRoots(defaults: defaults))
+            if let path = environment["MARGIN_SUITE_EXPORT"] {
+                do {
+                    let data = try JSONSerialization.data(withJSONObject: agent.comparisonSnapshot(), options: [.prettyPrinted, .sortedKeys])
+                    try data.write(to: URL(fileURLWithPath: path), options: .atomic)
+                    defaults.removePersistentDomain(forName: suite)
+                    exit(0)
+                } catch { print(error); exit(2) }
+            }
+            let files = await MarginFixtures.guardRails()
+            let calendar = await MarginFixtures.eventChangeGuards()
+            let behavior = await MarginFixtures.behaviorGuards()
+            let roadmap = await MarginRoadmapGuards.run()
+            let routing = await MarginFixtures.run(agent: agent, config: config)
+            defaults.removePersistentDomain(forName: suite)
+            exit(files && calendar && behavior && roadmap && routing ? 0 : 1)
+        }
+        if let bundleID = Bundle.main.bundleIdentifier,
+           let existing = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+            .first(where: { $0.processIdentifier != ProcessInfo.processInfo.processIdentifier }) {
+            existing.activate(options: [])
+            return
+        }
+        MeetingIntroApp.main()
+    }
+}
+
 struct MeetingIntroApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @Environment(\.openWindow) private var openWindow
@@ -237,6 +302,7 @@ struct MeetingIntroApp: App {
             tickerConfig: tickerConfig,
             tickerCoordinator: tickerCoordinator,
             recordingController: recordingController,
+            recordingConfig: recordingConfig,
             graphVerifierConfig: graphVerifierConfig,
             graphVerifier: graphVerifier,
             cameraDetector: cameraDetector,
@@ -278,6 +344,10 @@ struct MeetingIntroApp: App {
         }
         // An automated organize run that needs review → open the Assistant window (which
         // renders the pending preview). Auto-apply runs don't publish a review, so no open.
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MarginOpenFiles"))) { _ in
+            openWindow(id: "assistant")
+            NSApp.activate(ignoringOtherApps: true)
+        }
         .onReceive(fileOrganizerCoordinator.$pendingReview.compactMap { $0 }) { _ in
             openWindow(id: "assistant")
             NSApp.activate(ignoringOtherApps: true)
@@ -375,13 +445,13 @@ struct MeetingIntroApp: App {
         .defaultSize(width: 920, height: 620)
 
         // File Organizer plugin (Issue #17) — opt-in AI file organizer.
-        Window("File Organizer", id: "assistant") {
+        Window("Margin · Files", id: "assistant") {
             AssistantWindow(config: assistantConfig, organizer: fileOrganizer, coordinator: fileOrganizerCoordinator)
         }
         .defaultSize(width: 640, height: 560)
 
         // Dictionary plugin — opt-in word lookup (meaning, synonyms, pronunciation).
-        Window("Dictionary", id: "dictionary") {
+        Window("Margin · Dictionary", id: "dictionary") {
             DictionaryWindow()
         }
         .defaultSize(width: 480, height: 560)
@@ -467,6 +537,7 @@ final class AppLifecycleManager: ObservableObject {
         tickerConfig: TickerConfig,
         tickerCoordinator: TickerCoordinator,
         recordingController: RecordingController,
+        recordingConfig: RecordingConfig,
         graphVerifierConfig: GraphVerifierConfig,
         graphVerifier: GraphVerifier,
         cameraDetector: CameraUseDetector,
@@ -512,39 +583,9 @@ final class AppLifecycleManager: ObservableObject {
         // cross-service hookup. Registering the tools is what the model is allowed to do;
         // anything not in this list, it must decline rather than improvise.
         margin.diagnosticLog = diagnosticLog
-        margin.register([
-            CreateEventTool(calendarManager: calendarManager,
-                            defaultDurationMinutes: quickAddConfig.defaultDurationMinutes,
-                            calendarID: marginConfig.calendarID ?? quickAddConfig.defaultCalendarID),
-            CreateTaskTool(taskManager: taskManager, config: taskConfig),
-            TodayTool(calendarManager: calendarManager, taskManager: taskManager),
-            FindTimeTool(calendarManager: calendarManager),
-            CapabilitiesTool(summaries: { [weak margin] in margin?.capabilities ?? [] }),
-            // Files. Every one of these refuses to act outside a granted root.
-            FindFilesTool(roots: marginRoots),
-            FindByContentTool(roots: marginRoots),
-            FolderSummaryTool(roots: marginRoots),
-            WhereIsTool(roots: marginRoots),
-            MoveFilesTool(roots: marginRoots),
-            TrashFilesTool(roots: marginRoots),
-            CreateFolderTool(roots: marginRoots),
-            RenameFilesTool(roots: marginRoots),
-            // Wires over state the app already publishes — no network, no disk.
-            ListTasksTool(taskManager: taskManager),
-            CompleteTaskTool(taskManager: taskManager),
-            DayBriefingTool(calendarManager: calendarManager, taskManager: taskManager),
-            RSVPTool(calendarManager: calendarManager)
-        ])
-
-        // Routing fixtures, run headless against the configured model.
-        if ProcessInfo.processInfo.environment["MARGIN_FIXTURES"] != nil {
-            Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 1_500_000_000)
-                let guardsHeld = await MarginFixtures.guardRails()
-                let routingPassed = await MarginFixtures.run(agent: margin, config: marginConfig)
-                exit(guardsHeld && routingPassed ? 0 : 1)
-            }
-        }
+        margin.registerStandardTools(calendarManager: calendarManager, taskManager: taskManager,
+                                     taskConfig: taskConfig, quickAddConfig: quickAddConfig,
+                                     marginConfig: marginConfig, marginRoots: marginRoots, assistantConfig: assistantConfig, recordingConfig: recordingConfig, notesPipeline: notesPipeline)
 
         // Demo hook, same shape as MEETINGINTRO_SELFTEST: open Margin and ask it one
         // question, so a page can be exercised and captured without synthesising
@@ -562,8 +603,10 @@ final class AppLifecycleManager: ObservableObject {
                             taskManager: taskManager, log: diagnosticLog)
 
         // File Organizer (Issue #17): wire the organizer to its config + log.
+        fileOrganizer.marginRoots = marginRoots
         fileOrganizer.attach(config: assistantConfig)
         fileOrganizer.diagnosticLog = diagnosticLog
+        fileOrganizerCoordinator.marginRoots = marginRoots
         fileOrganizerCoordinator.attach(config: assistantConfig, organizer: fileOrganizer,
                                         notificationManager: notificationManager, diagnosticLog: diagnosticLog)
         // Camera-cover reminder (opt-in): nudges you to close a physical cover once

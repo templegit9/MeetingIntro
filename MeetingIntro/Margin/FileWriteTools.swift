@@ -447,3 +447,64 @@ enum FileNames {
             .description
     }
 }
+
+/// Image export is an explicit copy of the imported bytes, never a conversion.
+@MainActor
+enum MarginImageExport {
+    struct Saved {
+        let url: URL
+        let data: Data
+        let fileNumber: NSNumber
+        let deviceNumber: NSNumber
+    }
+    static func destination(folder: URL, filename: String, fileExtension: String) throws -> URL {
+        guard !filename.isEmpty, filename.utf8.count <= 240, !filename.hasPrefix("."),
+              !filename.contains("/"), !filename.contains("\\"), !filename.contains(":"),
+              !filename.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }),
+              (filename as NSString).pathExtension.lowercased() == fileExtension.lowercased() else {
+            throw ToolArgumentError(message: "Use a simple filename ending in .\(fileExtension). The image format stays unchanged.")
+        }
+        return folder.appendingPathComponent(filename, isDirectory: false)
+    }
+    static func save(data: Data, folder: URL, filename: String, fileExtension: String, roots: MarginRoots) throws -> Saved {
+        let target = try destination(folder: folder, filename: filename, fileExtension: fileExtension)
+        guard roots.isGranted(folder), roots.isGranted(target) else { throw ToolArgumentError(message: "This folder is no longer granted. Choose a folder again.") }
+        var directory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: folder.path, isDirectory: &directory), directory.boolValue else { throw ToolArgumentError(message: "The destination folder is unavailable.") }
+        // Exclusive creation also refuses existing symlinks; never overwrite on a race.
+        try data.write(to: target, options: .withoutOverwriting)
+        let attributes = try FileManager.default.attributesOfItem(atPath: target.path)
+        guard let number = attributes[.systemFileNumber] as? NSNumber,
+              let device = attributes[.systemNumber] as? NSNumber else {
+            throw ToolArgumentError(message: "The image was saved, but undo could not be prepared. Check \(target.lastPathComponent).")
+        }
+        return Saved(url: target, data: data, fileNumber: number, deviceNumber: device)
+    }
+    static func undo(_ saved: Saved, roots: MarginRoots) throws {
+        guard roots.isGranted(saved.url) else { throw ToolArgumentError(message: "Grant this folder again before undoing the save.") }
+        let attributes = try FileManager.default.attributesOfItem(atPath: saved.url.path)
+        guard attributes[.type] as? FileAttributeType == .typeRegular,
+              attributes[.systemFileNumber] as? NSNumber == saved.fileNumber,
+              attributes[.systemNumber] as? NSNumber == saved.deviceNumber,
+              try Data(contentsOf: saved.url) == saved.data else {
+            throw ToolArgumentError(message: "The saved file has changed or been replaced. Undo will leave it untouched.")
+        }
+        try FileManager.default.trashItem(at: saved.url, resultingItemURL: nil)
+    }
+}
+
+@MainActor
+enum MarginDocumentExport {
+    enum Format: String, CaseIterable, Codable {
+        case txt, docx, md
+        var label: String { switch self { case .txt: return "Text (.txt)"; case .docx: return "Word (.docx)"; case .md: return "Markdown (.md)" } }
+    }
+    static func data(text: String, format: Format) throws -> Data {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, text.utf8.count <= 200_000 else {
+            throw ToolArgumentError(message: "Review the extracted text before saving. Keep the document below 200 KB of text.")
+        }
+        if format != .docx { return Data(text.utf8) }
+        let content = NSAttributedString(string: text, attributes: [.font: NSFont.systemFont(ofSize: 12), .foregroundColor: NSColor.black])
+        return try content.data(from: NSRange(location: 0, length: content.length), documentAttributes: [.documentType: NSAttributedString.DocumentType.officeOpenXML])
+    }
+}

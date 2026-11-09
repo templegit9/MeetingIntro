@@ -48,7 +48,7 @@ struct ListTasksTool: AgentTool {
                 details: [open.isEmpty
                           ? "Your list is empty."
                           : "\(open.count) task\(open.count == 1 ? "" : "s") on the list, none \(scope)."],
-                run: { _ in "" })
+                agentReadable: true, run: { _ in "" })
         }
 
         // Overdue first, then by deadline, then the undated — the order you'd read them in.
@@ -79,7 +79,7 @@ struct ListTasksTool: AgentTool {
             title: "\(matching.count) task\(matching.count == 1 ? "" : "s")",
             groups: groups,
             provenance: overdue.isEmpty ? nil : "\(overdue.count) already past its deadline.",
-            confirmLabel: "Mark done",
+            agentReadable: true, confirmLabel: "Mark done",
             run: { picked in
                 guard let picked, var task = manager.tasks.first(where: { $0.id == picked }) else {
                     return "Pick one first."
@@ -127,7 +127,7 @@ struct CompleteTaskTool: AgentTool {
                 provenance: open.isEmpty
                     ? "Your list is empty."
                     : "\(open.count) task\(open.count == 1 ? "" : "s") outstanding.",
-                run: { _ in "" })
+                agentReadable: true, run: { _ in "" })
         }
 
         let manager = taskManager
@@ -253,7 +253,7 @@ struct DayBriefingTool: AgentTool {
             title: isToday ? "Today" : day.formatted(.dateTime.weekday(.wide).day().month(.abbreviated)),
             details: lines,
             provenance: "Read \(sources) calendar source\(sources == 1 ? "" : "s") · cancelled meetings excluded.",
-            run: { _ in "" })
+            agentReadable: true, run: { _ in "" })
     }
 
     /// The longest free stretch between the day's meetings — the one you could actually
@@ -288,12 +288,12 @@ struct DayBriefingTool: AgentTool {
 struct RSVPTool: AgentTool {
     let name = "rsvp"
     func workingPhrase(_ a: [String: Any]) -> String { "finding that invitation…" }
-    let description = "Accept, decline or tentatively accept a meeting invitation, found by its name. Use for 'accept the standup', 'decline the Friday review'."
+    let description = "Accept, decline or tentatively accept a meeting invitation, found by its name. Use for 'accept the standup', 'decline the Friday review', or 'tentatively accept the planning invitation'. Provider support is checked when preparing the proposal."
     var humanSummary: String { "accept or decline an invitation" }
     var parameters: [String: Any] {
         Self.schema([
             "title": Self.string("All or part of the meeting's name"),
-            "response": Self.string("One of: accept, decline, tentative")
+            "response": ["type": "string", "enum": ["accept", "decline", "tentative"], "description": "Use tentative for tentatively accept or maybe; accept for yes; decline for no."]
         ], required: ["title", "response"])
     }
 
@@ -317,7 +317,7 @@ struct RSVPTool: AgentTool {
         guard let meeting = upcoming.first else {
             return ProposedAction(kind: .answer, title: "Not found",
                                   details: ["No upcoming meeting called “\(needle)”."],
-                                  run: { _ in "" })
+                                  agentReadable: true, run: { _ in "" })
         }
 
         // EventKit offers no RSVP API at all — Apple simply doesn't expose it. Saying so
@@ -330,7 +330,7 @@ struct RSVPTool: AgentTool {
                 details: ["\(meeting.title) — \(meeting.startDate.formatted(date: .abbreviated, time: .shortened))",
                           "macOS Calendar gives apps no way to RSVP. Microsoft 365 meetings can be answered; this one came from macOS Calendar."],
                 provenance: "Nothing was sent.",
-                run: { _ in "" })
+                agentReadable: true, run: { _ in "" })
         }
 
         let manager = calendarManager

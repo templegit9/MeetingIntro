@@ -8,6 +8,7 @@ import SwiftUI
 /// inline RSVP, an Upcoming submenu, and the action rows. Functional parity with the old
 /// NSMenu; the rich `PopoverRootView` is the alternate presentation (Phase 2+).
 struct CompactMenuView: View {
+    @AppStorage(MarginConfig.enabledKey) private var marginEnabled = false
     @ObservedObject var calendarManager: CalendarManager
     @ObservedObject var recordingController: RecordingController
     @ObservedObject var recordingCoordinator: MeetingRecordingCoordinator
@@ -275,6 +276,18 @@ struct CompactMenuView: View {
             }
             actionRow(icon: "arrow.clockwise", tint: .primary, label: "Refresh", trailing: "⌘R") {
                 Task { await calendarManager.refreshEvents() }
+            }
+            if marginEnabled {
+                actionRow(icon: "book.closed.fill", tint: .primary, label: "Margin", trailing: "⌥Space") {
+                    NotificationCenter.default.post(name: Notification.Name("MarginOpenNotebook"), object: nil)
+                }
+            } else {
+                SettingsLink { actionLabel(icon: "book.closed.fill", tint: .primary, label: "Set up Margin…") }
+                    .buttonStyle(.plain)
+                    .simultaneousGesture(TapGesture().onEnded {
+                        UserDefaults.standard.set(true, forKey: "openMarginSettings")
+                        NotificationCenter.default.post(name: Notification.Name("MarginShowSettings"), object: nil)
+                    })
             }
             SettingsLink { actionLabel(icon: "gearshape", tint: .primary, label: "Settings", trailing: "⌘,") }
                 .buttonStyle(.plain)

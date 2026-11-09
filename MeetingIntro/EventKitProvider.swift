@@ -159,6 +159,7 @@ final class EventKitProvider: CalendarProvider {
                 id: cal.calendarIdentifier,
                 name: cal.title,
                 color: cal.cgColor?.hexString ?? "#007AFF",
+                canEdit: cal.allowsContentModifications,
                 source: cal.source?.title ?? "Local"
             ,
                 providerType: .eventKit)
@@ -216,6 +217,70 @@ final class EventKitProvider: CalendarProvider {
                 recurrenceWith: .yearly, interval: 1, daysOfTheWeek: nil,
                 daysOfTheMonth: [NSNumber(value: day)], monthsOfTheYear: [NSNumber(value: month)],
                 weeksOfTheYear: nil, daysOfTheYear: nil, setPositions: nil, end: nil)
+        }
+    }
+
+    var canModifyEvents: Bool { isAuthorized }
+
+    /// Find the exact `EKEvent` behind a `MeetingEvent`.
+    ///
+    /// **`event(withIdentifier:)` is not enough for a recurring series**: every occurrence
+    /// shares one identifier, so it hands back the *first* one and "move my 3pm" would
+    /// silently move a different week. When an occurrence date is known, the search runs
+    /// over that day and matches on it.
+    private func resolve(id: String, occurrenceDate: Date?) -> EKEvent? {
+        guard let occurrenceDate else {
+            guard let event = eventStore.event(withIdentifier: id), !event.hasRecurrenceRules else { return nil }
+            return event
+        }
+        let calendar = Calendar.current
+        let start = calendar.date(byAdding: .day, value: -1, to: occurrenceDate) ?? occurrenceDate
+        let end = calendar.date(byAdding: .day, value: 2, to: occurrenceDate) ?? occurrenceDate
+        let predicate = eventStore.predicateForEvents(withStart: start, end: end, calendars: nil)
+        let candidates = eventStore.events(matching: predicate).filter { $0.eventIdentifier == id }
+        return candidates.first { event in
+            guard let occurrence = event.occurrenceDate else { return false }
+            return abs(occurrence.timeIntervalSince(occurrenceDate)) < 1
+        }
+    }
+
+    func moveEvent(id: String, occurrenceDate: Date?, to start: Date, end: Date) async throws {
+        guard isAuthorized else { throw CreateError.notAuthorized }
+        guard let event = resolve(id: id, occurrenceDate: occurrenceDate) else {
+            throw ToolArgumentError(message: "The exact event occurrence could not be found. Refresh the calendar and prepare a new proposal.")
+        }
+        guard event.calendar.allowsContentModifications else {
+            throw CreateError.saveFailed(NSError(
+                domain: "MeetingIntro", code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "“\(event.calendar.title)” is read-only, so this meeting can't be moved from here."]))
+        }
+        event.startDate = start
+        event.endDate = end
+        do {
+            // `.thisEvent` on purpose: moving one occurrence must never rewrite the whole
+            // series. Moving a series is a different, more dangerous instruction and is
+            // not offered.
+            try eventStore.save(event, span: .thisEvent, commit: true)
+        } catch {
+            throw CreateError.saveFailed(error)
+        }
+    }
+
+    func cancelEvent(id: String, occurrenceDate: Date?) async throws {
+        guard isAuthorized else { throw CreateError.notAuthorized }
+        guard let event = resolve(id: id, occurrenceDate: occurrenceDate) else {
+            throw ToolArgumentError(message: "The exact event occurrence could not be found. Refresh the calendar and prepare a new proposal.")
+        }
+        guard event.calendar.allowsContentModifications else {
+            throw CreateError.saveFailed(NSError(
+                domain: "MeetingIntro", code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "“\(event.calendar.title)” is read-only, so this meeting can't be removed from here."]))
+        }
+        do {
+            // The calendar service controls attendee notifications; never promise silence.
+            try eventStore.remove(event, span: .thisEvent, commit: true)
+        } catch {
+            throw CreateError.saveFailed(error)
         }
     }
 

@@ -17,9 +17,10 @@ enum DictionaryError: LocalizedError {
 /// dictionary (`DCSCopyTextDefinition`) as an offline / not-found fallback. Dictionary plugin.
 enum DictionaryService {
 
-    static func lookup(_ raw: String) async throws -> [WordEntry] {
+    static func lookup(_ raw: String, preferOffline: Bool = false) async throws -> [WordEntry] {
         let word = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !word.isEmpty else { return [] }
+        if preferOffline, let local = systemDefinition(word) { return [local] }
         do {
             return try await fetchOnline(word)
         } catch let e as DictionaryError {

@@ -397,7 +397,7 @@ final class GraphCalendarProvider: CalendarProvider {
                     url: joinURL,
                     notes: notes,
                     attendeeNames: Array(attendeeNames.prefix(10)),
-                    attendeeCount: attendeeNames.count,
+                    attendeeCount: (event.attendees ?? []).count,
                     organizerName: event.organizer?.emailAddress?.name,
                     isCancelled: cancelled,
                     isRecurring: event.type != nil && event.type != "singleInstance",
@@ -412,7 +412,7 @@ final class GraphCalendarProvider: CalendarProvider {
     func availableCalendars() async throws -> [CalendarInfo] {
         let token = try await validToken()
 
-        let url = URL(string: "https://graph.microsoft.com/v1.0/me/calendars?$select=id,name,color")!
+        let url = URL(string: "https://graph.microsoft.com/v1.0/me/calendars?$select=id,name,color,canEdit")!
         var request = URLRequest(url: url)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
@@ -424,6 +424,7 @@ final class GraphCalendarProvider: CalendarProvider {
                 id: cal.id,
                 name: cal.name,
                 color: graphColorToHex(cal.color),
+                canEdit: cal.canEdit ?? false,
                 source: "Microsoft 365"
             ,
                 providerType: .microsoftGraph)
@@ -508,6 +509,102 @@ final class GraphCalendarProvider: CalendarProvider {
     /// macOS Calendar reaches your own calendar and nobody else's. Attendees on the
     /// draft are sent here, and Exchange mails the invitations itself — no `Mail.Send`
     /// scope involved.
+    /// IDs are opaque path segments: a slash or question mark must never alter the route.
+    static func changeURL(id: String, cancel: Bool = false, metadata: Bool = false) throws -> URL {
+        guard !id.isEmpty, let encoded = id.addingPercentEncoding(withAllowedCharacters:
+            CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-._~"))) else {
+            throw ToolArgumentError(message: "This meeting has no usable identifier.")
+        }
+        var parts = URLComponents(string: "https://graph.microsoft.com/v1.0/me/events")!
+        parts.percentEncodedPath += "/" + encoded + (cancel ? "/cancel" : "")
+        if metadata { parts.queryItems = [URLQueryItem(name: "$select", value: "isOrganizer,type")] }
+        guard let url = parts.url else { throw ToolArgumentError(message: "This meeting has no usable identifier.") }
+        return url
+    }
+
+    var canModifyEvents: Bool { isAuthorized && supportsResponding }
+
+    /// PATCH the event's times. Graph tells the attendees itself when you're the
+    /// organiser, which is the whole reason this is worth having over EventKit.
+    func moveEvent(id: String, occurrenceDate: Date?, to start: Date, end: Date) async throws {
+        guard start < end else { throw ToolArgumentError(message: "The end must follow the start.") }
+        let token = try await validToken()
+        guard try await isOrganizer(of: id, existingToken: token) else {
+            throw ToolArgumentError(message: "Only the organiser can move this meeting.")
+        }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+
+        // Wall clock plus a named zone, never a UTC instant with an offset — sending both
+        // double-applies it and the meeting lands hours away. Same trap as creation.
+        let body: [String: Any] = [
+            "start": ["dateTime": formatter.string(from: start), "timeZone": "UTC"],
+            "end": ["dateTime": formatter.string(from: end), "timeZone": "UTC"]
+        ]
+        var request = URLRequest(url: try Self.changeURL(id: id))
+        request.httpMethod = "PATCH"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+        guard (200...299).contains(status) else {
+            let detail = String(data: data, encoding: .utf8)?.prefix(300) ?? ""
+            await log("warn", "Graph move failed (HTTP \(status)): \(detail)")
+            throw CalendarProviderError.networkError(underlying: URLError(.init(rawValue: status)))
+        }
+        await log("info", "Moved event on Microsoft 365 to \(formatter.string(from: start))")
+    }
+
+    /// Organiser-only cancellation. Attendees use RSVP; never silently switch to DELETE.
+    func cancelEvent(id: String, occurrenceDate: Date?) async throws {
+        let token = try await validToken()
+        let organiser = try await isOrganizer(of: id, existingToken: token)
+        guard organiser else {
+            throw ToolArgumentError(message: "Only the organiser can cancel this meeting. Use RSVP to decline it.")
+        }
+        var request = URLRequest(url: try Self.changeURL(id: id, cancel: true))
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        if organiser {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try JSONSerialization.data(withJSONObject: ["comment": "Cancelled."])
+        }
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+        guard (200...299).contains(status) else {
+            let detail = String(data: data, encoding: .utf8)?.prefix(300) ?? ""
+            await log("warn", "Graph cancel failed (HTTP \(status)): \(detail)")
+            throw CalendarProviderError.networkError(underlying: URLError(.init(rawValue: status)))
+        }
+        await log("info", organiser ? "Cancelled a meeting on Microsoft 365 (attendees notified)"
+                                     : "Removed a meeting from this Microsoft 365 calendar")
+    }
+
+    /// Whether the signed-in account organises this event — decides cancel vs remove.
+    func isOrganizer(of id: String, existingToken: String? = nil) async throws -> Bool {
+        // `??` takes an autoclosure, which can't await — resolve it explicitly.
+        let token: String
+        if let existingToken { token = existingToken } else { token = try await validToken() }
+        var request = URLRequest(url: try Self.changeURL(id: id, metadata: true))
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard (response as? HTTPURLResponse)?.statusCode == 200,
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let organizer = json["isOrganizer"] as? Bool,
+              let type = json["type"] as? String else {
+            throw ToolArgumentError(message: "Could not verify this meeting. Refresh the calendar and try again.")
+        }
+        guard ["singleInstance", "occurrence", "exception"].contains(type) else {
+            throw ToolArgumentError(message: "Choose one occurrence; changing an entire series is not supported.")
+        }
+        return organizer
+    }
+
     /// `DraftRecurrence` → Graph's `recurrence` object. The same closed set EventKit
     /// gets, so an event repeats identically wherever it was created.
     static func recurrenceBody(for recurrence: DraftRecurrence?, start: Date) -> [String: Any]? {
@@ -900,6 +997,7 @@ struct GraphCalendarItem: Codable {
     let id: String
     let name: String
     let color: String?
+    let canEdit: Bool?
 }
 
 struct DeviceCodeResponse: Codable {

@@ -13,3 +13,6 @@ MeetingIntro.dmg
 MeetingIntro_Release/
 MeetingIntro_Release*.zip
 MeetingIntro.app/
+
+__pycache__/
+*.pyc
