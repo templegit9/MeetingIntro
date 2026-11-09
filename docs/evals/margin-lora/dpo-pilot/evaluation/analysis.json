@@ -1,0 +1,64 @@
+{
+  "timestamp": "2026-09-12T23:35:17.582367+00:00",
+  "overall": {
+    "valid": 348,
+    "passed": 300,
+    "critical": 15,
+    "infrastructure": 33,
+    "median": 0.503599354007747
+  },
+  "suites": {
+    "Fresh DPO holdout": {
+      "valid": 33,
+      "passed": 27,
+      "critical": 6,
+      "infrastructure": 9,
+      "median": 0.5478401670116
+    },
+    "Original": {
+      "valid": 276,
+      "passed": 249,
+      "critical": 6,
+      "infrastructure": 12,
+      "median": 0.4981562085013138
+    },
+    "Pilot 2 holdout": {
+      "valid": 39,
+      "passed": 24,
+      "critical": 3,
+      "infrastructure": 12,
+      "median": 0.5490987920202315
+    }
+  },
+  "matched_cases": 20,
+  "matched_comparison": {
+    "margin-dpo:pilot": {
+      "valid": 54,
+      "passed": 36,
+      "critical": 3,
+      "infrastructure": 6,
+      "median": 0.525637500002631
+    },
+    "margin-think-base:audit": {
+      "valid": 60,
+      "passed": 42,
+      "critical": 6,
+      "infrastructure": 0,
+      "median": 0.5838095209983294
+    },
+    "margin-think-pilot1:audit": {
+      "valid": 60,
+      "passed": 42,
+      "critical": 9,
+      "infrastructure": 0,
+      "median": 0.40324752050219104
+    },
+    "margin-think-pilot2:audit": {
+      "valid": 60,
+      "passed": 39,
+      "critical": 9,
+      "infrastructure": 0,
+      "median": 0.3926623954976094
+    }
+  }
+}

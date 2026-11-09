@@ -1,0 +1,9 @@
+{
+  "installed_at": "2026-09-13T00:59:10.709460+00:00",
+  "path": "/Applications/MeetingIntro.app",
+  "backup": "/private/tmp/MeetingIntro-backup-20260912-175910.app",
+  "version": "2.20.6",
+  "build": "202609121758",
+  "model": "margin-lora-pilot:final",
+  "sha256": "2681538971d5823440b75bfe5a05262f69d301c5cfdf02f122d185cc1110ad2b"
+}

@@ -1,0 +1,3 @@
+{'timestamp': '2026-09-11T23:00:54.855401+00:00', 'stage': 'downloading', 'model': 'qwen3.5:4b'}
+{'timestamp': '2026-09-11T23:01:37.138489+00:00', 'stage': 'evaluating', 'model': 'qwen3.5:4b'}
+{'timestamp': '2026-09-11T23:57:43.854505+00:00', 'stage': 'needs_attention', 'reason': 'qwen3.5:4b: Swap grew by over 2 GiB after model load; hardware-pressure stop'}

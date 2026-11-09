@@ -1,0 +1,1341 @@
+{
+  "cases" : [
+    {
+      "actual" : "create_events",
+      "arguments" : {
+        "events" : [
+          {
+            "all_day" : true,
+            "start" : "2026-10-12",
+            "title" : "Columbus Day \/ Indigenous Peoples' Day (Federal \/ National)"
+          },
+          {
+            "all_day" : true,
+            "start" : "2026-10-31",
+            "title" : "Halloween (Cultural \/ Observance)"
+          },
+          {
+            "all_day" : true,
+            "start" : "2026-11-11",
+            "title" : "Veterans Day (Federal \/ National)"
+          },
+          {
+            "all_day" : true,
+            "start" : "2026-11-26",
+            "title" : "Thanksgiving Day (Federal \/ National)"
+          },
+          {
+            "all_day" : true,
+            "start" : "2026-11-27",
+            "title" : "Black Friday (Observance \/ Commercial)"
+          },
+          {
+            "all_day" : true,
+            "start" : "2026-12-24",
+            "title" : "Christmas Eve (Observance)"
+          },
+          {
+            "all_day" : true,
+            "start" : "2026-12-25",
+            "title" : "Christmas Day (Federal \/ National)"
+          },
+          {
+            "all_day" : true,
+            "start" : "2026-12-31",
+            "title" : "New Year's Eve (Observance)"
+          }
+        ]
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : true,
+      "expected" : [
+        "create_events"
+      ],
+      "latency_seconds" : 0.0012229681015014648,
+      "model_reply" : "",
+      "note" : "screenshot: all eight holidays, complete arguments",
+      "passed" : true,
+      "prompt" : "Put the following events in my calendar\nOctober 12, 2026 – Columbus Day \/ Indigenous Peoples' Day (Federal \/ National)\nOctober 31, 2026 – Halloween (Cultural \/ Observance)\nNovember 11, 2026 – Veterans Day (Federal \/ National)\nNovember 26, 2026 – Thanksgiving Day (Federal \/ National)\nNovember 27, 2026 – Black Friday (Observance \/ Commercial)\nDecember 24, 2026 – Christmas Eve (Observance)\nDecember 25, 2026 – Christmas Day (Federal \/ National)\nDecember 31, 2026 – New Year's Eve (Observance)"
+    },
+    {
+      "actual" : "web_research",
+      "arguments" : {
+        "freshness" : "",
+        "query" : "latest Swift concurrency guidance"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "web_research"
+      ],
+      "latency_seconds" : 12.240437984466553,
+      "model_reply" : "",
+      "note" : "public web research",
+      "passed" : true,
+      "prompt" : "Research the latest Swift concurrency guidance on the web"
+    },
+    {
+      "actual" : "list_jobs",
+      "arguments" : {
+
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "list_jobs"
+      ],
+      "latency_seconds" : 2.5095690488815308,
+      "model_reply" : "",
+      "note" : "durable and folder jobs",
+      "passed" : true,
+      "prompt" : "List my saved jobs and their progress"
+    },
+    {
+      "actual" : "list_recordings",
+      "arguments" : {
+
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : true,
+      "expected" : [
+        "list_recordings"
+      ],
+      "latency_seconds" : 0.00017499923706054688,
+      "model_reply" : "",
+      "note" : "existing recording state",
+      "passed" : true,
+      "prompt" : "Show my recordings"
+    },
+    {
+      "actual" : "search_transcripts",
+      "arguments" : {
+        "query" : "ServiceNow"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : true,
+      "expected" : [
+        "search_transcripts"
+      ],
+      "latency_seconds" : 0.00022995471954345703,
+      "model_reply" : "",
+      "note" : "literal local transcript query",
+      "passed" : true,
+      "prompt" : "Search my transcripts for ServiceNow"
+    },
+    {
+      "actual" : "watch_folder",
+      "arguments" : {
+        "folder" : "Downloads"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "watch_folder"
+      ],
+      "latency_seconds" : 3.4102510213851929,
+      "model_reply" : "",
+      "note" : "standing folder work, previewed",
+      "passed" : true,
+      "prompt" : "Watch my Downloads folder for new files"
+    },
+    {
+      "actual" : "schedule_organize",
+      "arguments" : {
+        "folder" : "Downloads",
+        "hour" : 9,
+        "minute" : 0
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "schedule_organize"
+      ],
+      "latency_seconds" : 5.0920859575271606,
+      "model_reply" : "",
+      "note" : "scheduled previews",
+      "passed" : true,
+      "prompt" : "Schedule organizing Downloads every day at 9am"
+    },
+    {
+      "actual" : "create_event",
+      "arguments" : {
+        "all_day" : false,
+        "attendees" : [
+
+        ],
+        "duration_minutes" : null,
+        "location" : "",
+        "repeat" : "",
+        "start" : "2026-09-11T13:00:00",
+        "title" : "lunch with Sam"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "create_event"
+      ],
+      "latency_seconds" : 10.447465062141418,
+      "model_reply" : "",
+      "note" : "must not stall asking for Sam's email",
+      "passed" : true,
+      "prompt" : "lunch with Sam tomorrow 1pm"
+    },
+    {
+      "actual" : "create_task",
+      "arguments" : {
+        "due" : "2026-09-11T17:00:00",
+        "remind_minutes_before" : 60,
+        "title" : "Submit expense report"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "create_task"
+      ],
+      "latency_seconds" : 12.134775042533875,
+      "model_reply" : "",
+      "note" : "deadline task",
+      "passed" : true,
+      "prompt" : "remind me to submit the expense report by Friday 5pm"
+    },
+    {
+      "actual" : "create_task",
+      "arguments" : {
+        "title" : "buy milk"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "create_task"
+      ],
+      "latency_seconds" : 3.8127769231796265,
+      "model_reply" : "",
+      "note" : "must not refuse for want of a deadline",
+      "passed" : true,
+      "prompt" : "add a task to buy milk"
+    },
+    {
+      "actual" : "whats_on_today",
+      "arguments" : {
+
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "whats_on_today"
+      ],
+      "latency_seconds" : 2.2692979574203491,
+      "model_reply" : "",
+      "note" : "read",
+      "passed" : true,
+      "prompt" : "what's on today?"
+    },
+    {
+      "actual" : "find_time",
+      "arguments" : {
+        "days_ahead" : 1,
+        "duration_minutes" : 30,
+        "from_date" : "2026-09-10"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "find_time"
+      ],
+      "latency_seconds" : 13.465155005455017,
+      "model_reply" : "",
+      "note" : "read",
+      "passed" : true,
+      "prompt" : "when am I free for 30 minutes"
+    },
+    {
+      "actual" : "find_time",
+      "arguments" : {
+        "days_ahead" : 1,
+        "duration_minutes" : 30,
+        "earliest_hour" : 12,
+        "from_date" : "2026-09-11",
+        "latest_hour" : 18
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "find_time"
+      ],
+      "latency_seconds" : 9.5721780061721802,
+      "model_reply" : "",
+      "note" : "needs from_date + an hour range to be answerable",
+      "passed" : true,
+      "prompt" : "what's free tomorrow afternoon"
+    },
+    {
+      "actual" : "find_time",
+      "arguments" : {
+        "days_ahead" : 5,
+        "duration_minutes" : 45,
+        "earliest_hour" : 9,
+        "from_date" : "2026-09-10",
+        "latest_hour" : 18
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "find_time"
+      ],
+      "latency_seconds" : 14.444460034370422,
+      "model_reply" : "",
+      "note" : "phrasing",
+      "passed" : true,
+      "prompt" : "any gaps this week for a 45 minute call"
+    },
+    {
+      "actual" : "create_event",
+      "arguments" : {
+        "all_day" : false,
+        "attendees" : [
+
+        ],
+        "duration_minutes" : 90,
+        "location" : "",
+        "repeat" : "",
+        "title" : "board deck"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "create_event"
+      ],
+      "latency_seconds" : 9.6407690048217773,
+      "model_reply" : "",
+      "note" : "hold",
+      "passed" : true,
+      "prompt" : "block 90 minutes for the board deck on Thursday"
+    },
+    {
+      "actual" : "create_event",
+      "arguments" : {
+        "all_day" : true,
+        "attendees" : [
+
+        ],
+        "duration_minutes" : null,
+        "location" : "",
+        "repeat" : "",
+        "start" : "",
+        "title" : "Labour Day"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "create_event"
+      ],
+      "latency_seconds" : 5.8106249570846558,
+      "model_reply" : "",
+      "note" : "all-day",
+      "passed" : true,
+      "prompt" : "all day for Labour Day"
+    },
+    {
+      "actual" : "list_capabilities",
+      "arguments" : {
+
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : true,
+      "expected" : [
+        "list_capabilities"
+      ],
+      "latency_seconds" : 9.4890594482421875e-05,
+      "model_reply" : "",
+      "note" : "REPORTED: this called find_time before list_capabilities existed",
+      "passed" : true,
+      "prompt" : "what can yo do"
+    },
+    {
+      "actual" : "list_capabilities",
+      "arguments" : {
+
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : true,
+      "expected" : [
+        "list_capabilities"
+      ],
+      "latency_seconds" : 0.00013494491577148438,
+      "model_reply" : "",
+      "note" : "abilities",
+      "passed" : true,
+      "prompt" : "what can you do?"
+    },
+    {
+      "actual" : "list_capabilities",
+      "arguments" : {
+
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : true,
+      "expected" : [
+        "list_capabilities"
+      ],
+      "latency_seconds" : 7.0095062255859375e-05,
+      "model_reply" : "",
+      "note" : "abilities",
+      "passed" : true,
+      "prompt" : "help"
+    },
+    {
+      "actual" : "list_capabilities",
+      "arguments" : {
+
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : true,
+      "expected" : [
+        "list_capabilities"
+      ],
+      "latency_seconds" : 5.7935714721679688e-05,
+      "model_reply" : "",
+      "note" : "abilities",
+      "passed" : true,
+      "prompt" : "who are you"
+    },
+    {
+      "actual" : "move_event",
+      "arguments" : {
+        "new_start" : "2026-09-10T16:00:00",
+        "title" : "3pm"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "move_event"
+      ],
+      "latency_seconds" : 21.859194040298462,
+      "model_reply" : "",
+      "note" : "MUST NOT be create_event — that leaves two meetings",
+      "passed" : true,
+      "prompt" : "move my 3pm to 4pm"
+    },
+    {
+      "actual" : "cancel_event",
+      "arguments" : {
+        "title" : "2pm"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "cancel_event"
+      ],
+      "latency_seconds" : 7.3458139896392822,
+      "model_reply" : "",
+      "note" : "cancel",
+      "passed" : true,
+      "prompt" : "cancel my 2pm"
+    },
+    {
+      "actual" : "move_event",
+      "arguments" : {
+        "new_start" : "2026-09-11T10:00:00",
+        "title" : "standup"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "move_event"
+      ],
+      "latency_seconds" : 8.9031320810317993,
+      "model_reply" : "",
+      "note" : "move, other phrasing",
+      "passed" : true,
+      "prompt" : "push the standup to 10am"
+    },
+    {
+      "actual" : "cancel_event",
+      "arguments" : {
+        "title" : "design review"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "cancel_event"
+      ],
+      "latency_seconds" : 3.5041239261627197,
+      "model_reply" : "",
+      "note" : "remove phrasing",
+      "passed" : true,
+      "prompt" : "take the design review off my calendar"
+    },
+    {
+      "actual" : "(declined)",
+      "arguments" : {
+
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "move_event"
+      ],
+      "latency_seconds" : 33.20618999004364,
+      "model_reply" : "",
+      "note" : "move to another day",
+      "passed" : false,
+      "prompt" : "shift tomorrow's 1:1 to Thursday"
+    },
+    {
+      "actual" : "trash_files",
+      "arguments" : {
+        "ext" : [
+
+        ],
+        "folder" : "Downloads",
+        "limit" : 100
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "(declined)",
+        "trash_files"
+      ],
+      "latency_seconds" : 11.046002984046936,
+      "model_reply" : "",
+      "note" : "either is safe; the tool's filter guard is the real protection",
+      "passed" : true,
+      "prompt" : "delete everything in Downloads"
+    },
+    {
+      "actual" : "web_research",
+      "arguments" : {
+        "freshness" : "",
+        "query" : "weather in Lagos"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "web_research"
+      ],
+      "latency_seconds" : 3.9572639465332031,
+      "model_reply" : "",
+      "note" : "current public information is now supported by web research",
+      "passed" : true,
+      "prompt" : "how is the weather in Lagos"
+    },
+    {
+      "actual" : "find_files",
+      "arguments" : {
+        "ext" : [
+          "pdf"
+        ],
+        "folder" : "Downloads"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "find_files"
+      ],
+      "latency_seconds" : 3.1231850385665894,
+      "model_reply" : "",
+      "note" : "name\/kind search",
+      "passed" : true,
+      "prompt" : "find the pdfs in Downloads"
+    },
+    {
+      "actual" : "find_files",
+      "arguments" : {
+        "ext" : [
+          "dmg"
+        ],
+        "older_than_days" : 365
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "find_files"
+      ],
+      "latency_seconds" : 4.8075809478759766,
+      "model_reply" : "",
+      "note" : "age + extension",
+      "passed" : true,
+      "prompt" : "what dmg files do I have that are over a year old"
+    },
+    {
+      "actual" : "find_files_by_content",
+      "arguments" : {
+        "ext" : [
+
+        ],
+        "folder" : "",
+        "limit" : 12,
+        "text" : "Acme"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "find_files_by_content"
+      ],
+      "latency_seconds" : 8.3024370670318604,
+      "model_reply" : "",
+      "note" : "MUST NOT route to find_files — it is about what the file says",
+      "passed" : true,
+      "prompt" : "which file mentions Acme"
+    },
+    {
+      "actual" : "find_files_by_content",
+      "arguments" : {
+        "ext" : [
+          "png",
+          "jpg",
+          "jpeg"
+        ],
+        "folder" : "",
+        "limit" : 12,
+        "text" : "error"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "find_files_by_content"
+      ],
+      "latency_seconds" : 9.9450070858001709,
+      "model_reply" : "",
+      "note" : "OCR territory",
+      "passed" : true,
+      "prompt" : "find the screenshot with the error message in it"
+    },
+    {
+      "actual" : "folder_summary",
+      "arguments" : {
+        "folder" : "Downloads"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "folder_summary"
+      ],
+      "latency_seconds" : 4.0718879699707031,
+      "model_reply" : "",
+      "note" : "shape of a folder",
+      "passed" : true,
+      "prompt" : "what's in my Downloads folder"
+    },
+    {
+      "actual" : "where_is",
+      "arguments" : {
+        "name" : "blender.dmg"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "where_is"
+      ],
+      "latency_seconds" : 2.5193909406661987,
+      "model_reply" : "",
+      "note" : "locate by name",
+      "passed" : true,
+      "prompt" : "where is blender.dmg"
+    },
+    {
+      "actual" : "move_files",
+      "arguments" : {
+        "destination" : "Installers",
+        "ext" : [
+          "dmg"
+        ]
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "move_files"
+      ],
+      "latency_seconds" : 5.3642189502716064,
+      "model_reply" : "",
+      "note" : "move",
+      "passed" : true,
+      "prompt" : "move the dmgs into an Installers folder"
+    },
+    {
+      "actual" : "move_files",
+      "arguments" : {
+        "destination" : "Archive",
+        "ext" : [
+          "pdf"
+        ],
+        "older_than_days" : 30,
+        "query" : "invoice"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "move_files"
+      ],
+      "latency_seconds" : 19.820098042488098,
+      "model_reply" : "",
+      "note" : "move by age",
+      "passed" : true,
+      "prompt" : "put last month's invoices in Archive"
+    },
+    {
+      "actual" : "trash_files",
+      "arguments" : {
+        "ext" : [
+          "dmg",
+          "pkg"
+        ],
+        "older_than_days" : 365
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "trash_files"
+      ],
+      "latency_seconds" : 9.0636260509490967,
+      "model_reply" : "",
+      "note" : "trash",
+      "passed" : true,
+      "prompt" : "bin the installers I haven't touched in a year"
+    },
+    {
+      "actual" : "(declined)",
+      "arguments" : {
+
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : true,
+      "expected" : [
+        "(declined)"
+      ],
+      "latency_seconds" : 0.00012099742889404297,
+      "model_reply" : "",
+      "note" : "MUST decline — Margin trashes, it never deletes for good",
+      "passed" : true,
+      "prompt" : "permanently delete the old screenshots"
+    },
+    {
+      "actual" : "(declined)",
+      "arguments" : {
+
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "(declined)"
+      ],
+      "latency_seconds" : 3.6148769855499268,
+      "model_reply" : "I’m sorry, but I can’t empty the trash.",
+      "note" : "not in the registry, and never will be",
+      "passed" : true,
+      "prompt" : "empty the trash"
+    },
+    {
+      "actual" : "create_folder",
+      "arguments" : {
+        "name" : "Invoices",
+        "parent" : "Downloads"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "create_folder"
+      ],
+      "latency_seconds" : 3.6716328859329224,
+      "model_reply" : "",
+      "note" : "create",
+      "passed" : true,
+      "prompt" : "make an Invoices folder in Downloads"
+    },
+    {
+      "actual" : "rename_files",
+      "arguments" : {
+        "ext" : [
+          "png",
+          "jpg",
+          "jpeg"
+        ],
+        "folder" : "",
+        "limit" : 100,
+        "style" : "date_prefix"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "rename_files"
+      ],
+      "latency_seconds" : 5.4967920780181885,
+      "model_reply" : "",
+      "note" : "rename pattern",
+      "passed" : true,
+      "prompt" : "prefix the screenshots with their date"
+    },
+    {
+      "actual" : "rename_files",
+      "arguments" : {
+        "ext" : [
+
+        ],
+        "find" : "IMG_",
+        "folder" : "",
+        "limit" : 100,
+        "newer_than_days" : null,
+        "older_than_days" : null,
+        "query" : "",
+        "replace_with" : "Holiday",
+        "style" : "replace"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "rename_files"
+      ],
+      "latency_seconds" : 14.629480004310608,
+      "model_reply" : "",
+      "note" : "MUST NOT route to move_files — renaming is not moving",
+      "passed" : true,
+      "prompt" : "replace IMG_ with Holiday in those file names"
+    },
+    {
+      "actual" : "list_tasks",
+      "arguments" : {
+        "limit" : 20,
+        "scope" : "all"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "list_tasks"
+      ],
+      "latency_seconds" : 4.2232990264892578,
+      "model_reply" : "",
+      "note" : "outstanding",
+      "passed" : true,
+      "prompt" : "what's on my list"
+    },
+    {
+      "actual" : "list_tasks",
+      "arguments" : {
+        "scope" : "overdue"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "list_tasks"
+      ],
+      "latency_seconds" : 4.3001589775085449,
+      "model_reply" : "",
+      "note" : "scoped list",
+      "passed" : true,
+      "prompt" : "what's overdue"
+    },
+    {
+      "actual" : "complete_task",
+      "arguments" : {
+        "title" : "expense report"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "complete_task"
+      ],
+      "latency_seconds" : 2.5030061006546021,
+      "model_reply" : "",
+      "note" : "tick off",
+      "passed" : true,
+      "prompt" : "mark the expense report done"
+    },
+    {
+      "actual" : "day_briefing",
+      "arguments" : {
+        "day" : "2026-09-10"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "day_briefing"
+      ],
+      "latency_seconds" : 5.2906869649887085,
+      "model_reply" : "",
+      "note" : "shape of the day",
+      "passed" : true,
+      "prompt" : "how does my day look"
+    },
+    {
+      "actual" : "day_briefing",
+      "arguments" : {
+        "day" : "2026-09-10"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "day_briefing"
+      ],
+      "latency_seconds" : 2.7094370126724243,
+      "model_reply" : "",
+      "note" : "phrasing",
+      "passed" : true,
+      "prompt" : "brief me on today"
+    },
+    {
+      "actual" : "rsvp",
+      "arguments" : {
+        "response" : "decline",
+        "title" : "Friday review"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "rsvp"
+      ],
+      "latency_seconds" : 4.1277819871902466,
+      "model_reply" : "",
+      "note" : "RSVP",
+      "passed" : true,
+      "prompt" : "decline the Friday review"
+    },
+    {
+      "actual" : "rsvp",
+      "arguments" : {
+        "response" : "accept",
+        "title" : "standup"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "rsvp"
+      ],
+      "latency_seconds" : 5.9013359546661377,
+      "model_reply" : "",
+      "note" : "RSVP",
+      "passed" : true,
+      "prompt" : "accept the standup invite"
+    },
+    {
+      "actual" : "whats_on_today",
+      "arguments" : {
+
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "whats_on_today",
+        "day_briefing"
+      ],
+      "latency_seconds" : 1.9305469989776611,
+      "model_reply" : "",
+      "note" : "both read today; neither may be a write",
+      "passed" : true,
+      "prompt" : "what meetings do I have today"
+    },
+    {
+      "actual" : "list_capabilities",
+      "arguments" : {
+
+      },
+      "arguments_valid" : true,
+      "context" : [
+        {
+          "content" : "Find PDFs in Downloads",
+          "role" : "user"
+        },
+        {
+          "content" : "4 FILES \/ 441 KB. DOWNLOADS. Report.pdf, Agenda.pdf, Notes.pdf, Review.pdf. Reveal in Finder or Leave it.",
+          "role" : "assistant"
+        },
+        {
+          "content" : "leave it",
+          "role" : "user"
+        },
+        {
+          "content" : "Dismissed.",
+          "role" : "assistant"
+        }
+      ],
+      "deterministic" : true,
+      "expected" : [
+        "list_capabilities"
+      ],
+      "latency_seconds" : 6.008148193359375e-05,
+      "model_reply" : "",
+      "note" : "screenshot regression: capability question after dismissed PDF results",
+      "passed" : true,
+      "prompt" : "what can you do"
+    },
+    {
+      "actual" : "list_capabilities",
+      "arguments" : {
+
+      },
+      "arguments_valid" : true,
+      "context" : [
+        {
+          "content" : "Find PDFs in Downloads",
+          "role" : "user"
+        },
+        {
+          "content" : "4 FILES \/ 441 KB. DOWNLOADS. Report.pdf, Agenda.pdf, Notes.pdf, Review.pdf. Reveal in Finder or Leave it.",
+          "role" : "assistant"
+        },
+        {
+          "content" : "leave it",
+          "role" : "user"
+        },
+        {
+          "content" : "Dismissed.",
+          "role" : "assistant"
+        }
+      ],
+      "deterministic" : true,
+      "expected" : [
+        "list_capabilities"
+      ],
+      "latency_seconds" : 3.0994415283203125e-05,
+      "model_reply" : "",
+      "note" : "typo after file results",
+      "passed" : true,
+      "prompt" : "what can yo do?"
+    },
+    {
+      "actual" : "list_capabilities",
+      "arguments" : {
+
+      },
+      "arguments_valid" : true,
+      "context" : [
+        {
+          "content" : "Find PDFs in Downloads",
+          "role" : "user"
+        },
+        {
+          "content" : "4 FILES \/ 441 KB. DOWNLOADS. Report.pdf, Agenda.pdf, Notes.pdf, Review.pdf. Reveal in Finder or Leave it.",
+          "role" : "assistant"
+        },
+        {
+          "content" : "leave it",
+          "role" : "user"
+        },
+        {
+          "content" : "Dismissed.",
+          "role" : "assistant"
+        }
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "list_capabilities"
+      ],
+      "latency_seconds" : 3.8271069526672363,
+      "model_reply" : "",
+      "note" : "model-routed capability paraphrase after PDFs",
+      "passed" : true,
+      "prompt" : "tell me about your abilities"
+    },
+    {
+      "actual" : "list_tasks",
+      "arguments" : {
+        "limit" : 20,
+        "scope" : "overdue"
+      },
+      "arguments_valid" : true,
+      "context" : [
+        {
+          "content" : "Find PDFs in Downloads",
+          "role" : "user"
+        },
+        {
+          "content" : "4 FILES \/ 441 KB. DOWNLOADS. Report.pdf, Agenda.pdf, Notes.pdf, Review.pdf. Reveal in Finder or Leave it.",
+          "role" : "assistant"
+        },
+        {
+          "content" : "leave it",
+          "role" : "user"
+        },
+        {
+          "content" : "Dismissed.",
+          "role" : "assistant"
+        }
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "list_tasks"
+      ],
+      "latency_seconds" : 2.0304681062698364,
+      "model_reply" : "",
+      "note" : "new task intent replaces files",
+      "passed" : true,
+      "prompt" : "List my overdue tasks"
+    },
+    {
+      "actual" : "move_event",
+      "arguments" : {
+        "new_start" : "2026-09-11T16:00:00",
+        "title" : "3pm"
+      },
+      "arguments_valid" : true,
+      "context" : [
+        {
+          "content" : "Create a review tomorrow at 3pm",
+          "role" : "user"
+        },
+        {
+          "content" : "Create review at 3pm tomorrow. Proposal only; not confirmed.",
+          "role" : "assistant"
+        }
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "move_event"
+      ],
+      "latency_seconds" : 13.598132014274597,
+      "model_reply" : "",
+      "note" : "move must not inherit create_event",
+      "passed" : true,
+      "prompt" : "move my 3pm to 4pm"
+    },
+    {
+      "actual" : "list_capabilities",
+      "arguments" : {
+
+      },
+      "arguments_valid" : true,
+      "context" : [
+        {
+          "content" : "Create a review tomorrow at 3pm",
+          "role" : "user"
+        },
+        {
+          "content" : "Create review at 3pm tomorrow. Proposal only; not confirmed.",
+          "role" : "assistant"
+        }
+      ],
+      "deterministic" : true,
+      "expected" : [
+        "list_capabilities"
+      ],
+      "latency_seconds" : 5.7935714721679688e-05,
+      "model_reply" : "",
+      "note" : "capabilities after an unconfirmed write",
+      "passed" : true,
+      "prompt" : "what can you do?"
+    },
+    {
+      "actual" : "find_files",
+      "arguments" : {
+        "ext" : [
+          "png"
+        ],
+        "folder" : "Downloads"
+      },
+      "arguments_valid" : true,
+      "context" : [
+        {
+          "content" : "Find PDFs in Downloads",
+          "role" : "user"
+        },
+        {
+          "content" : "4 FILES \/ 441 KB. DOWNLOADS. Report.pdf, Agenda.pdf, Notes.pdf, Review.pdf. Reveal in Finder or Leave it.",
+          "role" : "assistant"
+        },
+        {
+          "content" : "leave it",
+          "role" : "user"
+        },
+        {
+          "content" : "Dismissed.",
+          "role" : "assistant"
+        }
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "find_files"
+      ],
+      "latency_seconds" : 2.8860310316085815,
+      "model_reply" : "",
+      "note" : "file refinement",
+      "passed" : true,
+      "prompt" : "Find PNG files in Downloads instead"
+    },
+    {
+      "actual" : "cancel_event",
+      "arguments" : {
+        "title" : "my 2pm"
+      },
+      "arguments_valid" : true,
+      "context" : [
+        {
+          "content" : "Find PDFs in Downloads",
+          "role" : "user"
+        },
+        {
+          "content" : "4 FILES \/ 441 KB. DOWNLOADS. Report.pdf, Agenda.pdf, Notes.pdf, Review.pdf. Reveal in Finder or Leave it.",
+          "role" : "assistant"
+        },
+        {
+          "content" : "leave it",
+          "role" : "user"
+        },
+        {
+          "content" : "Dismissed.",
+          "role" : "assistant"
+        }
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "cancel_event"
+      ],
+      "latency_seconds" : 3.0743440389633179,
+      "model_reply" : "",
+      "note" : "cancel after unrelated file results",
+      "passed" : true,
+      "prompt" : "cancel my 2pm"
+    }
+  ],
+  "complete" : true,
+  "date" : "2026-09-11T01:49:03Z",
+  "expected_cases" : 57,
+  "model" : "gpt-oss:20b",
+  "passed" : 56,
+  "scope" : "Product tool dispatch and selected arguments; deterministic capability routing included. No live provider mutations."
+}

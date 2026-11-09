@@ -1,0 +1,11 @@
+{
+  "recorded_at": "2026-10-01T17:39:05.957292+00:00",
+  "scope": "Full production tool schemas; real reader/planner; simulated calendar effects; synthetic fixture, not user screenshot",
+  "hashes": {
+    "build/agentic-check/Build/Products/Debug/MeetingIntro.app/Contents/MacOS/MeetingIntro": "477ed5ce74c6344b5e533c931c8d98a6472b0f538f58ef275d78e395ea2f5fb0",
+    "build/agentic-check/Build/Products/Debug/MeetingIntro.app/Contents/MacOS/MeetingIntro.debug.dylib": "9282b2d6fa3036fba19a14b117272c5f8f1289704dc76413ed4b77c6c8705bc2",
+    "docs/evals/margin-agentic/20261001-broad/fixtures/week.png": "46f6252b75feb60229fcfbaa139b457ae231dd521cbdb9f8200c0393d1ea4dd4",
+    "docs/evals/margin-agentic/20261001-broad/fixtures/week.json": "ae6d3d8246a796d54e0574c85aedd6e886f6be81700bf23f3fd9f197e06621b8"
+  },
+  "no_retries": true
+}

@@ -1,0 +1,106 @@
+{
+  "model": "empero-qwen38-distill:4b-q4_k_m",
+  "started": "2026-09-12T00:01:49.161719+00:00",
+  "manifest_sha256": "323a2864c8623cc95bea322f7e07e5684fe132718d84e55e25f46698234c9206",
+  "host": "Oluyinkas-MacBook-Pro.local",
+  "memory_bytes": 25769803776,
+  "runtime": {
+    "version": "0.30.10"
+  },
+  "profile": {
+    "num_ctx": 8192,
+    "num_predict": 2048,
+    "temperature": 0
+  },
+  "status": "completed",
+  "package": {
+    "name": "empero-qwen38-distill:4b-q4_k_m",
+    "model": "empero-qwen38-distill:4b-q4_k_m",
+    "modified_at": "2026-09-11T17:01:49.025428163-07:00",
+    "size": 2783446711,
+    "digest": "56c1b4004458f7dfa3d1e5d76d74200ea42d8d6cc6ba9e7010d08b8461061e55",
+    "details": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "qwen35",
+      "families": [
+        "qwen35"
+      ],
+      "parameter_size": "4.33B",
+      "quantization_level": "unknown",
+      "context_length": 262144,
+      "embedding_length": 2560
+    },
+    "capabilities": [
+      "completion"
+    ]
+  },
+  "swap_start_bytes": 4545451130.88,
+  "cold_start_seconds": 5.856616042001406,
+  "cold_response": {
+    "model": "empero-qwen38-distill:4b-q4_k_m",
+    "created_at": "2026-09-12T00:01:55.059214Z",
+    "message": {
+      "role": "assistant",
+      "content": "READY",
+      "thinking": "Thinking Process:\n\n1.  **Analyze the Request:** The user wants a reply that is *only* \"READY\". No additional text, explanations, or formatting should be included.\n\n2.  **Determine the Output:** The required output is exactly \"READY\".\n\n3.  **Final Check:** Ensure no extra characters, spaces, or words are present before or after \"READY\".\n"
+    },
+    "done": true,
+    "done_reason": "stop",
+    "total_duration": 5855388292,
+    "load_duration": 2128254084,
+    "prompt_eval_count": 14,
+    "prompt_eval_duration": 175992000,
+    "eval_count": 86,
+    "eval_duration": 3535355000
+  },
+  "preflight_loaded_samples": [
+    [
+      {
+        "name": "empero-qwen38-distill:4b-q4_k_m",
+        "model": "empero-qwen38-distill:4b-q4_k_m",
+        "size": 3129569443,
+        "digest": "56c1b4004458f7dfa3d1e5d76d74200ea42d8d6cc6ba9e7010d08b8461061e55",
+        "details": {
+          "parent_model": "",
+          "format": "gguf",
+          "family": "qwen35",
+          "families": [
+            "qwen35"
+          ],
+          "parameter_size": "4.33B",
+          "quantization_level": "unknown"
+        },
+        "expires_at": "2026-09-11T17:11:55.0594-07:00",
+        "size_vram": 3129569443,
+        "context_length": 8192
+      }
+    ]
+  ],
+  "swap_after_load_bytes": 4545451130.88,
+  "swap_guard_basis": "Growth beyond 2 GiB after cold model load; initial loading swap retained separately.",
+  "finished": "2026-09-12T00:29:01.251375+00:00",
+  "failed_cases": 21,
+  "models_loaded_at_end": [
+    {
+      "name": "empero-qwen38-distill:4b-q4_k_m",
+      "model": "empero-qwen38-distill:4b-q4_k_m",
+      "size": 3129569443,
+      "digest": "56c1b4004458f7dfa3d1e5d76d74200ea42d8d6cc6ba9e7010d08b8461061e55",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen35",
+        "families": [
+          "qwen35"
+        ],
+        "parameter_size": "4.33B",
+        "quantization_level": "unknown"
+      },
+      "expires_at": "2026-09-11T17:29:01.30851-07:00",
+      "size_vram": 3129569443,
+      "context_length": 8192
+    }
+  ],
+  "swap_end_bytes": 4016895426.56
+}

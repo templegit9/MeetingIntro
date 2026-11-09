@@ -1,0 +1,109 @@
+{
+  "model": "qwen3.5:9b",
+  "started": "2026-09-11T21:16:29.192793+00:00",
+  "manifest_sha256": "b63f949b5ca326cf78f1d186f5ca7e067cdfcf8f3d6203e79b54389501dbb685",
+  "host": "Oluyinkas-MacBook-Pro.local",
+  "memory_bytes": 25769803776,
+  "runtime": {
+    "version": "0.30.10"
+  },
+  "profile": {
+    "num_ctx": 8192,
+    "num_predict": 2048,
+    "temperature": 0
+  },
+  "status": "incomplete",
+  "package": {
+    "name": "qwen3.5:9b",
+    "model": "qwen3.5:9b",
+    "modified_at": "2026-09-11T04:08:31.639770602-07:00",
+    "size": 6594474711,
+    "digest": "6488c96fa5faab64bb65cbd30d4289e20e6130ef535a93ef9a49f42eda893ea7",
+    "details": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "qwen35",
+      "families": [
+        "qwen35"
+      ],
+      "parameter_size": "9.7B",
+      "quantization_level": "Q4_K_M",
+      "context_length": 262144,
+      "embedding_length": 4096
+    },
+    "capabilities": [
+      "vision",
+      "completion",
+      "tools",
+      "thinking"
+    ]
+  },
+  "swap_start_bytes": 2522674626.56,
+  "cold_start_seconds": 22.943322000006447,
+  "cold_response": {
+    "model": "qwen3.5:9b",
+    "created_at": "2026-09-11T21:16:52.157828Z",
+    "message": {
+      "role": "assistant",
+      "content": "READY",
+      "thinking": "Thinking Process:\n\n1.  **Analyze the Request:** The user is asking me to reply *only* with the word \"READY\". This is a constraint-based instruction. I need to ensure my output contains nothing else (no explanations, no extra text).\n\n2.  **Determine the Output:** The required string is \"READY\".\n\n3.  **Check for Constraints:**\n    *   Constraint: Reply only READY.\n    *   My internal thought process should not be visible in the final output.\n    *   I must not add any punctuation unless it's part of the word (though usually, just the word). The prompt says \"Reply only READY.\" so capitalization matters.\n\n4.  **Final Decision:** Output exactly \"READY\".\n\n5.  **Execution:** Generate the response.cw"
+    },
+    "done": true,
+    "done_reason": "stop",
+    "total_duration": 22933846166,
+    "load_duration": 10509578208,
+    "prompt_eval_count": 14,
+    "prompt_eval_duration": 431025000,
+    "eval_count": 174,
+    "eval_duration": 11985372000
+  },
+  "preflight_loaded_samples": [
+    [
+      {
+        "name": "qwen3.5:9b",
+        "model": "qwen3.5:9b",
+        "size": 5662404770,
+        "digest": "6488c96fa5faab64bb65cbd30d4289e20e6130ef535a93ef9a49f42eda893ea7",
+        "details": {
+          "parent_model": "",
+          "format": "gguf",
+          "family": "qwen35",
+          "families": [
+            "qwen35"
+          ],
+          "parameter_size": "9.7B",
+          "quantization_level": "Q4_K_M"
+        },
+        "expires_at": "2026-09-11T14:26:52.159968-07:00",
+        "size_vram": 5662404770,
+        "context_length": 8192
+      }
+    ]
+  ],
+  "swap_after_load_bytes": 2589584261.12,
+  "swap_guard_basis": "Growth beyond 2 GiB after cold model load; initial loading swap retained separately.",
+  "finished": "2026-09-11T22:11:49.596102+00:00",
+  "reason": "Swap grew by over 2 GiB after model load; hardware-pressure stop",
+  "models_loaded_at_end": [
+    {
+      "name": "qwen3.5:9b",
+      "model": "qwen3.5:9b",
+      "size": 5662404770,
+      "digest": "6488c96fa5faab64bb65cbd30d4289e20e6130ef535a93ef9a49f42eda893ea7",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen35",
+        "families": [
+          "qwen35"
+        ],
+        "parameter_size": "9.7B",
+        "quantization_level": "Q4_K_M"
+      },
+      "expires_at": "2026-09-11T15:11:49.643969-07:00",
+      "size_vram": 5662404770,
+      "context_length": 8192
+    }
+  ],
+  "swap_end_bytes": 5951130173.44
+}

@@ -1,0 +1,24 @@
+{
+  "timestamp": "2026-09-14T02:13:16.627881+00:00",
+  "default": "TXT draft; follow-up offers Word or Markdown; save requires user confirmation",
+  "formats": [
+    "txt",
+    "docx",
+    "md"
+  ],
+  "build": "Debug build passed; validation instance running; installed bundle unchanged",
+  "verification": {
+    "native_user_screenshot": "Editable transcription produced with Text (.txt) selected",
+    "typed_follow_up": "Word please selected Word (.docx) and extracted-document.docx; no model loaded; Text please restored default",
+    "document_export_checks": 10,
+    "filesystem_checks": 10,
+    "draft_persistence": "pass, including document content and format",
+    "word_render": "Opened with LibreOffice and visually inspected the single rendered page"
+  },
+  "limits": [
+    "DOCX contains editable text and tab-separated rows, not reconstructed screenshot layout or native Word tables.",
+    "One receipt export fixture and one native user screenshot; not a comprehensive OCR accuracy evaluation.",
+    "Native Save confirmation was not exercised for document files; output encoders and filesystem safety were tested independently.",
+    "Dense or unreadable images still require review; interrupted/length-limited output is rejected."
+  ]
+}

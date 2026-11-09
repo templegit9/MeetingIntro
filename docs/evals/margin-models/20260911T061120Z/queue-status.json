@@ -1,0 +1,5 @@
+{
+  "timestamp": "2026-09-11T06:55:25.738048+00:00",
+  "stage": "needs_attention",
+  "reason": "A model remains loaded; queue will not load a second model: qwen3.5:9b"
+}

@@ -1,0 +1,9 @@
+{"stage": "waiting_for_training_and_export", "timestamp": "2026-09-12T06:13:48.546549+00:00"}
+{"stage": "waiting_for_training_and_export", "timestamp": "2026-09-12T09:41:58.946286+00:00"}
+{"stage": "transferring", "timestamp": "2026-09-12T09:50:35.753493+00:00", "sha256": "3b443a9b8f5b3cb30f8686f5e9e56adfb3308a9a0cecf6b26591ce6d52cf8f02"}
+json True
+tool True
+{"stage": "evaluating", "timestamp": "2026-09-12T09:53:32.562805+00:00", "suite": "regression-eval"}
+margin-lora-base-control:preflight completed 27
+margin-lora-pilot2:final completed 15
+Comparison finished. Inspect quality gates before any promotion.

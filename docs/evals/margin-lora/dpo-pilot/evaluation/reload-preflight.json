@@ -1,0 +1,16 @@
+{
+  "model": "margin-dpo:pilot",
+  "created_at": "2026-09-12T23:30:38.1952476Z",
+  "message": {
+    "role": "assistant",
+    "content": "{\"ready\":true}"
+  },
+  "done": true,
+  "done_reason": "stop",
+  "total_duration": 2942185200,
+  "load_duration": 2798678100,
+  "prompt_eval_count": 23,
+  "prompt_eval_duration": 87957000,
+  "eval_count": 6,
+  "eval_duration": 44180000
+}

@@ -1,0 +1,19 @@
+{
+  "reviewed_at": "2026-09-13T09:18:11.596899+00:00",
+  "archive": "/Users/oluyinkaoginni/Downloads/Margin_MeetingIntro.zip",
+  "sha256": "6aa6becf47f548ebbeea67f145f69c465b1b5afbfa523144322755e6d40e1b5d",
+  "rendered_documents": [
+    "Image Drop - use cases.html",
+    "Image Capabilities.html",
+    "Capability Pages.html"
+  ],
+  "viewport": [
+    1440,
+    1050
+  ],
+  "evidence_boundary": "Rendered visual references and source review; no functional image drop or inference eval",
+  "deliverables": [
+    "review-and-plan.html",
+    "review-and-plan.md"
+  ]
+}

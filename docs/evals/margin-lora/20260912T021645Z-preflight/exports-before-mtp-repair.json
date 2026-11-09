@@ -1,0 +1,14 @@
+[
+  {
+    "name": "base-control",
+    "path": "/mnt/c/Users/oluyi/Documents/Projects/Margin-Empero-LoRA/artifacts/exports/base-control-Q4_K_M.gguf",
+    "bytes": 2783446880,
+    "sha256": "7347c527c5c135e9ecf2911f518ce0a7db80d5afac737622681fd5a66bc1c95b"
+  },
+  {
+    "name": "smoke-adapted",
+    "path": "/mnt/c/Users/oluyi/Documents/Projects/Margin-Empero-LoRA/artifacts/exports/smoke-adapted-Q4_K_M.gguf",
+    "bytes": 2708803968,
+    "sha256": "0d400da2e13198311a1effedc74a45fb26dcda9219def0f4c96dbb122fb1c3ab"
+  }
+]

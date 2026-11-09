@@ -1,0 +1,3871 @@
+{
+  "timestamp": "2026-09-13T17:56:30.806609+00:00",
+  "mode": "Offline diagnostic only: remove one enclosing Markdown code fence; original scores and responses unchanged. Not new inference.",
+  "candidates": [
+    {
+      "candidate": "unadapted",
+      "passed_after_fence_removal": 3,
+      "total": 114,
+      "results": [
+        {
+          "id": "IMG-001",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-002",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-003",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-004",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-005",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-006",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-007",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-008",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-009",
+          "repeat": 1,
+          "errors": []
+        },
+        {
+          "id": "IMG-010",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-011",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-012",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-013",
+          "repeat": 1,
+          "errors": [
+            "invalid output object"
+          ]
+        },
+        {
+          "id": "IMG-014",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-015",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-016",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-017",
+          "repeat": 1,
+          "errors": [
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-018",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-019",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-020",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-021",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-022",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-023",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-024",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-025",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-026",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-027",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-028",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-029",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-030",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-031",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-032",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-033",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-034",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-035",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-036",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-037",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-038",
+          "repeat": 1,
+          "errors": [
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-018",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-019",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-020",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-021",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-022",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-023",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-024",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-025",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-026",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-027",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-028",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-029",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-030",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-031",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-032",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-033",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-034",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-035",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-036",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-037",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-038",
+          "repeat": 2,
+          "errors": [
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-001",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-002",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-003",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-004",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-005",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-006",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-007",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-008",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-009",
+          "repeat": 2,
+          "errors": []
+        },
+        {
+          "id": "IMG-010",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-011",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-012",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-013",
+          "repeat": 2,
+          "errors": [
+            "invalid output object"
+          ]
+        },
+        {
+          "id": "IMG-014",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-015",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-016",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-017",
+          "repeat": 2,
+          "errors": [
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-035",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-036",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-037",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-038",
+          "repeat": 3,
+          "errors": [
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-001",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-002",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-003",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-004",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-005",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-006",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-007",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-008",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-009",
+          "repeat": 3,
+          "errors": []
+        },
+        {
+          "id": "IMG-010",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-011",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-012",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-013",
+          "repeat": 3,
+          "errors": [
+            "invalid output object"
+          ]
+        },
+        {
+          "id": "IMG-014",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-015",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-016",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-017",
+          "repeat": 3,
+          "errors": [
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-018",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-019",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-020",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-021",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-022",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-023",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-024",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-025",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-026",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-027",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-028",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-029",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-030",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-031",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-032",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-033",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-034",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing citations"
+          ]
+        }
+      ]
+    },
+    {
+      "candidate": "epoch-1",
+      "passed_after_fence_removal": 12,
+      "total": 114,
+      "results": [
+        {
+          "id": "IMG-001",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-002",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-003",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-004",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-005",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-006",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-007",
+          "repeat": 1,
+          "errors": []
+        },
+        {
+          "id": "IMG-008",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-009",
+          "repeat": 1,
+          "errors": []
+        },
+        {
+          "id": "IMG-010",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-011",
+          "repeat": 1,
+          "errors": []
+        },
+        {
+          "id": "IMG-012",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-013",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-014",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-015",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-016",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-017",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-018",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-019",
+          "repeat": 1,
+          "errors": [
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-020",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-021",
+          "repeat": 1,
+          "errors": []
+        },
+        {
+          "id": "IMG-022",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-023",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-024",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-025",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-026",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-027",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-028",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-029",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-030",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-031",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-032",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-033",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-034",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-035",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-036",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-037",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-038",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-018",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-019",
+          "repeat": 2,
+          "errors": [
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-020",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-021",
+          "repeat": 2,
+          "errors": []
+        },
+        {
+          "id": "IMG-022",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-023",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-024",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-025",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-026",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-027",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-028",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-029",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-030",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-031",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-032",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-033",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-034",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-035",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-036",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-037",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-038",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-001",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-002",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-003",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-004",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-005",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-006",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-007",
+          "repeat": 2,
+          "errors": []
+        },
+        {
+          "id": "IMG-008",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-009",
+          "repeat": 2,
+          "errors": []
+        },
+        {
+          "id": "IMG-010",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-011",
+          "repeat": 2,
+          "errors": []
+        },
+        {
+          "id": "IMG-012",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-013",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-014",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-015",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-016",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-017",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-035",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-036",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-037",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-038",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-001",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-002",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-003",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-004",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-005",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-006",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-007",
+          "repeat": 3,
+          "errors": []
+        },
+        {
+          "id": "IMG-008",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-009",
+          "repeat": 3,
+          "errors": []
+        },
+        {
+          "id": "IMG-010",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-011",
+          "repeat": 3,
+          "errors": []
+        },
+        {
+          "id": "IMG-012",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-013",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-014",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-015",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-016",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-017",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-018",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-019",
+          "repeat": 3,
+          "errors": [
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-020",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-021",
+          "repeat": 3,
+          "errors": []
+        },
+        {
+          "id": "IMG-022",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-023",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-024",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-025",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-026",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-027",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-028",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-029",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-030",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-031",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-032",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-033",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-034",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        }
+      ]
+    },
+    {
+      "candidate": "epoch-2",
+      "passed_after_fence_removal": 9,
+      "total": 114,
+      "results": [
+        {
+          "id": "IMG-001",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-002",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-003",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-004",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-005",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-006",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-007",
+          "repeat": 1,
+          "errors": []
+        },
+        {
+          "id": "IMG-008",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-009",
+          "repeat": 1,
+          "errors": []
+        },
+        {
+          "id": "IMG-010",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-011",
+          "repeat": 1,
+          "errors": []
+        },
+        {
+          "id": "IMG-012",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-013",
+          "repeat": 1,
+          "errors": [
+            "invalid output object"
+          ]
+        },
+        {
+          "id": "IMG-014",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-015",
+          "repeat": 1,
+          "errors": [
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-016",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-017",
+          "repeat": 1,
+          "errors": [
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-018",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-019",
+          "repeat": 1,
+          "errors": [
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-020",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-021",
+          "repeat": 1,
+          "errors": [
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-022",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-023",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-024",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-025",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-026",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-027",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-028",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-029",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-030",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-031",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-032",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-033",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-034",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-035",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-036",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-037",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-038",
+          "repeat": 1,
+          "errors": [
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-018",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-019",
+          "repeat": 2,
+          "errors": [
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-020",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-021",
+          "repeat": 2,
+          "errors": [
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-022",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-023",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-024",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-025",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-026",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-027",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-028",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-029",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-030",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-031",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-032",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-033",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-034",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-035",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-036",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-037",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-038",
+          "repeat": 2,
+          "errors": [
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-001",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-002",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-003",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-004",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-005",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-006",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-007",
+          "repeat": 2,
+          "errors": []
+        },
+        {
+          "id": "IMG-008",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-009",
+          "repeat": 2,
+          "errors": []
+        },
+        {
+          "id": "IMG-010",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-011",
+          "repeat": 2,
+          "errors": []
+        },
+        {
+          "id": "IMG-012",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-013",
+          "repeat": 2,
+          "errors": [
+            "invalid output object"
+          ]
+        },
+        {
+          "id": "IMG-014",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-015",
+          "repeat": 2,
+          "errors": [
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-016",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-017",
+          "repeat": 2,
+          "errors": [
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-035",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-036",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-037",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-038",
+          "repeat": 3,
+          "errors": [
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-001",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-002",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-003",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-004",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-005",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-006",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-007",
+          "repeat": 3,
+          "errors": []
+        },
+        {
+          "id": "IMG-008",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-009",
+          "repeat": 3,
+          "errors": []
+        },
+        {
+          "id": "IMG-010",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-011",
+          "repeat": 3,
+          "errors": []
+        },
+        {
+          "id": "IMG-012",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-013",
+          "repeat": 3,
+          "errors": [
+            "invalid output object"
+          ]
+        },
+        {
+          "id": "IMG-014",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-015",
+          "repeat": 3,
+          "errors": [
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-016",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-017",
+          "repeat": 3,
+          "errors": [
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-018",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-019",
+          "repeat": 3,
+          "errors": [
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-020",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-021",
+          "repeat": 3,
+          "errors": [
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-022",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-023",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-024",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-025",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-026",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-027",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-028",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-029",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-030",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-031",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-032",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-033",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-034",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        }
+      ]
+    },
+    {
+      "candidate": "epoch-3",
+      "passed_after_fence_removal": 9,
+      "total": 114,
+      "results": [
+        {
+          "id": "IMG-001",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-002",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-003",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-004",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-005",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-006",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-007",
+          "repeat": 1,
+          "errors": []
+        },
+        {
+          "id": "IMG-008",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-009",
+          "repeat": 1,
+          "errors": []
+        },
+        {
+          "id": "IMG-010",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-011",
+          "repeat": 1,
+          "errors": []
+        },
+        {
+          "id": "IMG-012",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-013",
+          "repeat": 1,
+          "errors": [
+            "invalid output object"
+          ]
+        },
+        {
+          "id": "IMG-014",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-015",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-016",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-017",
+          "repeat": 1,
+          "errors": [
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-018",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-019",
+          "repeat": 1,
+          "errors": [
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-020",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-021",
+          "repeat": 1,
+          "errors": [
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-022",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-023",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-024",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-025",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-026",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-027",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-028",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-029",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-030",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-031",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-032",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-033",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-034",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-035",
+          "repeat": 1,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-036",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-037",
+          "repeat": 1,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-038",
+          "repeat": 1,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-018",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-019",
+          "repeat": 2,
+          "errors": [
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-020",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-021",
+          "repeat": 2,
+          "errors": [
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-022",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-023",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-024",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-025",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-026",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-027",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-028",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-029",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-030",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-031",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-032",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-033",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-034",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-035",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-036",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-037",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-038",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-001",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-002",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-003",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-004",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-005",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-006",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-007",
+          "repeat": 2,
+          "errors": []
+        },
+        {
+          "id": "IMG-008",
+          "repeat": 2,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-009",
+          "repeat": 2,
+          "errors": []
+        },
+        {
+          "id": "IMG-010",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-011",
+          "repeat": 2,
+          "errors": []
+        },
+        {
+          "id": "IMG-012",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-013",
+          "repeat": 2,
+          "errors": [
+            "invalid output object"
+          ]
+        },
+        {
+          "id": "IMG-014",
+          "repeat": 2,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-015",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-016",
+          "repeat": 2,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-017",
+          "repeat": 2,
+          "errors": [
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-035",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-036",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-037",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-038",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-001",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-002",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-003",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-004",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-005",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-006",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-007",
+          "repeat": 3,
+          "errors": []
+        },
+        {
+          "id": "IMG-008",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-009",
+          "repeat": 3,
+          "errors": []
+        },
+        {
+          "id": "IMG-010",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-011",
+          "repeat": 3,
+          "errors": []
+        },
+        {
+          "id": "IMG-012",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-013",
+          "repeat": 3,
+          "errors": [
+            "invalid output object"
+          ]
+        },
+        {
+          "id": "IMG-014",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-015",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-016",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-017",
+          "repeat": 3,
+          "errors": [
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-018",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-019",
+          "repeat": 3,
+          "errors": [
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-020",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-021",
+          "repeat": 3,
+          "errors": [
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-022",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-023",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-024",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-025",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-026",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-027",
+          "repeat": 3,
+          "errors": [
+            "disposition differs from expected",
+            "operations differs from expected",
+            "destination differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-028",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-029",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-030",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-031",
+          "repeat": 3,
+          "errors": [
+            "invalid or missing operations",
+            "invalid or missing destination",
+            "invalid or missing filename",
+            "invalid or missing confirmed",
+            "invalid or missing uncertainties",
+            "invalid or missing citations"
+          ]
+        },
+        {
+          "id": "IMG-032",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-033",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected",
+            "operations differs from expected"
+          ]
+        },
+        {
+          "id": "IMG-034",
+          "repeat": 3,
+          "errors": [
+            "facts differs from expected",
+            "disposition differs from expected"
+          ]
+        }
+      ]
+    }
+  ]
+}

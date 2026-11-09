@@ -1,0 +1,22 @@
+{
+  "name": "margin-think-pilot2:audit",
+  "model": "margin-think-pilot2:audit",
+  "modified_at": "2026-09-12T12:48:32.9710757-07:00",
+  "size": 2783446710,
+  "digest": "a950eda3d11b3ed472c408879ac68e6a5d79bf944cc036df4483ca66d6bd28fa",
+  "details": {
+    "parent_model": "",
+    "format": "gguf",
+    "family": "qwen35",
+    "families": [
+      "qwen35"
+    ],
+    "parameter_size": "4.3B",
+    "quantization_level": "Q4_K_M",
+    "context_length": 262144,
+    "embedding_length": 2560
+  },
+  "capabilities": [
+    "completion"
+  ]
+}

@@ -1,0 +1,141 @@
+2026-09-12T09:53:49.593659+00:00 margin-lora-base-control:preflight repeat 1 routing-1: pass 11.4s
+2026-09-12T09:53:54.647928+00:00 margin-lora-base-control:preflight repeat 1 routing-2: pass 5.0s
+2026-09-12T09:53:57.554468+00:00 margin-lora-base-control:preflight repeat 1 routing-3: pass 2.9s
+2026-09-12T09:53:59.640311+00:00 margin-lora-base-control:preflight repeat 1 routing-4: pass 2.1s
+2026-09-12T09:54:03.096487+00:00 margin-lora-base-control:preflight repeat 1 routing-5: pass 3.4s
+2026-09-12T09:54:05.653795+00:00 margin-lora-base-control:preflight repeat 1 routing-6: pass 2.5s
+2026-09-12T09:54:09.911630+00:00 margin-lora-base-control:preflight repeat 1 routing-7: pass 4.3s
+2026-09-12T09:54:14.262313+00:00 margin-lora-base-control:preflight repeat 1 routing-8: pass 4.3s
+2026-09-12T09:54:17.478458+00:00 margin-lora-base-control:preflight repeat 1 routing-9: pass 3.2s
+2026-09-12T09:54:20.107847+00:00 margin-lora-base-control:preflight repeat 1 routing-10: pass 2.6s
+2026-09-12T09:54:22.339682+00:00 margin-lora-base-control:preflight repeat 1 routing-11: pass 2.2s
+2026-09-12T09:54:24.362031+00:00 margin-lora-base-control:preflight repeat 1 routing-12: pass 2.0s
+2026-09-12T09:54:27.318253+00:00 margin-lora-base-control:preflight repeat 1 routing-13: pass 2.9s
+2026-09-12T09:54:31.411871+00:00 margin-lora-base-control:preflight repeat 1 routing-14: pass 4.1s
+2026-09-12T09:54:34.241296+00:00 margin-lora-base-control:preflight repeat 1 routing-15: pass 2.8s
+2026-09-12T09:54:36.271674+00:00 margin-lora-base-control:preflight repeat 1 routing-16: pass 2.0s
+2026-09-12T09:54:38.277064+00:00 margin-lora-base-control:preflight repeat 1 routing-17: pass 2.0s
+2026-09-12T09:54:42.376425+00:00 margin-lora-base-control:preflight repeat 1 routing-18: pass 4.1s
+2026-09-12T09:54:42.380231+00:00 margin-lora-base-control:preflight repeat 1 routing-19: deterministic 0.0s
+2026-09-12T09:54:45.599820+00:00 margin-lora-base-control:preflight repeat 1 routing-20: pass 3.2s
+2026-09-12T09:54:47.366547+00:00 margin-lora-base-control:preflight repeat 1 routing-21: pass 1.8s
+2026-09-12T09:54:47.370683+00:00 margin-lora-base-control:preflight repeat 1 routing-22: deterministic 0.0s
+2026-09-12T09:54:47.375366+00:00 margin-lora-base-control:preflight repeat 1 routing-23: deterministic 0.0s
+2026-09-12T09:54:50.434055+00:00 margin-lora-base-control:preflight repeat 1 routing-24: pass 3.0s
+2026-09-12T09:54:53.974974+00:00 margin-lora-base-control:preflight repeat 1 routing-25: pass 3.5s
+2026-09-12T09:55:01.344570+00:00 margin-lora-base-control:preflight repeat 1 routing-26: pass 7.4s
+2026-09-12T09:55:06.634886+00:00 margin-lora-base-control:preflight repeat 1 routing-27: pass 5.3s
+2026-09-12T09:55:09.431288+00:00 margin-lora-base-control:preflight repeat 1 routing-28: pass 2.8s
+2026-09-12T09:55:12.368731+00:00 margin-lora-base-control:preflight repeat 1 routing-29: fail 2.9s
+2026-09-12T09:55:15.456781+00:00 margin-lora-base-control:preflight repeat 1 routing-30: pass 3.1s
+2026-09-12T09:55:18.601319+00:00 margin-lora-base-control:preflight repeat 1 routing-31: pass 3.1s
+2026-09-12T09:55:22.244024+00:00 margin-lora-base-control:preflight repeat 1 routing-32: pass 3.6s
+2026-09-12T09:55:27.644462+00:00 margin-lora-base-control:preflight repeat 1 routing-33: pass 5.4s
+2026-09-12T09:55:33.447263+00:00 margin-lora-base-control:preflight repeat 1 routing-34: pass 5.8s
+2026-09-12T09:55:33.451351+00:00 margin-lora-base-control:preflight repeat 1 routing-35: deterministic 0.0s
+2026-09-12T09:55:33.455816+00:00 margin-lora-base-control:preflight repeat 1 routing-36: deterministic 0.0s
+2026-09-12T09:55:33.460880+00:00 margin-lora-base-control:preflight repeat 1 routing-37: deterministic 0.0s
+2026-09-12T09:55:33.465086+00:00 margin-lora-base-control:preflight repeat 1 routing-38: deterministic 0.0s
+2026-09-12T09:55:39.196661+00:00 margin-lora-base-control:preflight repeat 1 routing-39: pass 5.7s
+2026-09-12T09:55:42.218084+00:00 margin-lora-base-control:preflight repeat 1 routing-40: pass 3.0s
+2026-09-12T09:55:47.541674+00:00 margin-lora-base-control:preflight repeat 1 routing-41: pass 5.3s
+2026-09-12T09:55:50.797561+00:00 margin-lora-base-control:preflight repeat 1 routing-42: pass 3.2s
+2026-09-12T09:55:55.617510+00:00 margin-lora-base-control:preflight repeat 1 routing-43: pass 4.8s
+2026-09-12T09:55:58.520419+00:00 margin-lora-base-control:preflight repeat 1 routing-44: pass 2.9s
+2026-09-12T09:56:01.795030+00:00 margin-lora-base-control:preflight repeat 1 routing-45: pass 3.3s
+2026-09-12T09:56:04.420767+00:00 margin-lora-base-control:preflight repeat 1 routing-46: pass 2.6s
+2026-09-12T09:56:07.858720+00:00 margin-lora-base-control:preflight repeat 1 routing-47: pass 3.4s
+2026-09-12T09:56:10.028899+00:00 margin-lora-base-control:preflight repeat 1 routing-48: pass 2.2s
+2026-09-12T09:56:13.030516+00:00 margin-lora-base-control:preflight repeat 1 routing-49: pass 3.0s
+2026-09-12T09:56:15.293010+00:00 margin-lora-base-control:preflight repeat 1 routing-50: pass 2.3s
+2026-09-12T09:56:17.453648+00:00 margin-lora-base-control:preflight repeat 1 routing-51: pass 2.2s
+2026-09-12T09:56:20.843736+00:00 margin-lora-base-control:preflight repeat 1 routing-52: pass 3.4s
+2026-09-12T09:56:25.484400+00:00 margin-lora-base-control:preflight repeat 1 routing-53: pass 4.6s
+2026-09-12T09:56:29.156234+00:00 margin-lora-base-control:preflight repeat 1 routing-54: pass 3.7s
+2026-09-12T09:56:29.159937+00:00 margin-lora-base-control:preflight repeat 1 routing-55: deterministic 0.0s
+2026-09-12T09:56:31.518978+00:00 margin-lora-base-control:preflight repeat 1 routing-56: fail 2.3s
+2026-09-12T09:56:34.247718+00:00 margin-lora-base-control:preflight repeat 1 routing-57: pass 2.7s
+2026-09-12T09:56:37.513355+00:00 margin-lora-base-control:preflight repeat 1 routing-58: pass 3.3s
+2026-09-12T09:56:43.866273+00:00 margin-lora-base-control:preflight repeat 1 routing-59: pass 6.3s
+2026-09-12T09:56:46.647539+00:00 margin-lora-base-control:preflight repeat 1 routing-60: pass 2.8s
+2026-09-12T09:56:49.819263+00:00 margin-lora-base-control:preflight repeat 1 routing-61: pass 3.2s
+2026-09-12T09:56:53.954631+00:00 margin-lora-base-control:preflight repeat 1 routing-62: pass 4.1s
+2026-09-12T09:56:59.152983+00:00 margin-lora-base-control:preflight repeat 1 routing-63: pass 5.2s
+2026-09-12T09:57:03.096375+00:00 margin-lora-base-control:preflight repeat 1 routing-64: pass 3.9s
+2026-09-12T09:57:09.516763+00:00 margin-lora-base-control:preflight repeat 1 routing-65: pass 6.4s
+2026-09-12T09:57:13.521421+00:00 margin-lora-base-control:preflight repeat 1 routing-66: pass 4.0s
+2026-09-12T09:57:18.068250+00:00 margin-lora-base-control:preflight repeat 1 routing-67: pass 4.5s
+2026-09-12T09:57:22.775764+00:00 margin-lora-base-control:preflight repeat 1 routing-68: pass 4.7s
+2026-09-12T09:57:25.431040+00:00 margin-lora-base-control:preflight repeat 1 routing-69: pass 2.6s
+2026-09-12T09:57:25.437068+00:00 margin-lora-base-control:preflight repeat 1 routing-70: deterministic 0.0s
+2026-09-12T09:57:25.442561+00:00 margin-lora-base-control:preflight repeat 1 routing-71: deterministic 0.0s
+2026-09-12T09:57:25.448381+00:00 margin-lora-base-control:preflight repeat 1 routing-72: deterministic 0.0s
+2026-09-12T09:57:28.325059+00:00 margin-lora-base-control:preflight repeat 1 routing-73: pass 2.9s
+2026-09-12T09:57:32.347615+00:00 margin-lora-base-control:preflight repeat 1 routing-74: pass 4.0s
+2026-09-12T09:57:39.145316+00:00 margin-lora-base-control:preflight repeat 1 routing-75: pass 6.8s
+2026-09-12T09:57:39.150996+00:00 margin-lora-base-control:preflight repeat 1 routing-76: deterministic 0.0s
+2026-09-12T09:57:43.343196+00:00 margin-lora-base-control:preflight repeat 1 routing-77: pass 4.2s
+2026-09-12T09:57:47.888118+00:00 margin-lora-base-control:preflight repeat 1 routing-78: pass 4.5s
+2026-09-12T09:58:00.713698+00:00 margin-lora-base-control:preflight repeat 1 args-1: pass 12.8s
+2026-09-12T09:58:19.025922+00:00 margin-lora-base-control:preflight repeat 1 args-2: pass 18.3s
+2026-09-12T09:58:33.232210+00:00 margin-lora-base-control:preflight repeat 1 args-3: fail 14.2s
+2026-09-12T09:58:46.726420+00:00 margin-lora-base-control:preflight repeat 1 args-4: pass 13.5s
+2026-09-12T09:58:55.378296+00:00 margin-lora-base-control:preflight repeat 1 args-5: pass 8.6s
+2026-09-12T09:59:04.614265+00:00 margin-lora-base-control:preflight repeat 1 recovery-1: pass 9.2s
+2026-09-12T09:59:07.741301+00:00 margin-lora-base-control:preflight repeat 1 recovery-2: pass 3.1s
+2026-09-12T09:59:11.798586+00:00 margin-lora-base-control:preflight repeat 1 recovery-3: pass 4.0s
+2026-09-12T09:59:19.133651+00:00 margin-lora-base-control:preflight repeat 1 recovery-4: pass 7.3s
+2026-09-12T09:59:24.450232+00:00 margin-lora-base-control:preflight repeat 1 boundary-1: fail 5.3s
+2026-09-12T09:59:31.049348+00:00 margin-lora-base-control:preflight repeat 1 boundary-2: fail 6.6s
+2026-09-12T09:59:34.441744+00:00 margin-lora-base-control:preflight repeat 1 boundary-3: pass 3.4s
+2026-09-12T09:59:41.661896+00:00 margin-lora-base-control:preflight repeat 1 reason-1: fail 7.2s
+2026-09-12T09:59:50.158532+00:00 margin-lora-base-control:preflight repeat 1 reason-2: pass 8.5s
+2026-09-12T09:59:57.700520+00:00 margin-lora-base-control:preflight repeat 1 reason-3: pass 7.5s
+2026-09-12T10:00:02.440079+00:00 margin-lora-base-control:preflight repeat 1 reason-4: pass 4.7s
+2026-09-12T10:00:08.107926+00:00 margin-lora-base-control:preflight repeat 1 reason-5: pass 5.6s
+2026-09-12T10:00:13.943309+00:00 margin-lora-base-control:preflight repeat 1 research-1: pass 5.8s
+2026-09-12T10:00:24.203843+00:00 margin-lora-base-control:preflight repeat 1 research-2: pass 10.2s
+2026-09-12T10:00:30.456697+00:00 margin-lora-base-control:preflight repeat 1 research-3: pass 6.2s
+2026-09-12T10:00:38.947998+00:00 margin-lora-base-control:preflight repeat 1 research-4: pass 8.5s
+2026-09-12T10:00:43.972519+00:00 margin-lora-base-control:preflight repeat 1 research-5: pass 5.0s
+2026-09-12T10:00:50.158104+00:00 margin-lora-base-control:preflight repeat 1 learn-1: pass 6.2s
+2026-09-12T10:00:57.193245+00:00 margin-lora-base-control:preflight repeat 1 learn-2: pass 7.0s
+2026-09-12T10:01:11.954096+00:00 margin-lora-base-control:preflight repeat 1 learn-3: pass 14.7s
+2026-09-12T10:01:18.215795+00:00 margin-lora-base-control:preflight repeat 1 learn-4: pass 6.2s
+Traceback (most recent call last):
+  File "/Users/oluyinkaoginni/Documents/SelfProjects/MeetingIntro/scripts/margin-model-eval/run.py", line 128, in <module>
+    if __name__=='__main__': main()
+                             ~~~~^^
+  File "/Users/oluyinkaoginni/Documents/SelfProjects/MeetingIntro/scripts/margin-model-eval/run.py", line 98, in main
+    result=api(a.base,'/api/chat',payload(case,manifest,model),timeout=manifest['timeout_seconds'])
+  File "/Users/oluyinkaoginni/Documents/SelfProjects/MeetingIntro/scripts/margin-model-eval/run.py", line 10, in api
+    with urllib.request.urlopen(req,timeout=timeout) as r: return json.load(r)
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 187, in urlopen
+    return opener.open(url, data, timeout)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 487, in open
+    response = self._open(req, data)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 504, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+                              '_open', req)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 464, in _call_chain
+    result = func(*args)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 1350, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 1325, in do_open
+    r = h.getresponse()
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/http/client.py", line 1459, in getresponse
+    response.begin()
+    ~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/http/client.py", line 336, in begin
+    version, status, reason = self._read_status()
+                              ~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/http/client.py", line 297, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+               ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/socket.py", line 729, in readinto
+    return self._sock.recv_into(b)
+           ~~~~~~~~~~~~~~~~~~~~^^^
+KeyboardInterrupt

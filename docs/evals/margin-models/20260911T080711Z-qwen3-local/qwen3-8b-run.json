@@ -1,0 +1,108 @@
+{
+  "model": "qwen3:8b",
+  "started": "2026-09-11T08:07:11.563114+00:00",
+  "manifest_sha256": "fb5df80b7960e79851545dfbf60ab95673726542b62e127d1eb54edf7b4da9bb",
+  "host": "Oluyinkas-MacBook-Pro.local",
+  "memory_bytes": 25769803776,
+  "runtime": {
+    "version": "0.30.10"
+  },
+  "profile": {
+    "num_ctx": 8192,
+    "num_predict": 2048,
+    "temperature": 0
+  },
+  "status": "completed",
+  "package": {
+    "name": "qwen3:8b",
+    "model": "qwen3:8b",
+    "modified_at": "2026-06-28T21:59:04.21065639-07:00",
+    "size": 5225388164,
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "details": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "qwen3",
+      "families": [
+        "qwen3"
+      ],
+      "parameter_size": "8.2B",
+      "quantization_level": "Q4_K_M",
+      "context_length": 40960,
+      "embedding_length": 4096
+    },
+    "capabilities": [
+      "completion",
+      "tools",
+      "thinking"
+    ]
+  },
+  "swap_start_bytes": 5170003968.0,
+  "cold_start_seconds": 9.441644834005274,
+  "cold_response": {
+    "model": "qwen3:8b",
+    "created_at": "2026-09-11T08:07:21.035791Z",
+    "message": {
+      "role": "assistant",
+      "content": "READY.",
+      "thinking": "Okay, the user just said \"Reply only READY.\" Let me think about how to respond. They might be testing if I can follow instructions. Since they specified \"Reply only READY,\" I should just say \"READY\" without any extra text. I need to make sure I don't add anything else. Let me confirm that's the correct approach. Yep, that's what they want. Alright, I'll respond with \"READY.\"\n"
+    },
+    "done": true,
+    "done_reason": "stop",
+    "total_duration": 9440990625,
+    "load_duration": 3237672917,
+    "prompt_eval_count": 14,
+    "prompt_eval_duration": 355040000,
+    "eval_count": 94,
+    "eval_duration": 5846309000
+  },
+  "preflight_loaded_samples": [
+    [
+      {
+        "name": "qwen3:8b",
+        "model": "qwen3:8b",
+        "size": 6079350046,
+        "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+        "details": {
+          "parent_model": "",
+          "format": "gguf",
+          "family": "qwen3",
+          "families": [
+            "qwen3"
+          ],
+          "parameter_size": "8.2B",
+          "quantization_level": "Q4_K_M"
+        },
+        "expires_at": "2026-09-11T01:17:21.03594-07:00",
+        "size_vram": 6079350046,
+        "context_length": 8192
+      }
+    ]
+  ],
+  "swap_after_load_bytes": 5170003968.0,
+  "swap_guard_basis": "Growth beyond 2 GiB after cold model load; initial loading swap retained separately.",
+  "finished": "2026-09-11T09:37:42.869210+00:00",
+  "failed_cases": 26,
+  "models_loaded_at_end": [
+    {
+      "name": "qwen3:8b",
+      "model": "qwen3:8b",
+      "size": 6079350046,
+      "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen3",
+        "families": [
+          "qwen3"
+        ],
+        "parameter_size": "8.2B",
+        "quantization_level": "Q4_K_M"
+      },
+      "expires_at": "2026-09-11T02:37:42.900397-07:00",
+      "size_vram": 6079350046,
+      "context_length": 8192
+    }
+  ],
+  "swap_end_bytes": 4009492480.0
+}

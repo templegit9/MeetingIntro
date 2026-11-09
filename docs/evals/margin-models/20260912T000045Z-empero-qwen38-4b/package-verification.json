@@ -1,0 +1,12 @@
+{
+  "model": "hf.co/empero-ai/Qwen3.8-4B-Distill-GGUF:Q4_K_M",
+  "sha256": "dec96e8cf2e11b613bb46513dec485377f9ca5a351e71712ee0e244f287c6790",
+  "source": {
+    "bytes_budget": 2800000000,
+    "repository": "https://huggingface.co/empero-ai/Qwen3.8-4B-Distill-GGUF",
+    "revision": "391fc7d103e3942a408def3e4f51c2f85d464417",
+    "sha256": "dec96e8cf2e11b613bb46513dec485377f9ca5a351e71712ee0e244f287c6790",
+    "source": "hf.co/empero-ai/Qwen3.8-4B-Distill-GGUF:Q4_K_M"
+  },
+  "verified_at": "2026-09-12T00:01:48.968464+00:00"
+}

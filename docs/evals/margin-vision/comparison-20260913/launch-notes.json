@@ -1,0 +1,29 @@
+{
+  "updated_at": "2026-09-13T15:01:03.771836+00:00",
+  "persistent_task": "Margin-Vision-Comparison-20260913",
+  "preflight_attempts": [
+    "Cache environment set after import; no responses",
+    "Cache request included unused training metadata; no responses",
+    "Detached WSL worker ended on SSH disconnect; no responses",
+    "Multimodal processor rejected string content; one infrastructure record, no generated response. Archived before restart with typed text blocks."
+  ],
+  "current_launch": "Windows scheduled task holds foreground WSL supervisor; confirmed GPU memory allocation and advancing weight loading",
+  "dashboard": "http://127.0.0.1:18775/training-20260913/index.html#comparison",
+  "order": [
+    "unadapted",
+    "epoch-1",
+    "epoch-2",
+    "epoch-3"
+  ],
+  "budget": {
+    "per_candidate": 402,
+    "total": 1608
+  },
+  "checks": [
+    "Native tool parser and truncation checks",
+    "6 training dashboard tests",
+    "9 language grading policy tests",
+    "12 image grading tests",
+    "Training image hashes excluded from screening assets"
+  ]
+}

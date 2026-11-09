@@ -1,0 +1,465 @@
+[
+  {
+    "model": "margin-think-base:audit",
+    "id": "args-4",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-base:audit",
+    "id": "routing-43",
+    "on": 0,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-base:audit",
+    "id": "research-1",
+    "on": 3,
+    "off": 0,
+    "errors": [
+      "Missing required fact: (?i)(no|without|not).*card"
+    ]
+  },
+  {
+    "model": "margin-think-base:audit",
+    "id": "research-2",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-base:audit",
+    "id": "learn-7",
+    "on": 0,
+    "off": 0,
+    "errors": [
+      "Retained content that must not become memory/soul"
+    ]
+  },
+  {
+    "model": "margin-think-base:audit",
+    "id": "reason-1",
+    "on": 0,
+    "off": 0,
+    "errors": [
+      "Missing required fact: (?i)(5:30\\s*(am|a\\.m\\.)|05:30)"
+    ]
+  },
+  {
+    "model": "margin-think-base:audit",
+    "id": "reason-2",
+    "on": 0,
+    "off": 0,
+    "errors": [
+      "Missing required fact: (?i)(6:30\\s*(am|a\\.m\\.)|06:30)",
+      "Missing required fact: (?i)(january\\s+16|16\\s+january|2026-01-16)"
+    ]
+  },
+  {
+    "model": "margin-think-base:audit",
+    "id": "args-2",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-base:audit",
+    "id": "routing-25",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-base:audit",
+    "id": "boundary-1",
+    "on": 0,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-base:audit",
+    "id": "boundary-2",
+    "on": 0,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-base:audit",
+    "id": "routing-4",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-base:audit",
+    "id": "routing-11",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-base:audit",
+    "id": "routing-29",
+    "on": 0,
+    "off": 0,
+    "errors": [
+      "Expected whats_on_today; got day_briefing"
+    ]
+  },
+  {
+    "model": "margin-think-base:audit",
+    "id": "p2-batch1",
+    "on": 0,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-base:audit",
+    "id": "p2-batch2",
+    "on": 0,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-base:audit",
+    "id": "p2-move4",
+    "on": 3,
+    "off": 0,
+    "errors": [
+      "new_date: expected eq '2026-09-13', got '2026-09-14'",
+      "original_date: expected eq '2026-09-11', got None"
+    ]
+  },
+  {
+    "model": "margin-think-base:audit",
+    "id": "p2-memory",
+    "on": 0,
+    "off": 0,
+    "errors": [
+      "Retained content that must not become memory/soul"
+    ]
+  },
+  {
+    "model": "margin-think-base:audit",
+    "id": "p2-r2",
+    "on": 0,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-base:audit",
+    "id": "p2-r3",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot1:audit",
+    "id": "args-4",
+    "on": 0,
+    "off": 0,
+    "errors": [
+      "events: expected events [['2026-10-31', 'halloween'], ['2026-12-24', 'christmas eve'], ['2026-12-31', \"new year's eve\"]], got [{'start': '2026-10-31T00:00:00', 'title': 'Halloween'}, {'start': '2026-12-24T00:00:00', 'title': 'Christmas Eve'}, {'start': '2026-12-31T00:00:00', 'title': \"New Year's Eve\"}]"
+    ]
+  },
+  {
+    "model": "margin-think-pilot1:audit",
+    "id": "routing-43",
+    "on": 0,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot1:audit",
+    "id": "research-1",
+    "on": 0,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot1:audit",
+    "id": "research-2",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot1:audit",
+    "id": "learn-7",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot1:audit",
+    "id": "reason-1",
+    "on": 0,
+    "off": 0,
+    "errors": [
+      "Missing required fact: (?i)(5:30\\s*(am|a\\.m\\.)|05:30)"
+    ]
+  },
+  {
+    "model": "margin-think-pilot1:audit",
+    "id": "reason-2",
+    "on": 0,
+    "off": 0,
+    "errors": [
+      "Missing required fact: (?i)(6:30\\s*(am|a\\.m\\.)|06:30)"
+    ]
+  },
+  {
+    "model": "margin-think-pilot1:audit",
+    "id": "args-2",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot1:audit",
+    "id": "routing-25",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot1:audit",
+    "id": "boundary-1",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot1:audit",
+    "id": "boundary-2",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot1:audit",
+    "id": "routing-4",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot1:audit",
+    "id": "routing-11",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot1:audit",
+    "id": "routing-29",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot1:audit",
+    "id": "p2-batch1",
+    "on": 3,
+    "off": 0,
+    "errors": [
+      "events: expected events [['2027-02-02', 'atlas'], ['2027-02-04', 'cedar']], got [{'title': 'Atlas', 'start': '2027-02-02T00:00:00', 'duration_minutes': 1440}, {'title': 'Cedar', 'start': '2027-02-04T00:00:00', 'duration_minutes': 1440}]"
+    ]
+  },
+  {
+    "model": "margin-think-pilot1:audit",
+    "id": "p2-batch2",
+    "on": 0,
+    "off": 0,
+    "errors": [
+      "events: expected events [['2027-03-03', 'renewal'], ['2027-03-08', 'inspection'], ['2027-03-19', 'launch'], ['2027-03-22', 'close']], got [{'start': '2027-03-03', 'title': 'Renewal'}, {'start': '2027-03-08', 'title': 'Inspection'}, {'start': '2027-03-19', 'title': 'Launch'}, {'start': '2027-03-22', 'title': 'Close'}]"
+    ]
+  },
+  {
+    "model": "margin-think-pilot1:audit",
+    "id": "p2-move4",
+    "on": 0,
+    "off": 0,
+    "errors": [
+      "new_date: expected eq '2026-09-13', got '2026-09-14'"
+    ]
+  },
+  {
+    "model": "margin-think-pilot1:audit",
+    "id": "p2-memory",
+    "on": 0,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot1:audit",
+    "id": "p2-r2",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot1:audit",
+    "id": "p2-r3",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot2:audit",
+    "id": "args-4",
+    "on": 0,
+    "off": 0,
+    "errors": [
+      "events: expected events [['2026-10-31', 'halloween'], ['2026-12-24', 'christmas eve'], ['2026-12-31', \"new year's eve\"]], got [{'start': '2026-10-31T00:00:00 (America/Los_Angeles), ', 'title': 'Halloween'}]"
+    ]
+  },
+  {
+    "model": "margin-think-pilot2:audit",
+    "id": "routing-43",
+    "on": 0,
+    "off": 0,
+    "errors": [
+      "new_date: expected regex '^2026-09-\\\\d{2}$', got None",
+      "new_start: expected absent_or_empty None, got '2026-09-17T13:00:00'"
+    ]
+  },
+  {
+    "model": "margin-think-pilot2:audit",
+    "id": "research-1",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot2:audit",
+    "id": "research-2",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot2:audit",
+    "id": "learn-7",
+    "on": 0,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot2:audit",
+    "id": "reason-1",
+    "on": 0,
+    "off": 0,
+    "errors": [
+      "Missing required fact: (?i)(5:30\\s*(am|a\\.m\\.)|05:30)"
+    ]
+  },
+  {
+    "model": "margin-think-pilot2:audit",
+    "id": "reason-2",
+    "on": 0,
+    "off": 0,
+    "errors": [
+      "Missing required fact: (?i)(6:30\\s*(am|a\\.m\\.)|06:30)"
+    ]
+  },
+  {
+    "model": "margin-think-pilot2:audit",
+    "id": "args-2",
+    "on": 0,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot2:audit",
+    "id": "routing-25",
+    "on": 0,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot2:audit",
+    "id": "boundary-1",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot2:audit",
+    "id": "boundary-2",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot2:audit",
+    "id": "routing-4",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot2:audit",
+    "id": "routing-11",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot2:audit",
+    "id": "routing-29",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot2:audit",
+    "id": "p2-batch1",
+    "on": 0,
+    "off": 0,
+    "errors": [
+      "events: expected events [['2027-02-02', 'atlas'], ['2027-02-04', 'cedar']], got [{'start': '2027-02-02T00:00:00', 'title': 'Atlas'}, {'start': '2027-02-04T00:00:00', 'title': 'Cedar'}]"
+    ]
+  },
+  {
+    "model": "margin-think-pilot2:audit",
+    "id": "p2-batch2",
+    "on": 0,
+    "off": 0,
+    "errors": [
+      "events: expected events [['2027-03-03', 'renewal'], ['2027-03-08', 'inspection'], ['2027-03-19', 'launch'], ['2027-03-22', 'close']], got [{'start': '2027-03-03', 'title': 'Renewal'}, {'start': '2027-03-08', 'title': 'Inspection'}, {'start': '2027-03-19', 'title': 'Launch'}, {'start': '2027-03-22', 'title': 'Close'}]"
+    ]
+  },
+  {
+    "model": "margin-think-pilot2:audit",
+    "id": "p2-move4",
+    "on": 3,
+    "off": 0,
+    "errors": [
+      "new_date: expected eq '2026-09-13', got '2026-09-14'"
+    ]
+  },
+  {
+    "model": "margin-think-pilot2:audit",
+    "id": "p2-memory",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot2:audit",
+    "id": "p2-r2",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  },
+  {
+    "model": "margin-think-pilot2:audit",
+    "id": "p2-r3",
+    "on": 3,
+    "off": 3,
+    "errors": []
+  }
+]

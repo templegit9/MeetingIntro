@@ -1,0 +1,64 @@
+{
+  "events": [
+    {
+      "all_day": false,
+      "duration_minutes": 30,
+      "location": "",
+      "start": "2026-10-05T09:00:00-07:00",
+      "title": "Standup"
+    },
+    {
+      "all_day": false,
+      "duration_minutes": 60,
+      "location": "",
+      "start": "2026-10-05T10:00:00-07:00",
+      "title": "Design review"
+    },
+    {
+      "all_day": false,
+      "duration_minutes": 45,
+      "location": "",
+      "start": "2026-10-06T09:30:00-07:00",
+      "title": "Client call"
+    },
+    {
+      "all_day": false,
+      "duration_minutes": 45,
+      "location": "",
+      "start": "2026-10-06T09:45:00-07:00",
+      "title": "Budget sync"
+    },
+    {
+      "all_day": true,
+      "duration_minutes": 1440,
+      "location": "",
+      "start": "2026-10-07",
+      "title": "Team offsite"
+    },
+    {
+      "all_day": false,
+      "duration_minutes": 30,
+      "location": "",
+      "start": "2026-10-07T09:00:00-07:00",
+      "title": "Standup"
+    },
+    {
+      "all_day": false,
+      "duration_minutes": 120,
+      "location": "",
+      "start": "2026-10-08T13:00:00-07:00",
+      "title": "Focus block"
+    },
+    {
+      "all_day": false,
+      "duration_minutes": 60,
+      "location": "",
+      "start": "2026-10-09T16:00:00-07:00",
+      "title": "Weekly review"
+    }
+  ],
+  "fixture": "Synthetic Outlook-style week grid, not a user screenshot",
+  "request": "Create all the visible events from this week calendar screenshot, preserving their titles, dates, times and durations.",
+  "proposal_mutation": "duration",
+  "expect_blocked": true
+}

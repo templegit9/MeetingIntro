@@ -1,0 +1,24 @@
+{
+  "recorded_at": "2026-10-01T18:31:57.681359+00:00",
+  "hashes": {
+    "MeetingIntro/Margin/AgentTool.swift": "41ef2b9fd5e8efec4d5a40f6e95a94d6803a8904ce7f21a69d1a39101e0456f6",
+    "MeetingIntro/Margin/MarginAgent.swift": "f62b4bb74589ce5ea3bc717fe75be864ac972f11db2455fa193915d71b224ef7",
+    "MeetingIntro/Margin/BatchCalendarTools.swift": "fdec0d4a75d593642c9910e5804bc66a52bb1213b974a16fd51eb921747f887e",
+    "MeetingIntro/Margin/OllamaToolClient.swift": "0414237ba60623ea0aacf41823ba0a560de8744a32dd437b3a6e415747f66cf1",
+    "MeetingIntro/MeetingIntroApp.swift": "fdc4b05c9a9814b3cec2e993266f0e168dbab78213540c4d40dd802aa5bcdeb4",
+    "scripts/margin-calendar-reader-check.swift": "42c1cd0c2cf56fdae502437e8fd8d6b49c0c9ebc361a76ce22807b8c33c56d79",
+    "scripts/margin-week-fixture.swift": "a853a9f67559a42737d654cad75be5bb250e5648f723fc7a67abdaab32cad594",
+    "build/agentic-check/Build/Products/Debug/MeetingIntro.app/Contents/MacOS/MeetingIntro": "477ed5ce74c6344b5e533c931c8d98a6472b0f538f58ef275d78e395ea2f5fb0",
+    "build/agentic-check/Build/Products/Debug/MeetingIntro.app/Contents/MacOS/MeetingIntro.debug.dylib": "8da40bb69b2af1a3e29a474b3a542b9c27585e284a0b71c4e681cf48f0bd1439"
+  },
+  "planner": "margin-lora-pilot:final",
+  "reader": "qwen3.5:4b",
+  "limitations": [
+    "Synthetic week-view fixture, not Outlook capture",
+    "No real calendar writes",
+    "Native clipboard paste not exercised",
+    "Routing and live-file runs used earlier build before final source-binding-only change",
+    "Final scripted/calendar guards and integration ran on final build",
+    "User screenshot not supplied"
+  ]
+}

@@ -1,0 +1,144 @@
+{
+  "checked_at": "2026-09-13T02:28:04.158106+00:00",
+  "repositories": [
+    {
+      "repo": "empero-ai/Qwen3.8-4B-Distill",
+      "sha": "c83cb7aa2999d2f35c43e9ae0634a30eb8985a1e",
+      "files": [
+        ".gitattributes",
+        "README.md",
+        "chat_template.jinja",
+        "config.json",
+        "generation_config.json",
+        "merges.txt",
+        "model.safetensors",
+        "preprocessor_config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "training_args.bin",
+        "video_preprocessor_config.json",
+        "vocab.json"
+      ],
+      "config.json": {
+        "architecture": [
+          "Qwen3_5ForConditionalGeneration"
+        ],
+        "model_type": "qwen3_5",
+        "vision_config": {
+          "deepstack_visual_indexes": [],
+          "depth": 24,
+          "hidden_act": "gelu_pytorch_tanh",
+          "hidden_size": 1024,
+          "in_channels": 3,
+          "initializer_range": 0.02,
+          "intermediate_size": 4096,
+          "model_type": "qwen3_5",
+          "num_heads": 16,
+          "num_position_embeddings": 2304,
+          "out_hidden_size": 2560,
+          "patch_size": 16,
+          "spatial_merge_size": 2,
+          "temporal_patch_size": 2
+        }
+      },
+      "model.safetensors.index.json": {
+        "error": "HTTP Error 404: Not Found"
+      },
+      "tensor_header": {
+        "vision_tensor_count": 297,
+        "vision_parameters": 333514240,
+        "sample_keys": [
+          "model.visual.blocks.0.attn.proj.bias",
+          "model.visual.blocks.0.attn.proj.weight",
+          "model.visual.blocks.0.attn.qkv.bias",
+          "model.visual.blocks.0.attn.qkv.weight",
+          "model.visual.blocks.0.mlp.linear_fc1.bias",
+          "model.visual.blocks.0.mlp.linear_fc1.weight"
+        ]
+      }
+    },
+    {
+      "repo": "empero-ai/Qwen3.8-9B-Distill",
+      "sha": "0934f3d2327ff2df2197495278c4c46ae5a56bd9",
+      "files": [
+        ".gitattributes",
+        "README.md",
+        "chat_template.jinja",
+        "config.json",
+        "generation_config.json",
+        "merges.txt",
+        "model.safetensors",
+        "preprocessor_config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "video_preprocessor_config.json",
+        "vocab.json"
+      ],
+      "config.json": {
+        "architecture": [
+          "Qwen3_5ForConditionalGeneration"
+        ],
+        "model_type": "qwen3_5",
+        "vision_config": {
+          "deepstack_visual_indexes": [],
+          "depth": 27,
+          "hidden_act": "gelu_pytorch_tanh",
+          "hidden_size": 1152,
+          "in_channels": 3,
+          "initializer_range": 0.02,
+          "intermediate_size": 4304,
+          "model_type": "qwen3_5",
+          "num_heads": 16,
+          "num_position_embeddings": 2304,
+          "out_hidden_size": 4096,
+          "patch_size": 16,
+          "spatial_merge_size": 2,
+          "temporal_patch_size": 2
+        }
+      },
+      "model.safetensors.index.json": {
+        "error": "HTTP Error 404: Not Found"
+      },
+      "tensor_header": {
+        "vision_tensor_count": 333,
+        "vision_parameters": 456010480,
+        "sample_keys": [
+          "model.visual.blocks.0.attn.proj.bias",
+          "model.visual.blocks.0.attn.proj.weight",
+          "model.visual.blocks.0.attn.qkv.bias",
+          "model.visual.blocks.0.attn.qkv.weight",
+          "model.visual.blocks.0.mlp.linear_fc1.bias",
+          "model.visual.blocks.0.mlp.linear_fc1.weight"
+        ]
+      }
+    },
+    {
+      "repo": "empero-ai/Qwen3.8-4B-Distill-GGUF",
+      "sha": "391fc7d103e3942a408def3e4f51c2f85d464417",
+      "files": [
+        ".gitattributes",
+        "Qwen3.8-4B-BF16.gguf",
+        "Qwen3.8-4B-Q4_K_M.gguf",
+        "Qwen3.8-4B-Q5_K_M.gguf",
+        "Qwen3.8-4B-Q6_K.gguf",
+        "Qwen3.8-4B-Q8_0.gguf",
+        "README.md",
+        "SHA256SUMS"
+      ]
+    },
+    {
+      "repo": "empero-ai/Qwen3.8-9B-Distill-GGUF",
+      "sha": "760121cd70bb4c36b2b5ec58eb765e0df5987efe",
+      "files": [
+        ".gitattributes",
+        "Qwen3.8-9B-BF16.gguf",
+        "Qwen3.8-9B-Q4_K_M.gguf",
+        "Qwen3.8-9B-Q5_K_M.gguf",
+        "Qwen3.8-9B-Q6_K.gguf",
+        "Qwen3.8-9B-Q8_0.gguf",
+        "README.md",
+        "SHA256SUMS"
+      ]
+    }
+  ]
+}

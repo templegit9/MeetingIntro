@@ -1,0 +1,14 @@
+/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-loop-kw86bxb5/checks.swift:428:23: warning: expression of type 'MarginToolLoop.End' is unused [#no-usage]
+426 |    try await MarginToolLoop.run(messages: [], request: { _ in throw CancellationError() }, prepare: { _ in fatalError("must not prepare") }, present: { _ in }, answer: { _ in })
+427 |   }
+428 |   do { try await task.value; fatalError("cancel swallowed") } catch is CancellationError { check(true, "cancellation propagates") }
+    |                       `- warning: expression of type 'MarginToolLoop.End' is unused [#no-usage]
+429 |   let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+430 |   defer { try? FileManager.default.removeItem(at: directory) }
+checks/checks.swift:375: Precondition failed: stale ID permits inventory refresh and recovery
+Traceback (most recent call last):
+  File "/Users/oluyinkaoginni/Documents/SelfProjects/MeetingIntro/scripts/test-margin-agent-loop.py", line 80, in <module>
+    subprocess.run([str(pathlib.Path(tmp)/'checks')],check=True)
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/subprocess.py", line 528, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-loop-kw86bxb5/checks']' died with <Signals.SIGTRAP: 5>.

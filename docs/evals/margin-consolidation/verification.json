@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-09-13T08:58:32.058862+00:00",
+  "build": "202609130150",
+  "binary_sha256": "b69af12e58d1812478d9d354fac18f078f1a6654357d8f578db688df68bcfbed",
+  "release_build": "passed",
+  "signature": "passed",
+  "dictionary_checks": "passed: direct routing, command exclusions, real offline definition",
+  "native_checks": [
+    "Margin settings rendered and inspected",
+    "Plugins absent from sidebar",
+    "Ticker controls reachable under Reminders",
+    "Camera Cover controls reachable under In-Meeting",
+    "Margin Files workspace observed with existing jobs, rules and undo history"
+  ],
+  "limits": [
+    "No full model eval rerun",
+    "No live file writes or camera reminder fired",
+    "Screenshot typo has no macOS spelling suggestion",
+    "Disabled-Margin setup link and both menu-bar paths not exercised end to end"
+  ]
+}

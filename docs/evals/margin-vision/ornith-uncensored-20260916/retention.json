@@ -1,0 +1,27 @@
+{
+  "archived_at": "2026-09-17T05:39:46.960678+00:00",
+  "decision": "Keep Pilot 1. Retain Ornith as a comparison candidate; no model promotion.",
+  "result": {
+    "passed": 106,
+    "scored": 117,
+    "critical_failures": 2,
+    "median_seconds": 9.2
+  },
+  "comparison": {
+    "model": "margin-lora-pilot:final",
+    "passed": 110,
+    "scored": 117,
+    "median_seconds": 4.0
+  },
+  "limits": "Frozen earlier planning/routing suite; not a new-harness or vision qualification.",
+  "sha256": {
+    "manifest.json": "68d7cf1a28826e6806cec5f79e1d96018c74dd2d659c9f07af6f9402ee8a4aa9",
+    "responses.jsonl": "2f923c306fb8caaabc75ad3d832567bcb45e310ed1eedc9c24a62a8ee54d3d29",
+    "status.json": "f83a3ee72b1c21ee0555c43433d9dc35061f574e248e90fd7a55392e720fa0f6",
+    "assessment.html": "9f0b882887631f0f6160d67f10849025b4271d35ad736131cd5dcdfdb3ae207f",
+    "runtime.json": "a2377d6b48928f966a9b89c72db045ac8c93f06f845f0febfd3aa3cb31050816",
+    "reader-output.json": "4a96e16b45c0854aab476ebe8b0dd7b63dc09f82b859039f507a40dd57bebee7",
+    "suite.json": "05f914bfc986fd7a6e7ff388a03e2d15c88a047d89dec84be5505c61cae91cfd",
+    "language.json": "d43dbfede3e88a6ba3f86bfe7e97081eb83676e536adf554f4c8fbd7cf4cc947"
+  }
+}

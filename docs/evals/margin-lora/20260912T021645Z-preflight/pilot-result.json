@@ -1,0 +1,15 @@
+{
+  "metrics": {
+    "train_runtime": 7339.3402,
+    "train_samples_per_second": 0.409,
+    "train_steps_per_second": 0.026,
+    "total_flos": 2.738504076991365e+17,
+    "train_loss": 0.012361933381917066,
+    "epoch": 1.0
+  },
+  "steps": 188,
+  "peak_gpu_allocated_bytes": 17853229568,
+  "peak_gpu_reserved_bytes": 19016974336,
+  "adapter": "/mnt/c/Users/oluyi/Documents/Projects/Margin-Empero-LoRA/artifacts/pilot-adapter",
+  "finished": "2026-09-12T04:49:39.981926+00:00"
+}

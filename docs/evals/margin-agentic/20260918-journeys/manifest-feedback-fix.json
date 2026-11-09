@@ -1,0 +1,23 @@
+{
+  "recorded_at": "2026-09-18T19:45:30.567183+00:00",
+  "model": "margin-lora-pilot:final",
+  "scenarios": [
+    "recovery",
+    "two-writes"
+  ],
+  "hashes": {
+    "MeetingIntro/Margin/AgentTool.swift": "39a0466a3bb0ac8beabedfb6c3442bb0e035e0a805cac7d2b4c9119a22bf0b71",
+    "MeetingIntro/Margin/MarginAgent.swift": "2bee315cd3130cd389fdd39635666df0d942ae84cb01bacb5e27b84e674d9eff",
+    "MeetingIntro/MeetingIntroApp.swift": "c6f6b361e834170c34c82f8a4914742e10f98b32a4960791609fdc26fd143808",
+    "scripts/test-margin-agent-loop.py": "7bfb73c273d30338d77dc63abd05727552d81c4380a2eb9eb3ad9d743f651a1d",
+    "build/agentic-check/Build/Products/Debug/MeetingIntro.app/Contents/MacOS/MeetingIntro": "477ed5ce74c6344b5e533c931c8d98a6472b0f538f58ef275d78e395ea2f5fb0",
+    "build/agentic-check/Build/Products/Debug/MeetingIntro.app/Contents/MacOS/MeetingIntro.debug.dylib": "fa96f3510425ce955c02684249f92134d5241da6626fa09e4c719ff45440a79a"
+  },
+  "limits": [
+    "Three fixture note/save tools plus real folder discovery constrained to temporary grants; no live calendar or user-folder changes",
+    "4 cases, no automatic retries; production per-task budget applies",
+    "Model responses are live; confirmations are supplied by test driver",
+    "Does not qualify full registry, OCR accuracy, or native UI"
+  ],
+  "harness_change": "Distinguish missing exact path from ambiguous destination in fixture error; compare canonical path components."
+}

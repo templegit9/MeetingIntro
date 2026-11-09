@@ -1,0 +1,107 @@
+{
+  "cases" : [
+    {
+      "actual" : "move_event",
+      "arguments" : {
+        "new_start" : "2026-09-10T16:00:00",
+        "title" : "3pm"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "move_event"
+      ],
+      "latency_seconds" : 48.987168073654175,
+      "model_reply" : "",
+      "note" : "MUST NOT be create_event — that leaves two meetings",
+      "passed" : true,
+      "prompt" : "move my 3pm to 4pm"
+    },
+    {
+      "actual" : "move_files",
+      "arguments" : {
+        "destination" : "Archive",
+        "ext" : [
+          "pdf"
+        ],
+        "newer_than_days" : 30,
+        "older_than_days" : 60,
+        "query" : "invoice"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "move_files"
+      ],
+      "latency_seconds" : 17.723415970802307,
+      "model_reply" : "",
+      "note" : "move by age",
+      "passed" : true,
+      "prompt" : "put last month's invoices in Archive"
+    },
+    {
+      "actual" : "trash_files",
+      "arguments" : {
+        "ext" : [
+          "dmg",
+          "pkg",
+          "exe",
+          "msi"
+        ],
+        "older_than_days" : 365
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "trash_files"
+      ],
+      "latency_seconds" : 10.982115030288696,
+      "model_reply" : "",
+      "note" : "trash",
+      "passed" : true,
+      "prompt" : "bin the installers I haven't touched in a year"
+    },
+    {
+      "actual" : "move_event",
+      "arguments" : {
+        "new_start" : "2026-09-11T16:00:00",
+        "title" : "my 3pm"
+      },
+      "arguments_valid" : true,
+      "context" : [
+        {
+          "content" : "Create a review tomorrow at 3pm",
+          "role" : "user"
+        },
+        {
+          "content" : "Create review at 3pm tomorrow. Proposal only; not confirmed.",
+          "role" : "assistant"
+        }
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "move_event"
+      ],
+      "latency_seconds" : 11.891956925392151,
+      "model_reply" : "",
+      "note" : "move must not inherit create_event",
+      "passed" : true,
+      "prompt" : "move my 3pm to 4pm"
+    }
+  ],
+  "complete" : true,
+  "date" : "2026-09-11T02:04:12Z",
+  "expected_cases" : 4,
+  "model" : "gpt-oss:20b",
+  "passed" : 4,
+  "scope" : "Product tool dispatch and selected arguments; deterministic capability routing included. No live provider mutations."
+}

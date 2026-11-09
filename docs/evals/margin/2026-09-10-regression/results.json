@@ -1,0 +1,283 @@
+{
+  "cases" : [
+    {
+      "actual" : "list_capabilities",
+      "arguments" : {
+
+      },
+      "arguments_valid" : true,
+      "context" : [
+        {
+          "content" : "Find PDFs in Downloads",
+          "role" : "user"
+        },
+        {
+          "content" : "4 FILES \/ 441 KB. DOWNLOADS. Report.pdf, Agenda.pdf, Notes.pdf, Review.pdf. Reveal in Finder or Leave it.",
+          "role" : "assistant"
+        },
+        {
+          "content" : "leave it",
+          "role" : "user"
+        },
+        {
+          "content" : "Dismissed.",
+          "role" : "assistant"
+        }
+      ],
+      "deterministic" : true,
+      "expected" : [
+        "list_capabilities"
+      ],
+      "latency_seconds" : 3.3020973205566406e-05,
+      "note" : "screenshot regression: capability question after dismissed PDF results",
+      "passed" : true,
+      "prompt" : "what can you do"
+    },
+    {
+      "actual" : "list_capabilities",
+      "arguments" : {
+
+      },
+      "arguments_valid" : true,
+      "context" : [
+        {
+          "content" : "Find PDFs in Downloads",
+          "role" : "user"
+        },
+        {
+          "content" : "4 FILES \/ 441 KB. DOWNLOADS. Report.pdf, Agenda.pdf, Notes.pdf, Review.pdf. Reveal in Finder or Leave it.",
+          "role" : "assistant"
+        },
+        {
+          "content" : "leave it",
+          "role" : "user"
+        },
+        {
+          "content" : "Dismissed.",
+          "role" : "assistant"
+        }
+      ],
+      "deterministic" : true,
+      "expected" : [
+        "list_capabilities"
+      ],
+      "latency_seconds" : 1.9073486328125e-05,
+      "note" : "typo after file results",
+      "passed" : true,
+      "prompt" : "what can yo do?"
+    },
+    {
+      "actual" : "list_capabilities",
+      "arguments" : {
+
+      },
+      "arguments_valid" : true,
+      "context" : [
+        {
+          "content" : "Find PDFs in Downloads",
+          "role" : "user"
+        },
+        {
+          "content" : "4 FILES \/ 441 KB. DOWNLOADS. Report.pdf, Agenda.pdf, Notes.pdf, Review.pdf. Reveal in Finder or Leave it.",
+          "role" : "assistant"
+        },
+        {
+          "content" : "leave it",
+          "role" : "user"
+        },
+        {
+          "content" : "Dismissed.",
+          "role" : "assistant"
+        }
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "list_capabilities"
+      ],
+      "latency_seconds" : 4.2093700170516968,
+      "note" : "model-routed capability paraphrase after PDFs",
+      "passed" : true,
+      "prompt" : "tell me about your abilities"
+    },
+    {
+      "actual" : "list_tasks",
+      "arguments" : {
+        "limit" : 20,
+        "scope" : "overdue"
+      },
+      "arguments_valid" : true,
+      "context" : [
+        {
+          "content" : "Find PDFs in Downloads",
+          "role" : "user"
+        },
+        {
+          "content" : "4 FILES \/ 441 KB. DOWNLOADS. Report.pdf, Agenda.pdf, Notes.pdf, Review.pdf. Reveal in Finder or Leave it.",
+          "role" : "assistant"
+        },
+        {
+          "content" : "leave it",
+          "role" : "user"
+        },
+        {
+          "content" : "Dismissed.",
+          "role" : "assistant"
+        }
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "list_tasks"
+      ],
+      "latency_seconds" : 2.0208930969238281,
+      "note" : "new task intent replaces files",
+      "passed" : true,
+      "prompt" : "List my overdue tasks"
+    },
+    {
+      "actual" : "move_event",
+      "arguments" : {
+        "keep_duration" : true,
+        "new_start" : "2026-09-11T16:00:00",
+        "title" : "review"
+      },
+      "arguments_valid" : true,
+      "context" : [
+        {
+          "content" : "Create a review tomorrow at 3pm",
+          "role" : "user"
+        },
+        {
+          "content" : "Create review at 3pm tomorrow. Proposal only; not confirmed.",
+          "role" : "assistant"
+        }
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "move_event"
+      ],
+      "latency_seconds" : 6.2506970167160034,
+      "note" : "move must not inherit create_event",
+      "passed" : true,
+      "prompt" : "move my 3pm to 4pm"
+    },
+    {
+      "actual" : "list_capabilities",
+      "arguments" : {
+
+      },
+      "arguments_valid" : true,
+      "context" : [
+        {
+          "content" : "Create a review tomorrow at 3pm",
+          "role" : "user"
+        },
+        {
+          "content" : "Create review at 3pm tomorrow. Proposal only; not confirmed.",
+          "role" : "assistant"
+        }
+      ],
+      "deterministic" : true,
+      "expected" : [
+        "list_capabilities"
+      ],
+      "latency_seconds" : 4.291534423828125e-05,
+      "note" : "capabilities after an unconfirmed write",
+      "passed" : true,
+      "prompt" : "what can you do?"
+    },
+    {
+      "actual" : "find_files",
+      "arguments" : {
+        "ext" : [
+          "png"
+        ],
+        "folder" : "Downloads"
+      },
+      "arguments_valid" : true,
+      "context" : [
+        {
+          "content" : "Find PDFs in Downloads",
+          "role" : "user"
+        },
+        {
+          "content" : "4 FILES \/ 441 KB. DOWNLOADS. Report.pdf, Agenda.pdf, Notes.pdf, Review.pdf. Reveal in Finder or Leave it.",
+          "role" : "assistant"
+        },
+        {
+          "content" : "leave it",
+          "role" : "user"
+        },
+        {
+          "content" : "Dismissed.",
+          "role" : "assistant"
+        }
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "find_files"
+      ],
+      "latency_seconds" : 3.5926649570465088,
+      "note" : "file refinement",
+      "passed" : true,
+      "prompt" : "Find PNG files in Downloads instead"
+    },
+    {
+      "actual" : "cancel_event",
+      "arguments" : {
+        "original_start" : "2026-09-10T14:00:00",
+        "title" : ""
+      },
+      "arguments_valid" : false,
+      "context" : [
+        {
+          "content" : "Find PDFs in Downloads",
+          "role" : "user"
+        },
+        {
+          "content" : "4 FILES \/ 441 KB. DOWNLOADS. Report.pdf, Agenda.pdf, Notes.pdf, Review.pdf. Reveal in Finder or Leave it.",
+          "role" : "assistant"
+        },
+        {
+          "content" : "leave it",
+          "role" : "user"
+        },
+        {
+          "content" : "Dismissed.",
+          "role" : "assistant"
+        }
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "cancel_event"
+      ],
+      "latency_seconds" : 11.156324982643127,
+      "note" : "cancel after unrelated file results",
+      "passed" : false,
+      "prompt" : "cancel my 2pm"
+    },
+    {
+      "actual" : "(declined)",
+      "arguments" : {
+
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : true,
+      "expected" : [
+        "(declined)"
+      ],
+      "latency_seconds" : 4.7087669372558594e-05,
+      "note" : "MUST decline — Margin trashes, it never deletes for good",
+      "passed" : true,
+      "prompt" : "permanently delete the old screenshots"
+    }
+  ],
+  "complete" : true,
+  "date" : "2026-09-10T23:31:15Z",
+  "expected_cases" : 9,
+  "model" : "gpt-oss:20b",
+  "passed" : 8,
+  "scope" : "Product tool dispatch and selected arguments; deterministic capability routing included. No live provider mutations."
+}

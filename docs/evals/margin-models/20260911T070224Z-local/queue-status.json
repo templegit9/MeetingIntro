@@ -1,0 +1,5 @@
+{
+  "timestamp": "2026-09-11T07:03:04.381374+00:00",
+  "stage": "needs_attention",
+  "reason": "gpt-oss:20b: Swap grew by over 2 GiB; hardware-pressure stop"
+}

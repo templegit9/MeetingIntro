@@ -1,0 +1,23 @@
+{
+  "verified_at": "2026-09-13T08:29:37.539027+00:00",
+  "build": "202609130125",
+  "binary_sha256": "fad2345da63d29b319283b5cb8d85e10b5a6bf0278539992b1983a59560679fd",
+  "palette": [
+    "red",
+    "gold",
+    "green",
+    "purple",
+    "orange",
+    "teal",
+    "blue",
+    "pink",
+    "lime",
+    "cyan",
+    "brown",
+    "slate"
+  ],
+  "persistence_checks": "passed for all 12 colours",
+  "release_build": "passed",
+  "signature_verification": "passed",
+  "native_12_colour_menu": "not yet verified"
+}

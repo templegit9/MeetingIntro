@@ -1,0 +1,52 @@
+{
+  "observations": [
+    {
+      "timestamp": "2026-09-11T03:55:43.280303+00:00",
+      "category": "Notebook inactivity",
+      "check": "Idle closes to transparent cover",
+      "status": "pass",
+      "observed": "After the configured one-minute timeout, the native accessibility tree contained only the Margin cover button; screenshot showed the small transparent cover.",
+      "binary": "1e27558b749e4c21e8f85029c1f5264fe6d8b9ff8c6dd2d0668814158d0a838f"
+    },
+    {
+      "timestamp": "2026-09-11T03:55:43.280303+00:00",
+      "category": "Notebook inactivity",
+      "check": "Click restores page and unsent draft",
+      "status": "pass",
+      "observed": "Clicking the cover restored the same page and the exact temporary draft. The test draft was then cleared without sending.",
+      "binary": "1e27558b749e4c21e8f85029c1f5264fe6d8b9ff8c6dd2d0668814158d0a838f"
+    },
+    {
+      "timestamp": "2026-09-11T04:04:47.807034+00:00",
+      "category": "Web research",
+      "check": "Search setup section removed after update",
+      "status": "pass",
+      "observed": "Installed Margin settings show Interrupted jobs followed by Personality. No Brave key field, source-count control or signup link is present. The earlier app confirmed the clipboard credential was saved in Keychain.",
+      "binary": "ffe92eaaa5b7d98a97ffb91e4427c7f3afcf943cbbd8516f1a34baf5e89ebcf9"
+    },
+    {
+      "timestamp": "2026-09-11T04:06:15.478909+00:00",
+      "category": "Web research",
+      "check": "Saved Brave credential works after app update",
+      "status": "pass",
+      "observed": "One public request for official Swift concurrency documentation retrieved five search excerpts; the saved answer includes Apple and Swift.org results. The credential was not exposed in test artifacts.",
+      "binary": "ffe92eaaa5b7d98a97ffb91e4427c7f3afcf943cbbd8516f1a34baf5e89ebcf9"
+    },
+    {
+      "timestamp": "2026-09-11T04:06:15.478909+00:00",
+      "category": "Web research",
+      "check": "Live research produces a reliably cited brief",
+      "status": "fail",
+      "observed": "The saved answer states: A reliably cited brief was not produced. Review the source excerpts below. Retrieval worked, but local synthesis fell back to source excerpts. This is a separate integration observation, not an automated routing failure.",
+      "binary": "ffe92eaaa5b7d98a97ffb91e4427c7f3afcf943cbbd8516f1a34baf5e89ebcf9"
+    },
+    {
+      "timestamp": "2026-09-11T05:20:10.323776+00:00",
+      "category": "Local AI setup",
+      "check": "Existing AI reused after update",
+      "status": "pass",
+      "observed": "Local AI settings reported Ready on this Mac / Using your existing local AI. No download needed on build 50031adc. After the final two setup fixes and restart, the notebook opened with enabled input and normal suggestions, without onboarding or a download. Fresh-user popup interaction and clean-Mac full-model download are not covered.",
+      "binary": "8f67c7df5eb31ff668a645d384300b68d2f44fbfa62395043bfdcb99ec013095"
+    }
+  ]
+}

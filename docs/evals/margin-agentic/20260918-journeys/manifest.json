@@ -1,0 +1,23 @@
+{
+  "recorded_at": "2026-09-18T19:35:06.786665+00:00",
+  "model": "margin-lora-pilot:final",
+  "scenarios": [
+    "evidence",
+    "recovery",
+    "clarification",
+    "two-writes"
+  ],
+  "hashes": {
+    "MeetingIntro/Margin/AgentTool.swift": "39a0466a3bb0ac8beabedfb6c3442bb0e035e0a805cac7d2b4c9119a22bf0b71",
+    "MeetingIntro/Margin/MarginAgent.swift": "74c4e7b630cb086efce5548544ecd3e90ca1a06138e2095da5864a29ac214a04",
+    "MeetingIntro/MeetingIntroApp.swift": "c6f6b361e834170c34c82f8a4914742e10f98b32a4960791609fdc26fd143808",
+    "scripts/test-margin-agent-loop.py": "7bfb73c273d30338d77dc63abd05727552d81c4380a2eb9eb3ad9d743f651a1d",
+    "build/agentic-check/Build/Products/Debug/MeetingIntro.app/Contents/MacOS/MeetingIntro": "477ed5ce74c6344b5e533c931c8d98a6472b0f538f58ef275d78e395ea2f5fb0"
+  },
+  "limits": [
+    "Fixture-only tool registry; no live calendar or user-folder changes",
+    "4 cases, no automatic retries; production per-task budget applies",
+    "Model responses are live; confirmations are supplied by test driver",
+    "Does not qualify full registry, OCR accuracy, or native UI"
+  ]
+}

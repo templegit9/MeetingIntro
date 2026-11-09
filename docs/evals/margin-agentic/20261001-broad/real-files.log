@@ -1,0 +1,17 @@
+CONFIRM: Create folder
+Installers in margin-files-99CAE6E0-688C-408B-A0A1-7A629BB42A28
+Proposal only; not confirmed.
+CONFIRM: Move 2 files → Installers
+two.dmg · 7 bytes
+one.dmg · 7 bytes
+Proposal only; not confirmed.
+PASS real file journey: exact two DMGs moved, keep.txt unchanged; 2 separate confirmations; final response answered
+user: Move the dmgs in /var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-files-99CAE6E0-688C-408B-A0A1-7A629BB42A28 into an Installers subfolder. Leave all other files alone.
+assistant: Create folder
+Installers in margin-files-99CAE6E0-688C-408B-A0A1-7A629BB42A28
+Created Installers.
+assistant: Move 2 files → Installers
+two.dmg · 7 bytes
+one.dmg · 7 bytes
+Moved 2 files into Installers.
+assistant: Two .dmg files have been moved into /var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-files-99CAE6E0-688C-408B-A0A1-7A629BB42A28/Installers. All other files remain in place.

@@ -1,0 +1,57 @@
+{
+  "generated": "2026-09-11T11:06:53.955114+00:00",
+  "complete": false,
+  "models": [
+    {
+      "model": "granite4.2:8b",
+      "status": "cancelled",
+      "valid": 74,
+      "expected": 288,
+      "pass": 70,
+      "fail": 4,
+      "infrastructure": 5,
+      "not_run": 209,
+      "stable_cases": 0,
+      "critical_failures": 0,
+      "qualified": false,
+      "median": 20.783833625500847,
+      "p95": 111.80158250000386,
+      "rss_peak_bytes": 6764478464,
+      "runtime_vram_peak_bytes": 6169674382
+    },
+    {
+      "model": "qwen3.5:9b",
+      "status": "not_run",
+      "valid": 0,
+      "expected": 288,
+      "pass": 0,
+      "fail": 0,
+      "infrastructure": 0,
+      "not_run": 288,
+      "stable_cases": 0,
+      "critical_failures": 0,
+      "qualified": false,
+      "median": null,
+      "p95": null,
+      "rss_peak_bytes": 0,
+      "runtime_vram_peak_bytes": 0
+    },
+    {
+      "model": "qwen3.5:4b",
+      "status": "not_run",
+      "valid": 0,
+      "expected": 288,
+      "pass": 0,
+      "fail": 0,
+      "infrastructure": 0,
+      "not_run": 288,
+      "stable_cases": 0,
+      "critical_failures": 0,
+      "qualified": false,
+      "median": null,
+      "p95": null,
+      "rss_peak_bytes": 0,
+      "runtime_vram_peak_bytes": 0
+    }
+  ]
+}

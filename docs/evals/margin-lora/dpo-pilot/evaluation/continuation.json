@@ -1,0 +1,6 @@
+{
+  "timestamp": "2026-09-12T23:30:34.554704+00:00",
+  "reason": "Retain completed requests; capture and continue per-request native-format parser errors as infrastructure, excluded from quality denominator. Identical requests, model, grader, and profile. No retry-to-pass.",
+  "old_script_sha256": "d5e76a773ae1911b55517097c618e4d5441030b23b8617872d2e592475b20507",
+  "new_script_sha256": "9eaed0bdfa7d7fc18a47f9fc3420be37532b58fe169fb9ddb5d044b9fa8606f6"
+}

@@ -1,0 +1,29 @@
+{
+  "id": "EXPLICIT-CONTENT",
+  "category": "Project note",
+  "assets": [
+    "assets/NEW-06.png"
+  ],
+  "facts": {
+    "project": "Cedar Harbor"
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "project": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "project"
+    ]
+  },
+  "reading_task": "Read the printed facts into the requested fields. Preserve ambiguities and distinguish assigned from unassigned items.",
+  "prompt": "Search inside the text of files in the granted /sandbox/Downloads folder for the project name shown in this image. Do not search filenames.",
+  "tool": "find_files_by_content",
+  "arguments": {
+    "folder": "/sandbox/Downloads",
+    "text": "Cedar Harbor"
+  },
+  "source_reading": "NEW-06"
+}

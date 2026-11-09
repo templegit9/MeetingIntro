@@ -1,0 +1,3 @@
+{'timestamp': '2026-09-12T00:00:45.401504+00:00', 'stage': 'downloading', 'model': 'empero-qwen38-distill:4b-q4_k_m'}
+{'timestamp': '2026-09-12T00:01:49.028974+00:00', 'stage': 'evaluating', 'model': 'empero-qwen38-distill:4b-q4_k_m'}
+{'timestamp': '2026-09-12T00:29:02.020813+00:00', 'stage': 'completed'}

@@ -1,0 +1,77 @@
+{
+  "scope": "Independent offline audit of raw reader facts; Markdown wrapper removed for diagnosis ONLY, not accepted in production",
+  "exact_events": 7,
+  "expected_events": 8,
+  "actual_events": 8,
+  "rows": [
+    {
+      "title": "Standup",
+      "date": "2026-10-05",
+      "exact": true,
+      "differences": {},
+      "matches": 1
+    },
+    {
+      "title": "Design review",
+      "date": "2026-10-05",
+      "exact": true,
+      "differences": {},
+      "matches": 1
+    },
+    {
+      "title": "Client call",
+      "date": "2026-10-06",
+      "exact": true,
+      "differences": {},
+      "matches": 1
+    },
+    {
+      "title": "Budget sync",
+      "date": "2026-10-06",
+      "exact": true,
+      "differences": {},
+      "matches": 1
+    },
+    {
+      "title": "Team offsite",
+      "date": "2026-10-07",
+      "exact": false,
+      "differences": {
+        "start": {
+          "expected": "2026-10-07",
+          "actual": "2026-10-07T09:00:00-07:00"
+        },
+        "all_day": {
+          "expected": true,
+          "actual": false
+        },
+        "duration_minutes": {
+          "expected": 1440,
+          "actual": 30
+        }
+      },
+      "matches": 1
+    },
+    {
+      "title": "Standup",
+      "date": "2026-10-07",
+      "exact": true,
+      "differences": {},
+      "matches": 1
+    },
+    {
+      "title": "Focus block",
+      "date": "2026-10-08",
+      "exact": true,
+      "differences": {},
+      "matches": 1
+    },
+    {
+      "title": "Weekly review",
+      "date": "2026-10-09",
+      "exact": true,
+      "differences": {},
+      "matches": 1
+    }
+  ]
+}

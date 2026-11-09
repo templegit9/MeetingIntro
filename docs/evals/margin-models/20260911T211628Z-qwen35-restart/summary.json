@@ -1,0 +1,40 @@
+{
+  "generated": "2026-09-11T22:11:54.547871+00:00",
+  "complete": false,
+  "models": [
+    {
+      "model": "qwen3.5:9b",
+      "status": "incomplete",
+      "valid": 159,
+      "expected": 288,
+      "pass": 146,
+      "fail": 13,
+      "infrastructure": 0,
+      "not_run": 129,
+      "stable_cases": 0,
+      "critical_failures": 2,
+      "qualified": false,
+      "median": 10.436671457995544,
+      "p95": 98.08100579101301,
+      "rss_peak_bytes": 6987874304,
+      "runtime_vram_peak_bytes": 5662404770
+    },
+    {
+      "model": "qwen3.5:4b",
+      "status": "not_run",
+      "valid": 0,
+      "expected": 288,
+      "pass": 0,
+      "fail": 0,
+      "infrastructure": 0,
+      "not_run": 288,
+      "stable_cases": 0,
+      "critical_failures": 0,
+      "qualified": false,
+      "median": null,
+      "p95": null,
+      "rss_peak_bytes": 0,
+      "runtime_vram_peak_bytes": 0
+    }
+  ]
+}

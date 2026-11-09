@@ -1,0 +1,7 @@
+check/check.swift:232: Fatal error: Grant failed
+Traceback (most recent call last):
+  File "/Users/oluyinkaoginni/Documents/SelfProjects/MeetingIntro/scripts/test-margin-image-export.py", line 47, in <module>
+    exe=pathlib.Path(tmp)/'check';subprocess.run(['swiftc','-parse-as-library',str(p),'-o',str(exe)],check=True);subprocess.run([str(exe)],check=True)
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/subprocess.py", line 528, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-export-no4jo6fb/check']' died with <Signals.SIGTRAP: 5>.

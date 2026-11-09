@@ -1,0 +1,48 @@
+
+Margin guards · no model involved
+  ✓ trash with no filter refuses instead of proposing the whole folder
+  ✓ trash with a filter proposes exactly the 2 matching files
+  ✓ reading an ungranted folder asks for access
+  ✓ a folder name containing ../ collapses to one component — got “etc-passwd”
+  ✓ rename proposes a new name, never a path, and keeps the extension — IMG_1234 Screen Shot.png → img-1234-screen-shot.png
+  ✓ moving to an ungranted destination is refused
+  6/6 guards held
+  ✓ 3pm means today's 15:00, not a title substring or tomorrow
+  ✓ explicit original date selects the later occurrence
+  ✓ same-id recurring occurrences remain separate; cancelled event excluded
+  ✓ ambiguous matches return a question, not a write proposal
+  ✓ blank title never matches everything
+  ✓ past occurrences are excluded
+  ✓ midnight and noon are distinct
+  ✓ invalid clock references are rejected
+  ✓ cancel tool refuses ambiguity before provider access
+  ✓ move tool refuses ambiguity before provider access
+  ✓ invalid original date does not broaden the selection
+  ✓ opaque Graph IDs cannot change the cancellation endpoint
+  12/12 calendar guards held
+  ✓ memory and history start opt-in
+  ✓ disabled memory is absent from model instructions
+  ✓ enabled explicit memory enters instructions
+  ✓ personality, soul and proactivity survive reload
+  ✓ history retains tool details across reload
+  ✓ reopened history has no executable actions
+  ✓ screenshot regression: capabilities after PDF history
+  ✓ capability answer comes from the registered tool
+  ✓ cleared history remains empty after reload
+  ✓ explicit permanent deletion refuses instead of proposing Trash
+  ✓ search text about deletion is not treated as a deletion command
+  ✓ preparing a proposal performs zero writes
+  ✓ simultaneous confirmations execute exactly once
+  13/13 behavior guards held
+Margin eval · gpt-oss:20b · 9 cases
+  ✓ 0.0s list_capabilities · what can you do
+  ✓ 0.0s list_capabilities · what can yo do?
+  ✓ 4.2s list_capabilities · tell me about your abilities
+  ✓ 2.0s list_tasks · List my overdue tasks
+  ✓ 6.3s move_event · move my 3pm to 4pm
+  ✓ 0.0s list_capabilities · what can you do?
+  ✓ 3.6s find_files · Find PNG files in Downloads instead
+  ✗ 11.2s cancel_event · cancel my 2pm
+    Expected cancel_event; arguments valid: false
+  ✓ 0.0s (declined) · permanently delete the old screenshots
+  8/9 passed

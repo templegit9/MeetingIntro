@@ -1,0 +1,10 @@
+{
+  "detail" : "AI is ready on this Mac. Your model will be kept across app updates.",
+  "endpoint" : "http:\/\/127.0.0.1:64171",
+  "finished" : "2026-09-13T00:39:27Z",
+  "model" : "margin-lora-pilot:final",
+  "passed" : true,
+  "ready" : true,
+  "started" : "2026-09-13T00:38:57Z",
+  "tool_reply" : "Reply(text: \"\", toolCalls: [MeetingIntro.OllamaToolClient.ToolCall(name: \"list_capabilities\", arguments: [:])])"
+}

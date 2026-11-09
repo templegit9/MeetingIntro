@@ -1,0 +1,3 @@
+{'timestamp': '2026-09-11T11:07:20.463226+00:00', 'stage': 'downloading', 'model': 'qwen3.5:9b'}
+{'timestamp': '2026-09-11T11:08:31.645946+00:00', 'stage': 'evaluating', 'model': 'qwen3.5:9b'}
+{'timestamp': '2026-09-11T11:47:44.796734+00:00', 'stage': 'needs_attention', 'reason': 'qwen3.5:9b: Three consecutive infrastructure failures; remaining cases not run'}

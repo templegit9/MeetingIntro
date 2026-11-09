@@ -1,0 +1,2 @@
+{'timestamp': '2026-09-11T07:02:24.284385+00:00', 'stage': 'evaluating', 'model': 'gpt-oss:20b'}
+{'timestamp': '2026-09-11T07:03:04.381374+00:00', 'stage': 'needs_attention', 'reason': 'gpt-oss:20b: Swap grew by over 2 GiB; hardware-pressure stop'}

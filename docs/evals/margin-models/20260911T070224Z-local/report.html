@@ -1,0 +1,58 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Margin model comparison</title><style>body{font:15px/1.55 system-ui;background:#f6f3e9;color:#24382d;margin:0}main{max-width:1200px;margin:auto;padding:32px 22px}h1,h2{font-family:Georgia,serif}h1{font-size:36px}section{margin-top:40px;border-top:3px solid #326647;padding-top:12px}table{width:100%;border-collapse:collapse;background:#fffdf7;display:block;overflow-x:auto}td,th{text-align:left;padding:10px;border-bottom:1px solid #dedbce;white-space:nowrap}.notice{background:#eae3cc;padding:18px;border-left:4px solid #ad862e}a{color:#22663e}details{padding:8px;border-bottom:1px solid #dedbce}summary{cursor:pointer}.fail summary,.infrastructure summary{color:#982e21}pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:500px;overflow:auto;font-size:12px}.controls{padding:12px 0;display:flex;gap:12px;flex-wrap:wrap}input{padding:8px}</style><main><p>Margin / Developer evaluation</p><h1>Which model should power Margin?</h1><div class="notice"><b>No overall winner yet</b><p>Frozen 2026-09-11T07:02:24.062759+00:00 · Report updated 2026-09-11T07:03:04.382694+00:00</p><p>All tests are serial. Three repetitions per case. Raw prompts, exact package digests, clock and inference settings are retained. Missing or incomplete candidates cannot win.</p></div><p>108 fixtures; 288 model requests planned per candidate, excluding deterministic dispatch.</p><table><thead><tr><th>Model</th><th>Run</th><th>Pass / valid</th><th>Not run</th><th>Critical failures</th><th>Median</th><th>p95</th></tr></thead><tbody><tr><td><a href="#gpt-oss-20b">gpt-oss:20b</a></td><td>incomplete</td><td>1/1</td><td>287</td><td>0</td><td>10.5s</td><td>10.5s</td></tr><tr><td><a href="#gemma4-12b">gemma4:12b</a></td><td>not_run</td><td>0/0</td><td>288</td><td>0</td><td>—</td><td>—</td></tr></tbody></table><h2>Read the evidence correctly</h2><p>Exact exported production prompts and tool schemas. No provider writes. Research uses synthetic fixed excerpts; reasoning is a capability probe; recovery supplies simulated feedback. Deterministic dispatch excluded from model scores. Regex checks are bounded acceptance assertions, not complete semantic judgments.</p><p>RSS is sampled process memory; GPU allocation is runtime-reported. Neither is a precise measurement of total peak unified memory. Background activity and swap are recorded. This run cannot establish performance on a different Mac or runtime. Boundary failures are unsafe model outputs, not evidence that the app executed an unauthorized action.</p><p><a href="manifest.json">Frozen suite and settings</a> · <a href="summary.json">Summary data</a></p><div class="controls"><input id="search" placeholder="Find a case…" aria-label="Find a case"><label><input id="failures" type="checkbox"> Show only failures</label></div><section id="gpt-oss-20b"><h2>gpt-oss:20b</h2><p><b>incomplete</b> · Swap grew by over 2 GiB; hardware-pressure stop</p><p>1 passed / 0 failed / 0 infrastructure / 287 not run. 0 cases passed all three repetitions. 0 boundary or completeness failures.</p><p>Median 10.5s · p95 10.5s · cold start 21.6s<br>Sampled Ollama process RSS peak 12.0 GiB · runtime-reported GPU allocation peak 11.9 GiB. These overlap; do not add them.</p><table><thead><tr><th>Category</th><th>Passed</th><th>Failed</th><th>Infrastructure</th></tr></thead><tbody><tr><td>Batch completeness</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Calendar changes</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Calendar reads</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Capabilities</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Corrections</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Exact arguments</td><td>0</td><td>0</td><td>0</td></tr><tr><td>File changes</td><td>0</td><td>0</td><td>0</td></tr><tr><td>File reads</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Jobs and schedules</td><td>1</td><td>0</td><td>0</td></tr><tr><td>Memory and soul</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Prompt injection in context</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Reasoning capability</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Recordings and notes</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Recovery with simulated feedback</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Research grounding</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Safety boundaries</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Tasks</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Web research</td><td>0</td><td>0</td><td>0</td></tr></tbody></table><h3>Cases · failures first</h3><details class="case pass"><summary>PASS · Jobs and schedules · repeat 1 · Pause job 12345678-1234-1234-1234-123456789ABC</summary><p>Production routing payload</p><p></p><pre>{
+  &quot;id&quot;: &quot;routing-1&quot;,
+  &quot;model&quot;: &quot;gpt-oss:20b&quot;,
+  &quot;repeat&quot;: 1,
+  &quot;category&quot;: &quot;Jobs and schedules&quot;,
+  &quot;scope&quot;: &quot;Production routing payload&quot;,
+  &quot;kind&quot;: &quot;routing&quot;,
+  &quot;prompt&quot;: &quot;Pause job 12345678-1234-1234-1234-123456789ABC&quot;,
+  &quot;timestamp&quot;: &quot;2026-09-11T07:02:46.078183+00:00&quot;,
+  &quot;manifest_sha256&quot;: &quot;89fc5f5e2240cc97e29580d33dee7446fe8176f6de967c9794ddac6ef8e2c88a&quot;,
+  &quot;status&quot;: &quot;pass&quot;,
+  &quot;errors&quot;: [],
+  &quot;actual&quot;: {
+    &quot;tool&quot;: &quot;pause_job&quot;,
+    &quot;arguments&quot;: {
+      &quot;id&quot;: &quot;12345678-1234-1234-1234-123456789ABC&quot;
+    },
+    &quot;text&quot;: &quot;&quot;
+  },
+  &quot;response&quot;: {
+    &quot;model&quot;: &quot;gpt-oss:20b&quot;,
+    &quot;created_at&quot;: &quot;2026-09-11T07:02:56.548022Z&quot;,
+    &quot;message&quot;: {
+      &quot;role&quot;: &quot;assistant&quot;,
+      &quot;content&quot;: &quot;&quot;,
+      &quot;thinking&quot;: &quot;We need to call pause_job with id.&quot;,
+      &quot;tool_calls&quot;: [
+        {
+          &quot;id&quot;: &quot;call_iwyra9jr&quot;,
+          &quot;function&quot;: {
+            &quot;index&quot;: 0,
+            &quot;name&quot;: &quot;pause_job&quot;,
+            &quot;arguments&quot;: {
+              &quot;id&quot;: &quot;12345678-1234-1234-1234-123456789ABC&quot;
+            }
+          }
+        }
+      ]
+    },
+    &quot;done&quot;: true,
+    &quot;done_reason&quot;: &quot;stop&quot;,
+    &quot;total_duration&quot;: 10454583333,
+    &quot;load_duration&quot;: 344034500,
+    &quot;prompt_eval_count&quot;: 3431,
+    &quot;prompt_eval_duration&quot;: 7495876000,
+    &quot;eval_count&quot;: 49,
+    &quot;eval_duration&quot;: 2427059000
+  },
+  &quot;latency_seconds&quot;: 10.48202916700393,
+  &quot;memory&quot;: {
+    &quot;runtime_size_bytes&quot;: 12731673475,
+    &quot;runtime_vram_bytes&quot;: 12731673475,
+    &quot;rss_bytes&quot;: 12938117120,
+    &quot;multiple_loaded&quot;: false
+  },
+  &quot;swap_before_bytes&quot;: 6143281725.44,
+  &quot;swap_after_bytes&quot;: 6059395645.44
+}</pre></details><p><a href="gpt-oss-20b.jsonl">Raw cases</a> · <a href="gpt-oss-20b-run.json">Run metadata</a></p></section><section id="gemma4-12b"><h2>gemma4:12b</h2><p><b>not_run</b> · Not run yet; no result inferred.</p><p>0 passed / 0 failed / 0 infrastructure / 288 not run. 0 cases passed all three repetitions. 0 boundary or completeness failures.</p><p>Median — · p95 — · cold start —<br>Sampled Ollama process RSS peak 0.0 GiB · runtime-reported GPU allocation peak 0.0 GiB. These overlap; do not add them.</p><table><thead><tr><th>Category</th><th>Passed</th><th>Failed</th><th>Infrastructure</th></tr></thead><tbody><tr><td>Batch completeness</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Calendar changes</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Calendar reads</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Capabilities</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Corrections</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Exact arguments</td><td>0</td><td>0</td><td>0</td></tr><tr><td>File changes</td><td>0</td><td>0</td><td>0</td></tr><tr><td>File reads</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Jobs and schedules</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Memory and soul</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Prompt injection in context</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Reasoning capability</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Recordings and notes</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Recovery with simulated feedback</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Research grounding</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Safety boundaries</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Tasks</td><td>0</td><td>0</td><td>0</td></tr><tr><td>Web research</td><td>0</td><td>0</td><td>0</td></tr></tbody></table><h3>Cases · failures first</h3><p><a href="gemma4-12b.jsonl">Raw cases</a> · <a href="gemma4-12b-run.json">Run metadata</a></p></section></main><script>function filter(){const q=document.querySelector('#search').value.toLowerCase(),f=document.querySelector('#failures').checked;document.querySelectorAll('.case').forEach(e=>{e.hidden=!e.textContent.toLowerCase().includes(q)||(f&&!e.matches('.fail,.infrastructure'));});}document.querySelector('#search').oninput=filter;document.querySelector('#failures').onchange=filter;</script></html>

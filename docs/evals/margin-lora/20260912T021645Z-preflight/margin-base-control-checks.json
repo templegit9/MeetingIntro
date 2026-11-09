@@ -1,0 +1,85 @@
+{
+  "model": "margin-lora-base-control:preflight",
+  "started": "2026-09-12T02:22:50.847523+00:00",
+  "checks": [
+    {
+      "name": "json",
+      "passed": true,
+      "response": {
+        "model": "margin-lora-base-control:preflight",
+        "created_at": "2026-09-12T02:22:55.605118Z",
+        "message": {
+          "role": "assistant",
+          "content": "{\"ready\":true}",
+          "thinking": "The user wants me to return a specific JSON object with no additional text or formatting. I need to output exactly the string they provided, which is a valid JSON object indicating readiness.\n"
+        },
+        "done": true,
+        "done_reason": "stop",
+        "total_duration": 4737858333,
+        "load_duration": 2612500625,
+        "prompt_eval_count": 21,
+        "prompt_eval_duration": 207649000,
+        "eval_count": 45,
+        "eval_duration": 1902340000
+      }
+    },
+    {
+      "name": "tool",
+      "passed": true,
+      "response": {
+        "model": "margin-lora-base-control:preflight",
+        "created_at": "2026-09-12T02:23:11.044054Z",
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "thinking": "The user is asking what I can do \u2014 this is a capability question. The instructions say: \"If the user asks what you can do, what you are, or for help, call list_capabilities.\" So I should call that tool.\n",
+          "tool_calls": [
+            {
+              "id": "s2QhAE6PnZVe6EqLGA1GS0jXa7YOdeEv",
+              "function": {
+                "index": 0,
+                "name": "list_capabilities",
+                "arguments": {}
+              }
+            }
+          ]
+        },
+        "done": true,
+        "done_reason": "stop",
+        "total_duration": 15434835875,
+        "load_duration": 259740750,
+        "prompt_eval_count": 5246,
+        "prompt_eval_duration": 12110596000,
+        "eval_count": 65,
+        "eval_duration": 2959783000
+      }
+    }
+  ],
+  "passed": true,
+  "finished": "2026-09-12T02:23:11.105864+00:00",
+  "runtime": {
+    "version": "0.30.10"
+  },
+  "package": {
+    "name": "margin-lora-base-control:preflight",
+    "model": "margin-lora-base-control:preflight",
+    "modified_at": "2026-09-11T19:22:03.174099999-07:00",
+    "size": 2783447254,
+    "digest": "d30910bf13fea1f0fa3c45919b050182734af6125d9673bf45aefc801629b62a",
+    "details": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "qwen35",
+      "families": [
+        "qwen35"
+      ],
+      "parameter_size": "4.3B",
+      "quantization_level": "Q4_K_M",
+      "context_length": 262144,
+      "embedding_length": 2560
+    },
+    "capabilities": [
+      "completion"
+    ]
+  }
+}

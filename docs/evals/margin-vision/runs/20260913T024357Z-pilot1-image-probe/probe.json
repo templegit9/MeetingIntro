@@ -1,0 +1,73 @@
+{
+  "started_at": "2026-09-13T02:43:57.968380+00:00",
+  "model": "margin-lora-pilot:final",
+  "model_metadata": {
+    "name": "margin-lora-pilot:final",
+    "model": "margin-lora-pilot:final",
+    "modified_at": "2026-09-11T22:06:01.375403809-07:00",
+    "size": 2783446710,
+    "digest": "e3de95b06ad469c48e26d66c02e44f3f81fb7586a9da25d8aaecab4eb1c18998",
+    "details": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "qwen35",
+      "families": [
+        "qwen35"
+      ],
+      "parameter_size": "4.3B",
+      "quantization_level": "Q4_K_M",
+      "context_length": 262144,
+      "embedding_length": 2560
+    },
+    "capabilities": [
+      "completion"
+    ]
+  },
+  "capabilities": [
+    "tools",
+    "thinking",
+    "completion"
+  ],
+  "runtime": {
+    "version": "0.30.10"
+  },
+  "asset": "assets/diagram.png",
+  "asset_sha256": "556712e7e9142ec5689aed643027c0cbaa7b5062ae10ce9945bbc57fb080fb0f",
+  "prompt": "Read this image. What is the diagram about? List the directed connections, including the failure path. If you cannot see the image, say so. Do not guess.",
+  "options": {
+    "temperature": 0,
+    "num_predict": 256,
+    "num_ctx": 4096
+  },
+  "suite_cases_scored": 0,
+  "suite_responses_not_run": 114,
+  "actual_pixels_sent": true,
+  "http_status": 500,
+  "response_body": "{\"error\":\"{\\\"error\\\":{\\\"code\\\":500,\\\"message\\\":\\\"image input is not supported - hint: if this is unexpected, you may need to provide the mmproj\\\",\\\"type\\\":\\\"server_error\\\"}}\"}",
+  "status": "capability_blocked",
+  "elapsed_seconds": 3.6446747909940314,
+  "finished_at": "2026-09-13T02:44:01.640731+00:00",
+  "residency_after": {
+    "models": [
+      {
+        "name": "margin-lora-pilot:final",
+        "model": "margin-lora-pilot:final",
+        "size": 2975114199,
+        "digest": "e3de95b06ad469c48e26d66c02e44f3f81fb7586a9da25d8aaecab4eb1c18998",
+        "details": {
+          "parent_model": "",
+          "format": "gguf",
+          "family": "qwen35",
+          "families": [
+            "qwen35"
+          ],
+          "parameter_size": "4.3B",
+          "quantization_level": "Q4_K_M"
+        },
+        "expires_at": "2026-09-12T19:44:01.641707-07:00",
+        "size_vram": 2975114199,
+        "context_length": 4096
+      }
+    ]
+  }
+}

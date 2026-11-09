@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-09-12T19:41:11.611093+00:00",
+  "rows": [
+    {
+      "think": false,
+      "error": "{\"error\":\"unable to load model: C:\\\\Users\\\\oluyi\\\\.ollama\\\\models\\\\blobs\\\\sha256-7347c527c5c135e9ecf2911f518ce0a7db80d5afac737622681fd5a66bc1c95b\"}"
+    },
+    {
+      "think": true,
+      "error": "{\"error\":\"\\\"margin-think-base:audit\\\" does not support thinking\"}"
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "model": "gemma4:12b",
+  "started": "2026-09-11T07:38:11.594685+00:00",
+  "manifest_sha256": "e30d4ac6cb319469079894de730e1970de42da6c95115fc975d32752797ef917",
+  "host": "Oluyinkas-MacBook-Pro.local",
+  "memory_bytes": 25769803776,
+  "runtime": {
+    "version": "0.30.10"
+  },
+  "profile": {
+    "num_ctx": 8192,
+    "num_predict": 2048,
+    "temperature": 0
+  },
+  "status": "cancelled",
+  "package": {
+    "name": "gemma4:12b",
+    "model": "gemma4:12b",
+    "modified_at": "2026-06-24T02:20:53.640403263-07:00",
+    "size": 7556508396,
+    "digest": "4eb23ef187e2c5462566d6a1d3bbbc2f1346d0b4327cbb66d58fffbcc9b2b05c",
+    "details": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "gemma4",
+      "families": [
+        "gemma4"
+      ],
+      "parameter_size": "11.9B",
+      "quantization_level": "Q4_K_M",
+      "context_length": 262144,
+      "embedding_length": 3840
+    },
+    "capabilities": [
+      "completion",
+      "tools",
+      "thinking",
+      "vision"
+    ]
+  },
+  "swap_start_bytes": 5614726021.12,
+  "cold_start_seconds": 10.033660999994026,
+  "cold_response": {
+    "model": "gemma4:12b",
+    "created_at": "2026-09-11T07:38:21.674816Z",
+    "message": {
+      "role": "assistant",
+      "content": "READY",
+      "thinking": "The user wants me to reply with only the word \"READY\".\n\n    *   Input: \"Reply only READY.\"\n    *   Constraint: Only output \"READY\"."
+    },
+    "done": true,
+    "done_reason": "stop",
+    "total_duration": 10032446041,
+    "load_duration": 5572650083,
+    "prompt_eval_count": 20,
+    "prompt_eval_duration": 716839000,
+    "eval_count": 41,
+    "eval_duration": 3741329000
+  },
+  "preflight_loaded_samples": [
+    [
+      {
+        "name": "gemma4:12b",
+        "model": "gemma4:12b",
+        "size": 8060676340,
+        "digest": "4eb23ef187e2c5462566d6a1d3bbbc2f1346d0b4327cbb66d58fffbcc9b2b05c",
+        "details": {
+          "parent_model": "",
+          "format": "gguf",
+          "family": "gemma4",
+          "families": [
+            "gemma4"
+          ],
+          "parameter_size": "11.9B",
+          "quantization_level": "Q4_K_M"
+        },
+        "expires_at": "2026-09-11T00:48:21.674919-07:00",
+        "size_vram": 8060676340,
+        "context_length": 8192
+      }
+    ]
+  ],
+  "swap_after_load_bytes": 5614726021.12,
+  "swap_guard_basis": "Growth beyond 2 GiB after cold model load; initial loading swap retained separately.",
+  "finished": "2026-09-11T08:06:42.782815+00:00",
+  "reason": "User stopped Gemma because of latency; completed rows retained, remaining cases not run."
+}

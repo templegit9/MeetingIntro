@@ -1,0 +1,84 @@
+{
+  "model": "granite4.2:8b",
+  "started": "2026-09-11T10:15:46.671231+00:00",
+  "manifest_sha256": "3bab5f4a6ad949d90c2329e0183cd56f925810f504c67c926ce716538098bb58",
+  "host": "Oluyinkas-MacBook-Pro.local",
+  "memory_bytes": 25769803776,
+  "runtime": {
+    "version": "0.30.10"
+  },
+  "profile": {
+    "num_ctx": 8192,
+    "num_predict": 2048,
+    "temperature": 0
+  },
+  "status": "cancelled",
+  "package": {
+    "name": "granite4.2:8b",
+    "model": "granite4.2:8b",
+    "modified_at": "2026-09-11T03:15:46.56120112-07:00",
+    "size": 5347929757,
+    "digest": "f586c02fdecdf151b656207c339aa003997345774a41768bac1fd6d2fb85913b",
+    "details": {
+      "parent_model": "/Users/runner/.ollama/models/blobs/sha256-16a9369d0805f80b7377d25d87f937a90c05dc04ad79173a52001e42c9aab311",
+      "format": "gguf",
+      "family": "granite",
+      "families": [
+        "granite"
+      ],
+      "parameter_size": "8.8B",
+      "quantization_level": "Q4_K_M",
+      "context_length": 131072,
+      "embedding_length": 4096
+    },
+    "capabilities": [
+      "completion"
+    ]
+  },
+  "swap_start_bytes": 3883401216.0,
+  "cold_start_seconds": 7.744721625000238,
+  "cold_response": {
+    "model": "granite4.2:8b",
+    "created_at": "2026-09-11T10:15:54.452503Z",
+    "message": {
+      "role": "assistant",
+      "content": "READY",
+      "thinking": "Okay, the user said \"Reply only READY.\" So I need to respond with just \"READY\" and nothing else. No extra text, no explanations. Just the word READY. Let me make sure I don't add anything else. Yep, reply exactly \"READY\".\n"
+    },
+    "done": true,
+    "done_reason": "stop",
+    "total_duration": 7743410417,
+    "load_duration": 2416015375,
+    "prompt_eval_count": 19,
+    "prompt_eval_duration": 553075000,
+    "eval_count": 59,
+    "eval_duration": 4738838000
+  },
+  "preflight_loaded_samples": [
+    [
+      {
+        "name": "granite4.2:8b",
+        "model": "granite4.2:8b",
+        "size": 6169674382,
+        "digest": "f586c02fdecdf151b656207c339aa003997345774a41768bac1fd6d2fb85913b",
+        "details": {
+          "parent_model": "",
+          "format": "gguf",
+          "family": "granite",
+          "families": [
+            "granite"
+          ],
+          "parameter_size": "8.8B",
+          "quantization_level": "Q4_K_M"
+        },
+        "expires_at": "2026-09-11T03:25:54.453231-07:00",
+        "size_vram": 6169674382,
+        "context_length": 8192
+      }
+    ]
+  ],
+  "swap_after_load_bytes": 3807903744.0,
+  "swap_guard_basis": "Growth beyond 2 GiB after cold model load; initial loading swap retained separately.",
+  "finished": "2026-09-11T11:06:53.873713+00:00",
+  "reason": "User requested skipping Granite because latency exceeds GPT-OSS baseline; partial observations retained."
+}

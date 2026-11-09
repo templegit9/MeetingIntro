@@ -1,0 +1,49 @@
+{
+  "started": "2026-09-11T05:18:28.856223+00:00",
+  "ended": "2026-09-11T05:18:33.834245+00:00",
+  "checks": [
+    {
+      "name": "Official runtime archive matches pinned SHA-256",
+      "pass": true,
+      "timestamp": "2026-09-11T05:18:29.100975+00:00"
+    },
+    {
+      "name": "Archive links stay inside installation",
+      "pass": true,
+      "timestamp": "2026-09-11T05:18:30.527058+00:00"
+    },
+    {
+      "name": "Supervisor signature verifies",
+      "pass": true,
+      "timestamp": "2026-09-11T05:18:30.536636+00:00"
+    },
+    {
+      "name": "Packaged engine starts on its own loopback port",
+      "pass": true,
+      "timestamp": "2026-09-11T05:18:33.005080+00:00"
+    },
+    {
+      "name": "Stopping supervisor stops its engine",
+      "pass": true,
+      "timestamp": "2026-09-11T05:18:33.237668+00:00"
+    },
+    {
+      "name": "Engine starts under disposable app owner",
+      "pass": true,
+      "timestamp": "2026-09-11T05:18:33.489563+00:00"
+    },
+    {
+      "name": "App crash stops the owned engine",
+      "pass": true,
+      "timestamp": "2026-09-11T05:18:33.693809+00:00"
+    },
+    {
+      "name": "No model downloaded during lifecycle tests",
+      "pass": true,
+      "timestamp": "2026-09-11T05:18:33.694370+00:00"
+    }
+  ],
+  "passed": 8,
+  "total": 8,
+  "scope": "Real pinned runtime; no fresh 14 GB model download."
+}

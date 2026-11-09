@@ -1,0 +1,2 @@
+{'timestamp': '2026-09-11T07:03:55.838770+00:00', 'stage': 'evaluating', 'model': 'gpt-oss:20b'}
+{'timestamp': '2026-09-11T07:38:11.451674+00:00', 'stage': 'evaluating', 'model': 'gemma4:12b'}

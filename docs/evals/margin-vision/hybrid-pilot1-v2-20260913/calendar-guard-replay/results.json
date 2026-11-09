@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-09-13T21:45:08.544888+00:00",
+  "scope": "Saved failed model calls replayed through production Swift validation. No new inference or provider actions. Image adapter remains unconnected.",
+  "results": [
+    {
+      "blocked": true,
+      "id": "predicted_planner/NEW-02",
+      "reason": "The proposal didn't preserve an image event's all-day setting. Nothing has been created."
+    },
+    {
+      "blocked": true,
+      "id": "gold_planner/NEW-02",
+      "reason": "The proposal didn't preserve an image event's all-day setting. Nothing has been created."
+    },
+    {
+      "blocked": true,
+      "id": "language/routing-43",
+      "reason": "The proposed move supplied a time you didn't ask to change. Please specify the target date; nothing has been changed."
+    },
+    {
+      "blocked": true,
+      "id": "language/args-4",
+      "reason": "The proposal didn't preserve your all-day instruction. Nothing has been created; please retry the all-day dates."
+    }
+  ]
+}

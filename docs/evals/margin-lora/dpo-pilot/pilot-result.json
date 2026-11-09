@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "steps": 72,
+  "metrics": {
+    "train_runtime": 5187.7768,
+    "train_samples_per_second": 0.111,
+    "train_steps_per_second": 0.014,
+    "total_flos": 0.0,
+    "train_loss": 0.3126993538915283,
+    "epoch": 1.0
+  },
+  "finished": "2026-09-12T22:22:32.567866+00:00",
+  "peak_allocated": 10380579840,
+  "script_sha256": "b5e006a8b348fc244fa857f5058e0b016775e780a80a8cfca79cd129936b5cce"
+}

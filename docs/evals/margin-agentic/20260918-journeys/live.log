@@ -1,0 +1,30 @@
+START evidence 2026-09-18T19:34:39Z
+CHECK evidence: invoice.txt waits for separate confirmation
+PASS evidence; writes=["invoice.txt"]; model=margin-lora-pilot:final
+user: Find the invoice note and save its complete text as invoice.txt in Work Reports.
+assistant: Notes
+Invoice note ID: note-19964e57
+Read observation; no write executed.
+assistant: Note text
+Invoice total USD 19.44; payment due 2030-04-18.
+Read observation; no write executed.
+assistant: Destinations
+work: Work Reports
+Read observation; no write executed.
+assistant: Save invoice.txt
+work
+Invoice total USD 19.44; payment due 2030-04-18.
+/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-journey-20C4E097-1C69-447F-AC86-61EA73176393/invoice.txt
+Saved invoice.txt to work; verified contents: Invoice total USD 19.44; payment due 2030-04-18.
+assistant: Invoice.txt has been saved to Work Reports with the complete text.
+END evidence; elapsed=47.57174909114838; at=2026-09-18T19:35:27Z
+START recovery 2026-09-18T19:35:27Z
+FAIL recovery: Infrastructure: another model is loaded; no inference started.
+END recovery; elapsed=0.007770061492919922; at=2026-09-18T19:35:27Z
+START clarification 2026-09-18T19:35:27Z
+FAIL clarification: Infrastructure: another model is loaded; no inference started.
+END clarification; elapsed=0.004633903503417969; at=2026-09-18T19:35:27Z
+START two-writes 2026-09-18T19:35:27Z
+FAIL two-writes: Infrastructure: another model is loaded; no inference started.
+END two-writes; elapsed=0.0037479400634765625; at=2026-09-18T19:35:27Z
+Live journeys: 1/4 passed. Fixture tools only; no calendar or user-folder effects.

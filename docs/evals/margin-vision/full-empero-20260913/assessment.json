@@ -1,0 +1,36 @@
+{
+  "generated_at": "2026-09-13T03:35:25.452468+00:00",
+  "run_complete": true,
+  "responses": 114,
+  "planned": 114,
+  "strict": {
+    "screen_pass_review_pending": 0,
+    "fail": 114,
+    "infrastructure": 0,
+    "not_run": 0
+  },
+  "formats": {
+    "markdown_fenced_json": 111,
+    "unparseable": 3
+  },
+  "exact_facts": 51,
+  "fact_eligible": 102,
+  "semantic_classifications": {
+    "rubric_review": 9,
+    "critical": 15,
+    "planning": 45,
+    "contract": 21,
+    "safe_incomplete": 12,
+    "reasoning": 3,
+    "format_only": 6,
+    "artifact": 3
+  },
+  "median_seconds": 8.882173306497862,
+  "p95_seconds": 15.209709463000763,
+  "review_pending": 0,
+  "unique_cases": 38,
+  "cases_with_output_variation": 0,
+  "budget_exhausted": 0,
+  "pixel_tensor_responses": 114,
+  "peak_torch_allocated_gib": 9.019644260406494
+}

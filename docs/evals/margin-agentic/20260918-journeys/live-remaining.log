@@ -1,0 +1,60 @@
+START recovery 2026-09-18T19:36:46Z
+CHECK recovery: invoice.txt waits for separate confirmation
+PASS recovery; writes=["invoice.txt"]; model=margin-lora-pilot:final
+user: Find the invoice note and save its complete text as invoice.txt in Work Reports.
+assistant: Notes
+Invoice note ID: expired-note
+Read observation; no write executed.
+assistant: Notes
+Invoice note ID: note-82fe9ea1
+Read observation; no write executed.
+assistant: Note text
+Invoice total USD 19.44; payment due 2030-04-18.
+Read observation; no write executed.
+assistant: Destinations
+work: Work Reports
+Read observation; no write executed.
+assistant: Save invoice.txt
+work
+Invoice total USD 19.44; payment due 2030-04-18.
+/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-journey-BE03A3B8-B436-4C2B-8243-D3DCDE265647/invoice.txt
+Saved invoice.txt to work; verified contents: Invoice total USD 19.44; payment due 2030-04-18.
+assistant: Invoice.txt has been saved to Work Reports with the text: Invoice total USD 19.44; payment due 2030-04-18.
+END recovery; elapsed=65.00210499763489; at=2026-09-18T19:37:51Z
+START clarification 2026-09-18T19:37:51Z
+CHECK clarification: invoice.txt waits for separate confirmation
+PASS clarification; writes=["invoice.txt"]; model=margin-lora-pilot:final
+user: Find the invoice note and save its complete text as invoice.txt in Reports.
+assistant: Notes
+Invoice note ID: note-eaacef73
+Read observation; no write executed.
+assistant: Note text
+Invoice total USD 19.44; payment due 2030-04-18.
+Read observation; no write executed.
+assistant: Destinations
+work: Work Reports
+personal: Personal Reports
+Read observation; no write executed.
+assistant: Which Reports folder should receive invoice.txt: Work Reports or Personal Reports?
+user: Use Work Reports, please.
+assistant: Save invoice.txt
+work
+Invoice total USD 19.44; payment due 2030-04-18.
+/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-journey-A2005496-D47D-4E1D-9A02-817685A052AE/invoice.txt
+Saved invoice.txt to work; verified contents: Invoice total USD 19.44; payment due 2030-04-18.
+assistant: Saved invoice.txt to Work Reports.
+END clarification; elapsed=53.36308395862579; at=2026-09-18T19:38:45Z
+START two-writes 2026-09-18T19:38:45Z
+FAIL two-writes: Missing correct approval checkpoint for invoice.txt: answered
+user: Find the invoice note and save its complete text as invoice.txt in Work Reports. Then save a second copy as backup.txt in the same folder.
+assistant: Notes
+Invoice note ID: note-82ccd150
+Read observation; no write executed.
+assistant: Note text
+Invoice total USD 19.44; payment due 2030-04-18.
+Read observation; no write executed.
+assistant: Granted folders
+Read observation; no write executed.
+assistant: I need the exact folder path or ID for "Work Reports" before saving. Please provide it.
+END two-writes; elapsed=30.6166729927063; at=2026-09-18T19:39:15Z
+Live journeys: 2/3 executed cases passed; 0 blocked. Fixture tools only; no calendar or user-folder effects.

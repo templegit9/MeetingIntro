@@ -1,0 +1,27 @@
+START two-writes 2026-09-18T19:50:34Z
+CHECK two-writes: invoice.txt waits for separate confirmation
+CHECK two-writes: backup.txt waits for separate confirmation
+PASS two-writes; writes=["invoice.txt", "backup.txt"]; model=margin-lora-pilot:final
+user: Find the invoice note and save its complete text as invoice.txt in Work Reports. Then save a second copy as backup.txt in the same folder.
+assistant: Notes
+Invoice note ID: note-e8166431
+Read observation; no write executed.
+assistant: Note text
+Invoice total USD 19.44; payment due 2030-04-18.
+Read observation; no write executed.
+assistant: Granted folders
+/private/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-journey-DEFE8849-B2D6-4A4F-9C75-A4273C55A7B4/Work Reports/
+Read observation; no write executed.
+assistant: Save invoice.txt
+/private/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-journey-DEFE8849-B2D6-4A4F-9C75-A4273C55A7B4/Work Reports/
+Invoice total USD 19.44; payment due 2030-04-18.
+/private/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-journey-DEFE8849-B2D6-4A4F-9C75-A4273C55A7B4/Work Reports/invoice.txt
+Saved invoice.txt to /private/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-journey-DEFE8849-B2D6-4A4F-9C75-A4273C55A7B4/Work Reports/; verified contents: Invoice total USD 19.44; payment due 2030-04-18.
+assistant: Save backup.txt
+/private/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-journey-DEFE8849-B2D6-4A4F-9C75-A4273C55A7B4/Work Reports/
+Invoice total USD 19.44; payment due 2030-04-18.
+/private/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-journey-DEFE8849-B2D6-4A4F-9C75-A4273C55A7B4/Work Reports/backup.txt
+Saved backup.txt to /private/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-journey-DEFE8849-B2D6-4A4F-9C75-A4273C55A7B4/Work Reports/; verified contents: Invoice total USD 19.44; payment due 2030-04-18.
+assistant: Done. invoice.txt and backup.txt are saved in Work Reports with the same content.
+END two-writes; elapsed=73.1953330039978; at=2026-09-18T19:51:47Z
+Live journeys: 1/1 executed cases passed; 0 blocked. Fixture tools only; no calendar or user-folder effects.

@@ -1,0 +1,106 @@
+{
+  "model": "gpt-oss:20b",
+  "started": "2026-09-11T07:02:24.368288+00:00",
+  "manifest_sha256": "89fc5f5e2240cc97e29580d33dee7446fe8176f6de967c9794ddac6ef8e2c88a",
+  "host": "Oluyinkas-MacBook-Pro.local",
+  "memory_bytes": 25769803776,
+  "runtime": {
+    "version": "0.30.10"
+  },
+  "profile": {
+    "num_ctx": 8192,
+    "num_predict": 2048,
+    "temperature": 0
+  },
+  "status": "incomplete",
+  "package": {
+    "name": "gpt-oss:20b",
+    "model": "gpt-oss:20b",
+    "modified_at": "2026-06-28T22:01:54.193190562-07:00",
+    "size": 13793441244,
+    "digest": "17052f91a42e97930aa6e28a6c6c06a983e6a58dbb00434885a0cf5313e376f7",
+    "details": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "gptoss",
+      "families": [
+        "gptoss"
+      ],
+      "parameter_size": "20.9B",
+      "quantization_level": "MXFP4",
+      "context_length": 131072,
+      "embedding_length": 2880
+    },
+    "capabilities": [
+      "completion",
+      "tools",
+      "thinking"
+    ]
+  },
+  "swap_start_bytes": 3678006149.12,
+  "cold_start_seconds": 21.58038554200175,
+  "cold_response": {
+    "model": "gpt-oss:20b",
+    "created_at": "2026-09-11T07:02:45.942151Z",
+    "message": {
+      "role": "assistant",
+      "content": "READY",
+      "thinking": "The user says \"Reply only READY.\" So I should reply with just the word READY."
+    },
+    "done": true,
+    "done_reason": "stop",
+    "total_duration": 21541053750,
+    "load_duration": 19782947125,
+    "prompt_eval_count": 71,
+    "prompt_eval_duration": 400342000,
+    "eval_count": 29,
+    "eval_duration": 1218872000
+  },
+  "preflight_loaded_samples": [
+    [
+      {
+        "name": "gpt-oss:20b",
+        "model": "gpt-oss:20b",
+        "size": 12731673475,
+        "digest": "17052f91a42e97930aa6e28a6c6c06a983e6a58dbb00434885a0cf5313e376f7",
+        "details": {
+          "parent_model": "",
+          "format": "gguf",
+          "family": "gptoss",
+          "families": [
+            "gptoss"
+          ],
+          "parameter_size": "20.9B",
+          "quantization_level": "MXFP4"
+        },
+        "expires_at": "2026-09-11T00:12:45.958522-07:00",
+        "size_vram": 12731673475,
+        "context_length": 8192
+      }
+    ]
+  ],
+  "finished": "2026-09-11T07:02:56.572133+00:00",
+  "reason": "Swap grew by over 2 GiB; hardware-pressure stop",
+  "models_loaded_at_end": [
+    {
+      "name": "gpt-oss:20b",
+      "model": "gpt-oss:20b",
+      "size": 12731673475,
+      "digest": "17052f91a42e97930aa6e28a6c6c06a983e6a58dbb00434885a0cf5313e376f7",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "gptoss",
+        "families": [
+          "gptoss"
+        ],
+        "parameter_size": "20.9B",
+        "quantization_level": "MXFP4"
+      },
+      "expires_at": "2026-09-11T00:02:56.681986-07:00",
+      "size_vram": 12731673475,
+      "context_length": 8192
+    }
+  ],
+  "swap_end_bytes": 6051007037.44
+}

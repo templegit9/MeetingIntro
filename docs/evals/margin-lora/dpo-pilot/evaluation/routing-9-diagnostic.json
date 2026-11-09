@@ -1,0 +1,4 @@
+{
+  "http_status": 500,
+  "body": "{\"error\":\"llama-server chat error: map[code:500 message:The model produced output that does not match the expected peg-native format type:server_error]\"}"
+}

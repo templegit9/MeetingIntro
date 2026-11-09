@@ -1,0 +1,21 @@
+ MeetingIntro.xcodeproj/project.pbxproj          |  12 ++
+ MeetingIntro/CalendarManager.swift              |  46 +++++
+ MeetingIntro/CalendarProvider.swift             |   5 +-
+ MeetingIntro/EventKitProvider.swift             |  64 ++++++
+ MeetingIntro/GraphCalendarProvider.swift        |  98 +++++++++-
+ MeetingIntro/Margin/CapabilitiesTool.swift      |   2 +-
+ MeetingIntro/Margin/MarginAgent.swift           | 158 +++++++++++++--
+ MeetingIntro/Margin/MarginConfig.swift          |  80 ++++++--
+ MeetingIntro/Margin/MarginFixtures.swift        | 250 +++++++++++++++++++++---
+ MeetingIntro/Margin/MarginNudgeEngine.swift     |   9 +-
+ MeetingIntro/Margin/MarginPageView.swift        |  17 ++
+ MeetingIntro/Margin/MarginPanelController.swift |   4 +-
+ MeetingIntro/Margin/MarginRoots.swift           |  11 +-
+ MeetingIntro/Margin/ProposedAction.swift        |  16 ++
+ MeetingIntro/MeetingIntroApp.swift              |  77 ++++----
+ MeetingIntro/SettingsView.swift                 |  11 +-
+ assumptions.md                                  |   6 +
+ dev.md                                          |   6 +
+ dev_pattern.md                                  |   6 +
+ docs/margin-tools.md                            |  28 ++-
+ 20 files changed, 804 insertions(+), 102 deletions(-)

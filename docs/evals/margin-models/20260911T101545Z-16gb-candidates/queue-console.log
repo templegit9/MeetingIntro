@@ -1,0 +1,2 @@
+{'timestamp': '2026-09-11T10:15:46.036625+00:00', 'stage': 'downloading', 'model': 'granite4.2:8b'}
+{'timestamp': '2026-09-11T10:15:46.566310+00:00', 'stage': 'evaluating', 'model': 'granite4.2:8b'}

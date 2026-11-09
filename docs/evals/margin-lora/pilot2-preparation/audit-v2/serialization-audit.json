@@ -1,0 +1,190 @@
+{
+  "cpu_only": true,
+  "base": "/private/tmp/margin-audit-local/cache/huggingface/hub/models--empero-ai--Qwen3.8-4B-Distill/snapshots/c83cb7aa2999d2f35c43e9ae0634a30eb8985a1e",
+  "counts": {
+    "train_rows": 3600,
+    "memory_targets": 680,
+    "nested_parameters_checked": 800,
+    "batch_targets": 242,
+    "research_targets": 220,
+    "validation_rows": 460
+  },
+  "issues": [],
+  "samples": {
+    "memory": {
+      "id": "train-memory-0260",
+      "structured_target": {
+        "role": "assistant",
+        "content": "[{\"kind\": \"soul\", \"key\": \"brevity\", \"value\": \"Prefers short answers\", \"evidence\": \"From now on, I prefer short answers about project 260.\"}]"
+      },
+      "rendered_target": "<think>\n\n</think>\n\n[{\"kind\": \"soul\", \"key\": \"brevity\", \"value\": \"Prefers short answers\", \"evidence\": \"From now on, I prefer short answers about project 260.\"}]<|im_end|>\n",
+      "supervised_decoded": "<think>\n\n</think>\n\n[{\"kind\": \"soul\", \"key\": \"brevity\", \"value\": \"Prefers short answers\", \"evidence\": \"From now on, I prefer short answers about project 260.\"}]<|im_end|>\n"
+    },
+    "boundaries": {
+      "id": "train-boundaries-0421",
+      "structured_target": {
+        "role": "assistant",
+        "content": "I cannot send email. No message has been sent."
+      },
+      "rendered_target": "<think>\n\n</think>\n\nI cannot send email. No message has been sent.<|im_end|>\n",
+      "supervised_decoded": "<think>\n\n</think>\n\nI cannot send email. No message has been sent.<|im_end|>\n"
+    },
+    "calendar_intent": {
+      "id": "train-calendar_intent-0135",
+      "structured_target": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "type": "function",
+            "function": {
+              "name": "day_briefing",
+              "arguments": {}
+            }
+          }
+        ]
+      },
+      "rendered_target": "<think>\n\n</think>\n\n<tool_call>\n<function=day_briefing>\n</function>\n</tool_call><|im_end|>\n",
+      "supervised_decoded": "<think>\n\n</think>\n\n<tool_call>\n<function=day_briefing>\n</function>\n</tool_call><|im_end|>\n"
+    },
+    "calendar_arguments": {
+      "id": "train-calendar_arguments-0179",
+      "structured_target": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "type": "function",
+            "function": {
+              "name": "move_event",
+              "arguments": {
+                "title": "Project 179 review",
+                "original_date": "2027-03-29",
+                "new_start": "2027-04-04T14:30:00"
+              }
+            }
+          }
+        ]
+      },
+      "rendered_target": "<think>\n\n</think>\n\n<tool_call>\n<function=move_event>\n<parameter=title>\nProject 179 review\n</parameter>\n<parameter=original_date>\n2027-03-29\n</parameter>\n<parameter=new_start>\n2027-04-04T14:30:00\n</parameter>\n</function>\n</tool_call><|im_end|>\n",
+      "supervised_decoded": "<think>\n\n</think>\n\n<tool_call>\n<function=move_event>\n<parameter=title>\nProject 179 review\n</parameter>\n<parameter=original_date>\n2027-03-29\n</parameter>\n<parameter=new_start>\n2027-04-04T14:30:00\n</parameter>\n</function>\n</tool_call><|im_end|>\n"
+    },
+    "all_day_batches": {
+      "id": "p2-train-439",
+      "structured_target": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "type": "function",
+            "function": {
+              "name": "create_events",
+              "arguments": {
+                "events": [
+                  {
+                    "title": "Workshop 439 session 1",
+                    "start": "2027-07-20",
+                    "all_day": true
+                  },
+                  {
+                    "title": "Workshop 439 session 2",
+                    "start": "2027-07-22",
+                    "all_day": true
+                  },
+                  {
+                    "title": "Workshop 439 session 3",
+                    "start": "2027-07-24",
+                    "all_day": true
+                  },
+                  {
+                    "title": "Workshop 439 session 4",
+                    "start": "2027-07-26",
+                    "all_day": true
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "rendered_target": "<think>\n\n</think>\n\n<tool_call>\n<function=create_events>\n<parameter=events>\n[{\"title\": \"Workshop 439 session 1\", \"start\": \"2027-07-20\", \"all_day\": true}, {\"title\": \"Workshop 439 session 2\", \"start\": \"2027-07-22\", \"all_day\": true}, {\"title\": \"Workshop 439 session 3\", \"start\": \"2027-07-24\", \"all_day\": true}, {\"title\": \"Workshop 439 session 4\", \"start\": \"2027-07-26\", \"all_day\": true}]\n</parameter>\n</function>\n</tool_call><|im_end|>\n",
+      "supervised_decoded": "<think>\n\n</think>\n\n<tool_call>\n<function=create_events>\n<parameter=events>\n[{\"title\": \"Workshop 439 session 1\", \"start\": \"2027-07-20\", \"all_day\": true}, {\"title\": \"Workshop 439 session 2\", \"start\": \"2027-07-22\", \"all_day\": true}, {\"title\": \"Workshop 439 session 3\", \"start\": \"2027-07-24\", \"all_day\": true}, {\"title\": \"Workshop 439 session 4\", \"start\": \"2027-07-26\", \"all_day\": true}]\n</parameter>\n</function>\n</tool_call><|im_end|>\n"
+    },
+    "retention": {
+      "id": "train-retention-0193",
+      "structured_target": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "type": "function",
+            "function": {
+              "name": "search_transcripts",
+              "arguments": {
+                "folder": "/Users/demo/Documents/Collection-193",
+                "query": "archive-193"
+              }
+            }
+          }
+        ]
+      },
+      "rendered_target": "<think>\n\n</think>\n\n<tool_call>\n<function=search_transcripts>\n<parameter=folder>\n/Users/demo/Documents/Collection-193\n</parameter>\n<parameter=query>\narchive-193\n</parameter>\n</function>\n</tool_call><|im_end|>\n",
+      "supervised_decoded": "<think>\n\n</think>\n\n<tool_call>\n<function=search_transcripts>\n<parameter=folder>\n/Users/demo/Documents/Collection-193\n</parameter>\n<parameter=query>\narchive-193\n</parameter>\n</function>\n</tool_call><|im_end|>\n"
+    },
+    "timezones": {
+      "id": "train-timezones-0086",
+      "structured_target": {
+        "role": "assistant",
+        "content": "2027-03-28 02:00 in America/Los_Angeles."
+      },
+      "rendered_target": "<think>\n\n</think>\n\n2027-03-28 02:00 in America/Los_Angeles.<|im_end|>\n",
+      "supervised_decoded": "<think>\n\n</think>\n\n2027-03-28 02:00 in America/Los_Angeles.<|im_end|>\n"
+    },
+    "research_citations": {
+      "id": "p2-train-92",
+      "structured_target": {
+        "role": "assistant",
+        "content": "The excerpt does not state a price for Service 92 [1]."
+      },
+      "rendered_target": "<think>\n\n</think>\n\nThe excerpt does not state a price for Service 92 [1].<|im_end|>\n",
+      "supervised_decoded": "<think>\n\n</think>\n\nThe excerpt does not state a price for Service 92 [1].<|im_end|>\n"
+    },
+    "calendar_destination": {
+      "id": "p2-train-546",
+      "structured_target": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "type": "function",
+            "function": {
+              "name": "move_event",
+              "arguments": {
+                "title": "Workshop 546",
+                "original_date": "2027-05-07",
+                "new_date": "2027-05-10"
+              }
+            }
+          }
+        ]
+      },
+      "rendered_target": "<think>\n\n</think>\n\n<tool_call>\n<function=move_event>\n<parameter=title>\nWorkshop 546\n</parameter>\n<parameter=original_date>\n2027-05-07\n</parameter>\n<parameter=new_date>\n2027-05-10\n</parameter>\n</function>\n</tool_call><|im_end|>\n",
+      "supervised_decoded": "<think>\n\n</think>\n\n<tool_call>\n<function=move_event>\n<parameter=title>\nWorkshop 546\n</parameter>\n<parameter=original_date>\n2027-05-07\n</parameter>\n<parameter=new_date>\n2027-05-10\n</parameter>\n</function>\n</tool_call><|im_end|>\n"
+    }
+  },
+  "template_sha256": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715",
+  "note": "Field-presence and label-boundary audit; raw sample targets included. No inference or GPU work.",
+  "limitations": [
+    "Saved adapter tokenizer and pinned source tokenizer produce identical rendered text and token IDs across all 4,060 train/validation rows, both completed and generation-prompt forms.",
+    "Field preservation does not establish model learning or inference correctness."
+  ],
+  "script_sha256": "222064f644f4c772bc291151a7139480286450bb4763a13719a65d4be642a8ae",
+  "saved_tokenizer_verification": {
+    "rows": 4060,
+    "render_comparisons": 8120,
+    "issues": [],
+    "source_template_sha256": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715",
+    "saved_template_sha256": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715",
+    "cpu_only": true
+  }
+}

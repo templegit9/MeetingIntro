@@ -1,0 +1,92 @@
+
+Margin checks · deterministic guards; optional live learning checks are labeled
+  ✓ trash with no filter refuses instead of proposing the whole folder
+  ✓ trash with a filter proposes exactly the 2 matching files
+  ✓ reading an ungranted folder asks for access
+  ✓ a folder name containing ../ collapses to one component — got “etc-passwd”
+  ✓ rename proposes a new name, never a path, and keeps the extension — IMG_1234 Screen Shot.png → img-1234-screen-shot.png
+  ✓ moving to an ungranted destination is refused
+  6/6 guards held
+  ✓ 3pm means today's 15:00, not a title substring or tomorrow
+  ✓ explicit original date selects the later occurrence
+  ✓ same-id recurring occurrences remain separate; cancelled event excluded
+  ✓ ambiguous matches return a question, not a write proposal
+  ✓ blank title never matches everything
+  ✓ past occurrences are excluded
+  ✓ midnight and noon are distinct
+  ✓ invalid clock references are rejected
+  ✓ cancel tool refuses ambiguity before provider access
+  ✓ move tool refuses ambiguity before provider access
+  ✓ invalid original date does not broaden the selection
+  ✓ exact original time works without an invented title
+  ✓ two meetings at the exact same time remain ambiguous
+  ✓ missing both title and original time refuses
+  ✓ opaque Graph IDs cannot change the cancellation endpoint
+  15/15 calendar guards held
+  ✓ learning starts enabled; conversation archive remains opt-in
+  ✓ disabled memory is absent from model instructions
+  ✓ enabled explicit memory enters instructions
+  ✓ personality, soul and proactivity survive reload
+  ✓ unconfirmed history pages have grey markers
+  ✓ unchanged pages keep their original date
+  ✓ confirmed history pages retain action markers and outcomes
+  ✓ history retains tool details across reload
+  ✓ reopened history has no executable actions
+  ✓ screenshot regression: capabilities after PDF history
+  ✓ capability answer comes from the registered tool
+  ✓ cleared history remains empty after reload
+  ✓ explicit permanent deletion refuses instead of proposing Trash
+  ✓ search text about deletion is not treated as a deletion command
+  ✓ preparing a proposal performs zero writes
+  ✓ simultaneous confirmations execute exactly once
+  16/16 behavior guards held
+  ✓ idle notebook rests after configured timeout
+  ✓ busy and never-rest states stay visible
+  ✓ soul forms automatically from attributed feedback
+  ✓ evolving preference retains previous value
+  ✓ user-edited learning is pinned
+  ✓ forgotten category cannot silently return
+  ✓ unattributed learning is rejected
+  ✓ disabled soul cannot learn
+  ✓ learned soul survives reload
+  ✓ forgetting survives reload
+Learning model reply: [{"evidence":"I prefer concise answers. Please keep your replies to two short sentences from now on.","kind":"soul","key":"brevity","value":"Prefers concise answers and wants replies in two short sentences"}]
+  ✓ live local model extracts a durable style preference
+Learning model reply: []
+  ✓ live local model does not learn a one-time calendar request
+  ✓ undated event asks before provider access
+  ✓ invalid numeric arguments cannot trap or truncate
+  ✓ simple recording list needs no model
+  ✓ literal transcript search preserves query without model
+  ✓ date-only meeting moves preserve the known local clock time
+  ✓ screenshot holiday request retains all eight events
+  ✓ last requested date survives parsing
+  ✓ full holiday title survives parsing
+  ✓ date-only events explicitly preview all-day
+  ✓ timed lists are not silently converted to all-day
+  ✓ initial activity describes batch scope
+  ✓ invalid eighth event blocks whole batch
+  ✓ duplicate entries rejected
+  ✓ multiple returned event calls are combined, never truncated
+  ✓ all-day interval uses calendar boundaries
+  ✓ event preview includes year
+  ✓ failure stops before following writes
+  ✓ partial completion survives restart without pretending failure is retry-safe
+  ✓ resume skips completed and uncertain steps
+  ✓ human-checked noncreation returns uncertain step to pending
+  ✓ reconciled step resumes without replaying completed siblings
+  ✓ identical completed steps cannot replay through a new job
+  ✓ in-flight write becomes uncertain after restart
+  ✓ pause finishes current step and stops next step
+  ✓ corrupt journals cannot be overwritten
+  ✓ web query cannot be replaced with private prior tool output
+  ✓ Brave credential goes only in API header
+  ✓ search key never enters URL
+  ✓ search result limit enforced
+  ✓ missing Brave key fails before network
+  ✓ search results deduplicate URLs and reject executable links
+  ✓ quota errors are not empty search results
+  ✓ malformed search response fails
+  45/45 roadmap guards held
+Margin eval · gpt-oss:20b · 0 cases
+  0/0 passed

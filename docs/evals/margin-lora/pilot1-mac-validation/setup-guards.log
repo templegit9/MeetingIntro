@@ -1,0 +1,23 @@
+PASS · Pinned manifest is bundled
+PASS · GGUF model cache path follows the selected model
+PASS · Invalid GGUF model rejected
+PASS · Invalid GGUF modelGGUFURL rejected
+PASS · Invalid GGUF modelGGUFSHA256 rejected
+PASS · Intel compatibility explained
+PASS · Insufficient memory explained
+PASS · Insufficient disk explained
+PASS · Supported Mac accepted
+PASS · Checksum detects changed bytes
+PASS · Repeated layer updates are not double-counted
+PASS · Negative progress is bounded
+PASS · Oversized progress is bounded
+PASS · Closed stream requires success
+PASS · Provider error fails setup
+PASS · Malformed update fails setup
+PASS · Terminal success accepted
+PASS · First enable requires introduction and download approval
+PASS · Legacy enabled users skip introduction without granting downloads
+PASS · Unavailable AI cannot download without approval
+PASS · Cancelled setup does not write files
+PASS · Approval survives app updates
+SETUP GUARDS: 22/22

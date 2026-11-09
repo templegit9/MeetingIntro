@@ -1,0 +1,25 @@
+{
+  "recorded_at": "2026-09-18T19:41:24.867498+00:00",
+  "model": "margin-lora-pilot:final",
+  "scenarios": [
+    "evidence",
+    "recovery",
+    "clarification",
+    "two-writes"
+  ],
+  "hashes": {
+    "MeetingIntro/Margin/AgentTool.swift": "39a0466a3bb0ac8beabedfb6c3442bb0e035e0a805cac7d2b4c9119a22bf0b71",
+    "MeetingIntro/Margin/MarginAgent.swift": "d45d45b078b548d6a941aa43730ca60e1482e6b5748dc3775959a4649d967c03",
+    "MeetingIntro/MeetingIntroApp.swift": "c6f6b361e834170c34c82f8a4914742e10f98b32a4960791609fdc26fd143808",
+    "scripts/test-margin-agent-loop.py": "7bfb73c273d30338d77dc63abd05727552d81c4380a2eb9eb3ad9d743f651a1d",
+    "build/agentic-check/Build/Products/Debug/MeetingIntro.app/Contents/MacOS/MeetingIntro": "477ed5ce74c6344b5e533c931c8d98a6472b0f538f58ef275d78e395ea2f5fb0",
+    "build/agentic-check/Build/Products/Debug/MeetingIntro.app/Contents/MacOS/MeetingIntro.debug.dylib": "0fb43eed99f717c26f2b6014b46cc19af2970273a425d776ce1f201e48dff6ec"
+  },
+  "limits": [
+    "Three fixture note/save tools plus real folder discovery constrained to temporary grants; no live calendar or user-folder changes",
+    "4 cases, no automatic retries; production per-task budget applies",
+    "Model responses are live; confirmations are supplied by test driver",
+    "Does not qualify full registry, OCR accuracy, or native UI"
+  ],
+  "harness_change": "Actual temporary security-scoped folder grants and production folder discovery replace synthetic destination tool."
+}

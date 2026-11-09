@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-09-13T22:01:14.640129+00:00",
+  "reader": "qwen3.5:4b (installed runtime validation candidate; not Empero)",
+  "planner": "margin-lora-pilot:final",
+  "image": "../separated-20260913b/assets/NEW-03.png",
+  "question": "What is the total including tax? Do not save anything.",
+  "answer": "USD 19.44.",
+  "expected": "USD 19.44",
+  "scope": "Exact production Swift client, two local models sequentially, no tools. One development fixture, not broad image qualification. Native drag/drop and installed-app rendering not verified.",
+  "post_run_loaded_models": [],
+  "current_source_sha256": "b28d5387240acfbea6718539a5096c11c7b591b65008d71bee3a5ee4537eb835",
+  "source_note": "Live smoke preceded the final missing-model error wording and single-selected-image prompt clarification; the final source passed the full Debug build. Hash identifies final source, not the earlier smoke executable."
+}

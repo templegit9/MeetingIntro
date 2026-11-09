@@ -1,0 +1,95 @@
+{
+  "passed": true,
+  "tensors": [
+    {
+      "tensor": "model.language_model.layers.0.linear_attn.in_proj_qkv.weight",
+      "changed_elements": 5680484,
+      "elements": 20971520
+    },
+    {
+      "tensor": "model.language_model.layers.15.mlp.down_proj.weight",
+      "changed_elements": 5429022,
+      "elements": 23592960
+    },
+    {
+      "tensor": "model.language_model.layers.31.self_attn.q_proj.weight",
+      "changed_elements": 6476060,
+      "elements": 20971520
+    },
+    {
+      "tensor": "mtp.fc.weight",
+      "changed_elements": 0,
+      "elements": 13107200
+    },
+    {
+      "tensor": "mtp.layers.0.input_layernorm.weight",
+      "changed_elements": 0,
+      "elements": 2560
+    },
+    {
+      "tensor": "mtp.layers.0.mlp.down_proj.weight",
+      "changed_elements": 0,
+      "elements": 23592960
+    },
+    {
+      "tensor": "mtp.layers.0.mlp.gate_proj.weight",
+      "changed_elements": 0,
+      "elements": 23592960
+    },
+    {
+      "tensor": "mtp.layers.0.mlp.up_proj.weight",
+      "changed_elements": 0,
+      "elements": 23592960
+    },
+    {
+      "tensor": "mtp.layers.0.post_attention_layernorm.weight",
+      "changed_elements": 0,
+      "elements": 2560
+    },
+    {
+      "tensor": "mtp.layers.0.self_attn.k_norm.weight",
+      "changed_elements": 0,
+      "elements": 256
+    },
+    {
+      "tensor": "mtp.layers.0.self_attn.k_proj.weight",
+      "changed_elements": 0,
+      "elements": 2621440
+    },
+    {
+      "tensor": "mtp.layers.0.self_attn.o_proj.weight",
+      "changed_elements": 0,
+      "elements": 10485760
+    },
+    {
+      "tensor": "mtp.layers.0.self_attn.q_norm.weight",
+      "changed_elements": 0,
+      "elements": 256
+    },
+    {
+      "tensor": "mtp.layers.0.self_attn.q_proj.weight",
+      "changed_elements": 0,
+      "elements": 20971520
+    },
+    {
+      "tensor": "mtp.layers.0.self_attn.v_proj.weight",
+      "changed_elements": 0,
+      "elements": 2621440
+    },
+    {
+      "tensor": "mtp.norm.weight",
+      "changed_elements": 0,
+      "elements": 2560
+    },
+    {
+      "tensor": "mtp.pre_fc_norm_embedding.weight",
+      "changed_elements": 0,
+      "elements": 2560
+    },
+    {
+      "tensor": "mtp.pre_fc_norm_hidden.weight",
+      "changed_elements": 0,
+      "elements": 2560
+    }
+  ]
+}

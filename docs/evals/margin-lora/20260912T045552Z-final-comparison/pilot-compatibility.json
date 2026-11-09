@@ -1,0 +1,85 @@
+{
+  "model": "margin-lora-pilot:final",
+  "started": "2026-09-12T05:06:01.492454+00:00",
+  "checks": [
+    {
+      "name": "json",
+      "passed": true,
+      "response": {
+        "model": "margin-lora-pilot:final",
+        "created_at": "2026-09-12T05:06:04.878781Z",
+        "message": {
+          "role": "assistant",
+          "content": "{\"ready\": true}",
+          "thinking": "The user wants a simple JSON response with no additional text. I will return exactly the specified JSON object.\n"
+        },
+        "done": true,
+        "done_reason": "stop",
+        "total_duration": 3362443958,
+        "load_duration": 2107124541,
+        "prompt_eval_count": 21,
+        "prompt_eval_duration": 151239000,
+        "eval_count": 30,
+        "eval_duration": 1087874000
+      }
+    },
+    {
+      "name": "tool",
+      "passed": true,
+      "response": {
+        "model": "margin-lora-pilot:final",
+        "created_at": "2026-09-12T05:06:18.673438Z",
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "thinking": "The user is asking what I can do. This matches the list_capabilities intent exactly. No tool parameters are needed.\n",
+          "tool_calls": [
+            {
+              "id": "nC4bjjPjaQSy08VFYfVWKgmx6PmQY7Sa",
+              "function": {
+                "index": 0,
+                "name": "list_capabilities",
+                "arguments": {}
+              }
+            }
+          ]
+        },
+        "done": true,
+        "done_reason": "stop",
+        "total_duration": 13792082958,
+        "load_duration": 223414000,
+        "prompt_eval_count": 5246,
+        "prompt_eval_duration": 11723021000,
+        "eval_count": 40,
+        "eval_duration": 1739284000
+      }
+    }
+  ],
+  "runtime": {
+    "version": "0.30.10"
+  },
+  "package": {
+    "name": "margin-lora-pilot:final",
+    "model": "margin-lora-pilot:final",
+    "modified_at": "2026-09-11T22:06:01.375403809-07:00",
+    "size": 2783446710,
+    "digest": "e3de95b06ad469c48e26d66c02e44f3f81fb7586a9da25d8aaecab4eb1c18998",
+    "details": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "qwen35",
+      "families": [
+        "qwen35"
+      ],
+      "parameter_size": "4.3B",
+      "quantization_level": "Q4_K_M",
+      "context_length": 262144,
+      "embedding_length": 2560
+    },
+    "capabilities": [
+      "completion"
+    ]
+  },
+  "passed": true,
+  "finished": "2026-09-12T05:06:18.736464+00:00"
+}

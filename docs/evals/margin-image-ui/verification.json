@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-09-13T09:39:18.732342+00:00",
+  "build": "202609130301",
+  "sha256": "89f5e9c65e867dc51b34dcba0f976140d7593874223838addaa6a3c4f74fabb6",
+  "phase": "1 native UI prototype",
+  "import_checks": "8 checks passed",
+  "release_build": "passed",
+  "signature": "passed",
+  "native": [
+    "keyboard entry",
+    "diagram fixture",
+    "eight holiday entries",
+    "source inspection controls",
+    "field editing"
+  ],
+  "not_exercised": [
+    "physical Finder drag",
+    "native image paste",
+    "HEIC and tall receipt rendering",
+    "VoiceOver",
+    "Reduce Motion"
+  ],
+  "not_implemented": [
+    "live vision",
+    "attachment persistence",
+    "image-derived write execution"
+  ]
+}

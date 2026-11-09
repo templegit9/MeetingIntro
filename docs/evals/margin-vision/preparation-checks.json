@@ -1,0 +1,11 @@
+{
+  "checked_at": "2026-09-13T02:36:33.664566+00:00",
+  "fixture_integrity": "38 cases; 20 image assets verified against saved hashes",
+  "grader_tests": "12/12 passed",
+  "command": "python3 scripts/margin-vision-eval/test_eval.py",
+  "model_inference_runs": 0,
+  "suite_sha256": "93be22ed829d1d523cd60f2ce14fd3dacbb76712dc66696842ad7675fa8b5760",
+  "native_execution": "not tested",
+  "real_world_holdout": "not collected",
+  "html": "catalogue rendered and visually inspected"
+}

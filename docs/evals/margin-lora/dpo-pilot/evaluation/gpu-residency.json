@@ -1,0 +1,21 @@
+[
+  {
+    "name": "margin-dpo:pilot",
+    "model": "margin-dpo:pilot",
+    "size": 3244629688,
+    "digest": "11bdd5983898f6c273b22123a8d90c7e649f02ba1763ebd800a208e2b000d008",
+    "details": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "qwen35",
+      "families": [
+        "qwen35"
+      ],
+      "parameter_size": "4.3B",
+      "quantization_level": "Q4_K_M"
+    },
+    "expires_at": "2026-09-12T16:35:38.1952476-07:00",
+    "size_vram": 3244629688,
+    "context_length": 8192
+  }
+]

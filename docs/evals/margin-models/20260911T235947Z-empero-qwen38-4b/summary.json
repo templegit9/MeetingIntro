@@ -1,0 +1,23 @@
+{
+  "generated": "2026-09-11T23:59:47.434364+00:00",
+  "complete": false,
+  "models": [
+    {
+      "model": "empero-qwen38-distill:4b-q4_k_m",
+      "status": "not_run",
+      "valid": 0,
+      "expected": 288,
+      "pass": 0,
+      "fail": 0,
+      "infrastructure": 0,
+      "not_run": 288,
+      "stable_cases": 0,
+      "critical_failures": 0,
+      "qualified": false,
+      "median": null,
+      "p95": null,
+      "rss_peak_bytes": 0,
+      "runtime_vram_peak_bytes": 0
+    }
+  ]
+}

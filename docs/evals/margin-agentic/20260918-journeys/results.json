@@ -1,0 +1,56 @@
+{
+  "generated_at": "2026-09-18T19:52:29.983663+00:00",
+  "deterministic_checks": {
+    "loop-and-journal": "24/24",
+    "compiled-image-integration": "16/16"
+  },
+  "live_runs": {
+    "live.log": [
+      "CHECK evidence: invoice.txt waits for separate confirmation",
+      "PASS evidence; writes=[\"invoice.txt\"]; model=margin-lora-pilot:final",
+      "FAIL recovery: Infrastructure: another model is loaded; no inference started.",
+      "FAIL clarification: Infrastructure: another model is loaded; no inference started.",
+      "FAIL two-writes: Infrastructure: another model is loaded; no inference started.",
+      "Live journeys: 1/4 passed. Fixture tools only; no calendar or user-folder effects."
+    ],
+    "live-remaining.log": [
+      "CHECK recovery: invoice.txt waits for separate confirmation",
+      "PASS recovery; writes=[\"invoice.txt\"]; model=margin-lora-pilot:final",
+      "CHECK clarification: invoice.txt waits for separate confirmation",
+      "PASS clarification; writes=[\"invoice.txt\"]; model=margin-lora-pilot:final",
+      "FAIL two-writes: Missing correct approval checkpoint for invoice.txt: answered",
+      "Live journeys: 2/3 executed cases passed; 0 blocked. Fixture tools only; no calendar or user-folder effects."
+    ],
+    "live-real-folders.log": [
+      "CHECK evidence: invoice.txt waits for separate confirmation",
+      "PASS evidence; writes=[\"invoice.txt\"]; model=margin-lora-pilot:final",
+      "FAIL recovery: Missing correct approval checkpoint for invoice.txt: answered",
+      "CHECK clarification: invoice.txt waits for separate confirmation",
+      "PASS clarification; writes=[\"invoice.txt\"]; model=margin-lora-pilot:final",
+      "FAIL two-writes: Missing correct approval checkpoint for invoice.txt: answered",
+      "Live journeys: 2/4 executed cases passed; 0 blocked. Fixture tools only; no calendar or user-folder effects."
+    ],
+    "live-feedback-fix.log": [
+      "CHECK recovery: invoice.txt waits for separate confirmation",
+      "PASS recovery; writes=[\"invoice.txt\"]; model=margin-lora-pilot:final",
+      "CHECK two-writes: invoice.txt waits for separate confirmation",
+      "CHECK two-writes: backup.txt waits for separate confirmation",
+      "FAIL two-writes: Task did not finish with the expected execution receipts.",
+      "Live journeys: 1/2 executed cases passed; 0 blocked. Fixture tools only; no calendar or user-folder effects."
+    ],
+    "live-diagnostic.log": [
+      "CHECK two-writes: invoice.txt waits for separate confirmation",
+      "CHECK two-writes: backup.txt waits for separate confirmation",
+      "PASS two-writes; writes=[\"invoice.txt\", \"backup.txt\"]; model=margin-lora-pilot:final",
+      "Live journeys: 1/1 executed cases passed; 0 blocked. Fixture tools only; no calendar or user-folder effects."
+    ],
+    "live-diagnostic-repeat.log": [
+      "CHECK two-writes: invoice.txt waits for separate confirmation",
+      "CHECK two-writes: backup.txt waits for separate confirmation",
+      "PASS two-writes; writes=[\"invoice.txt\", \"backup.txt\"]; model=margin-lora-pilot:final",
+      "Live journeys: 1/1 executed cases passed; 0 blocked. Fixture tools only; no calendar or user-folder effects."
+    ]
+  },
+  "assessment": "Recovery fix verified. All four scenarios have successful executions; do not treat as a clean 4/4 qualification. One two-write final-continuation failure remains unexplained after two successful diagnostic repetitions. Earlier fixture and infrastructure failures are retained.",
+  "deployment": "Debug build only; installed app and public release unchanged."
+}

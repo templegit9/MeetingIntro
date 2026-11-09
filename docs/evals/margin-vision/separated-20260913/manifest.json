@@ -1,0 +1,106 @@
+{
+  "source": {
+    "repo": "empero-ai/Qwen3.8-4B-Distill",
+    "revision": "c83cb7aa2999d2f35c43e9ae0634a30eb8985a1e"
+  },
+  "hf_home": "/mnt/c/Users/oluyi/Documents/Projects/Margin-Empero-LoRA/cache/huggingface",
+  "training_root": "/mnt/c/Users/oluyi/Documents/Projects/Margin-Vision-Pilot/mixed-pilot-20260913",
+  "adapter_hashes": {
+    "epoch-1": {
+      "adapter_config.json": "d74624d6ae6245cce7d613bc2f603666c6b4c1c5f4b811c1a46a3983be762c16",
+      "adapter_model.safetensors": "ac39f3a35353d7b30b4632c1cfaa5f1ff9b2809acbeb93ab9a8736cfbdbb28f1",
+      "chat_template.jinja": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715",
+      "processor_config.json": "d89ef49ce9cd37fbf510158e13c1ef063d9286411c1ec9049932dbe0487143b1",
+      "README.md": "5873c210a4705acc97f980b0e07ed642e4f6008e511f8ec12c05af0049ca87b8",
+      "tokenizer.json": "87a7830d63fcf43bf241c3c5242e96e62dd3fdc29224ca26fed8ea333db72de4",
+      "tokenizer_config.json": "e98f1901ac6f0adff67b1d540bfa0c36ac1a0cf59eb72ed78146ef89aafa1182"
+    },
+    "epoch-2": {
+      "adapter_config.json": "ed7df49211ab2fce0c477b2f1a55429b8487205cddfb1098de8caccf77c9f01e",
+      "adapter_model.safetensors": "c592a77e2216552d801cf662dc355d9359842037b95b8d88b69003706d0f40c7",
+      "chat_template.jinja": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715",
+      "processor_config.json": "d89ef49ce9cd37fbf510158e13c1ef063d9286411c1ec9049932dbe0487143b1",
+      "README.md": "5873c210a4705acc97f980b0e07ed642e4f6008e511f8ec12c05af0049ca87b8",
+      "tokenizer.json": "87a7830d63fcf43bf241c3c5242e96e62dd3fdc29224ca26fed8ea333db72de4",
+      "tokenizer_config.json": "e98f1901ac6f0adff67b1d540bfa0c36ac1a0cf59eb72ed78146ef89aafa1182",
+      "training-state.pt": "76fd3fdc8fd87f2b3f461380dc0f20409ef5d115d4f5af72e8e86744d4bfa944"
+    },
+    "epoch-3": {
+      "adapter_config.json": "ed7df49211ab2fce0c477b2f1a55429b8487205cddfb1098de8caccf77c9f01e",
+      "adapter_model.safetensors": "157f167a0f4b8d5731682d8b4870f31fe8f63eb844334f73a65a7e72378795ce",
+      "chat_template.jinja": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715",
+      "processor_config.json": "d89ef49ce9cd37fbf510158e13c1ef063d9286411c1ec9049932dbe0487143b1",
+      "README.md": "5873c210a4705acc97f980b0e07ed642e4f6008e511f8ec12c05af0049ca87b8",
+      "tokenizer.json": "87a7830d63fcf43bf241c3c5242e96e62dd3fdc29224ca26fed8ea333db72de4",
+      "tokenizer_config.json": "e98f1901ac6f0adff67b1d540bfa0c36ac1a0cf59eb72ed78146ef89aafa1182",
+      "training-state.pt": "0cb704708151aaed4af1f91fd501f3ffaeabea9f8d6c7ed992f2b559216281fa"
+    }
+  },
+  "candidates": [
+    "unadapted",
+    "epoch-1",
+    "epoch-2",
+    "epoch-3"
+  ],
+  "created_at": "2026-09-13T18:54:33.210589+00:00",
+  "repeats": 1,
+  "requests_per_candidate": 169,
+  "stage_counts": {
+    "reader": 43,
+    "joint": 10,
+    "predicted_planner": 10,
+    "gold_planner": 10,
+    "language": 96
+  },
+  "generation": {
+    "max_new_tokens": 2048,
+    "max_time": 120,
+    "do_sample": false,
+    "enable_thinking": false
+  },
+  "limits": [
+    "Offline native proposals only; no tools executed.",
+    "Original images are previously audited screening; ten new cases are synthetic independent-layout probes, not real photos.",
+    "Gold planner receives annotated facts as an explicit diagnostic; predicted planner never receives gold values.",
+    "Same checkpoint supplies reader and planner sequentially. Pilot 1 cross-model planning is not tested in this run.",
+    "One deterministic repeat; no confidence interval or release qualification."
+  ],
+  "files": {
+    "worker.py": "c6ff76a3c010a188257b1682cbaa858d2196bc056ff7c3f9297e54d8a8d82d0b",
+    "vision_grading.py": "53b6988dc26e5e010b8210693178c8fef1c5e0450afeb9dd17a718bb8ca984c1",
+    "grading.py": "97e83992953e0f23d84166ebbabdc85b5518d3ba3db3d1e1df0eea21e0a14069",
+    "language.json": "31bb78064c52c7dec7034fa0db0f422263af6047116d2aa6232dcf7531e9bce6",
+    "supervisor.py": "a721a2769f476eb0c7e68cf1044f7bc0e2d5258ff0f18dfb02002ecea4dd0e4f",
+    "suite.json": "05f914bfc986fd7a6e7ff388a03e2d15c88a047d89dec84be5505c61cae91cfd",
+    "contracts.py": "f203bb2a043e6e97db32204fda45a13cf57bd110b6eea9f848b9d6bae2146078",
+    "assets/NEW-08.png": "062a3bee53e1743e20b03c72255960aa19f69b516ae34b3b075fb2c96a8aebfa",
+    "assets/NEW-09.png": "144c13f492994916fbe7a06e33ccdb505a17bb996797a4ba4b8b410620e82160",
+    "assets/NEW-07.png": "1606700d3438d56f1ef46cca35058cd84bafab094e59ec412e8366304777b805",
+    "assets/NEW-06.png": "7f0803c253b8a8855ecb3520fa7a02a8a4b1225a64fe9c7ecc7a3b29d0e0a1ed",
+    "assets/NEW-04.png": "ef4b6ae4b2345e7376fbd96ebb456392324834a5bbf3b4f588be919cb81d4eb6",
+    "assets/NEW-05.png": "5c2d51d0f450bfd93b82599750a3514c4d62b4ee159fe66f82fae8f1675054c6",
+    "assets/NEW-01.png": "74f7b61eb583113e51a324a2572e434fa52eaffb1fbb9c7628b3c51c8823ecb0",
+    "assets/NEW-02.png": "b34da1cfcaf24a1f3c571f38b1b475d87c1ae8263ff1d7625fa2295836bec250",
+    "assets/NEW-03.png": "df13997054b2f4f9fdde1d96ca7dcea207e616bd5ba1dc069ee3a205d4877502",
+    "assets/original/blank.png": "e75f1157790d7babf1c0269553fb302c1c3f8a753cdd290f4160152d271f64cc",
+    "assets/original/crop.png": "af6578d41315be6c271d3490bec3de3461eb8b7324f0d7f094ac74e3336ef03b",
+    "assets/original/poster.png": "37f4c81488fcedd29f897c56d61ed3b3201db9942b4cce9e6a50550d3c97e842",
+    "assets/original/whiteboard.png": "bcb92c45ff71a73cff54f3152946aa47911c779edcdab9aa1383bcc72fc01178",
+    "assets/original/letter.png": "5a8d7194e33247f9cf59f7a83a974482912081e5ce5818445a49d6a3663387c6",
+    "assets/original/events.png": "6f9bea1a462ca64711b97bd4c5a5616c8610c4220097f5d94eb918eb3cde482a",
+    "assets/original/chart.png": "0754709c40a98b5fcd5e5dd57d1c632ae95f94a4aabb5037a4a00a2b69ff7422",
+    "assets/original/receipt.png": "44ba7a371d919c96f3f41bd53106891a389114b850771ce81954e0de0419fc9a",
+    "assets/original/ambiguous.png": "22a778da201f4a653f6183f8def5618cf82788d05ac92f5a240a9037d1a3be32",
+    "assets/original/contact.png": "e4d99e52fb8f184cf571aec742486db41d5a5e9e56e560ea486e9fb876b01b28",
+    "assets/original/invoice.png": "8e915845cbc2a0b812306d46c3b2b051e17654d7cabd41e6e64f9443db58e8c1",
+    "assets/original/error.png": "951dc21e4cc2e5b9d412ca55b5ba1249905f00b5a29f01ce3cdd2c68022c7792",
+    "assets/original/spanish.png": "5bfdf8ab97e5f147fb54e234c24baac2ad73801345641fadb2610afc11f7633d",
+    "assets/original/schedule.png": "6909e97040752d1a26ff0b5943addcde9a5d72e411ae63b33ea4280b39eab84a",
+    "assets/original/changed.png": "897b0bc72fed8cf17df729b0698574011c465adbdc8c2e44329c6bd9a712684a",
+    "assets/original/checklist.png": "05ecab6d4b44afe8518987fcfc01ae44eebbcd4022deddc63a1199452898484b",
+    "assets/original/table.png": "0c1171819241219211a14b2ae08af4bb33466a02ad8ced6af22f7183045cef5f",
+    "assets/original/diagram.png": "556712e7e9142ec5689aed643027c0cbaa7b5062ae10ce9945bbc57fb080fb0f",
+    "assets/original/recipe.png": "79a21ae648338a622fab4b2ff88cb47e61b71c6c61e553e3e6620fc34e1d83c2",
+    "assets/original/injection.png": "141539f27309ea9d6617c0ee47a45093302e4e9c04a6c63252e31c886f0b4978"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "created_at": "2026-09-13T03:41:22.816472+00:00",
+  "counts": {
+    "train": 600,
+    "validation": 120
+  },
+  "sha256": {
+    "train": "cd10686becdef83878c3afaca1b61e58ae2c67556cd7d454867bef86f394d22b",
+    "validation": "3c523c60d35c2e81d4b03fb03e717a34c50684d0831bcc7f675a75f81ce1a056"
+  },
+  "generator_sha256": "923f10acf087a95ea08689440a3c2c91b84e9dc50d070ac7e59a50857e1888aa",
+  "tool_snapshot_sha256": "f6fa9a54aef7e998a125e7b045e1834106e154ad9d2ed76b92fcc0f73c8d9c7b",
+  "limitations": [
+    "Synthetic template development corpus; validation uses distinct documents but shared templates. Not an independent generalization holdout.",
+    "Ten initial families; image-save and document-write targets excluded because absent from selected production tool registry.",
+    "No original eval images, personal documents or chat histories used."
+  ]
+}

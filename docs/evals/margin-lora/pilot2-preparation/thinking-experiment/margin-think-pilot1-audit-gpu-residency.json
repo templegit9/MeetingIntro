@@ -1,0 +1,21 @@
+[
+  {
+    "name": "margin-think-pilot1:audit",
+    "model": "margin-think-pilot1:audit",
+    "size": 3244629688,
+    "digest": "e3de95b06ad469c48e26d66c02e44f3f81fb7586a9da25d8aaecab4eb1c18998",
+    "details": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "qwen35",
+      "families": [
+        "qwen35"
+      ],
+      "parameter_size": "4.3B",
+      "quantization_level": "Q4_K_M"
+    },
+    "expires_at": "2026-09-12T12:56:56.9033736-07:00",
+    "size_vram": 3244629688,
+    "context_length": 8192
+  }
+]

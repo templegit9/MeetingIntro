@@ -1,0 +1,40 @@
+{
+  "generated": "2026-09-11T08:06:42.876076+00:00",
+  "complete": false,
+  "models": [
+    {
+      "model": "gpt-oss:20b",
+      "status": "completed",
+      "valid": 285,
+      "expected": 288,
+      "pass": 262,
+      "fail": 23,
+      "infrastructure": 3,
+      "not_run": 0,
+      "stable_cases": 85,
+      "critical_failures": 3,
+      "qualified": false,
+      "median": 5.249196666998614,
+      "p95": 16.771828332995938,
+      "rss_peak_bytes": 13077544960,
+      "runtime_vram_peak_bytes": 12731673475
+    },
+    {
+      "model": "gemma4:12b",
+      "status": "cancelled",
+      "valid": 62,
+      "expected": 288,
+      "pass": 61,
+      "fail": 1,
+      "infrastructure": 1,
+      "not_run": 225,
+      "stable_cases": 0,
+      "critical_failures": 0,
+      "qualified": false,
+      "median": 17.252284354497533,
+      "p95": 68.52436000000307,
+      "rss_peak_bytes": 8819376128,
+      "runtime_vram_peak_bytes": 8060676340
+    }
+  ]
+}

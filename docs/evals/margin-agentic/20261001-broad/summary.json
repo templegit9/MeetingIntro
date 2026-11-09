@@ -1,0 +1,30 @@
+{
+  "generated_at": "2026-10-01T18:31:57.710607+00:00",
+  "routing": {
+    "completed": 78,
+    "legacy_passed": 73,
+    "review": "routing-review.json"
+  },
+  "real_file_journey": "passed; two real DMG fixtures, two confirmations, keep.txt unchanged",
+  "checks": {
+    "orchestration": 25,
+    "integration": 16,
+    "calendar_request": 30,
+    "screenshot_scripted": {
+      "final-ambiguous-week": true,
+      "final-changed-source": true,
+      "final-cleared-source": true,
+      "final-duplicate": true,
+      "final-duration": true,
+      "final-omit": true,
+      "final-unread": true,
+      "final-week": true
+    }
+  },
+  "vision": {
+    "week": "failed; 7/8 event facts exact in offline audit; all-day misread",
+    "missing_context": "failed; year and timezone invented without uncertainty",
+    "pipeline": "reader output rejected; no live calendar writes"
+  },
+  "release_gate": "held: screenshot accuracy, real Outlook screenshot, native paste and live provider verification outstanding"
+}

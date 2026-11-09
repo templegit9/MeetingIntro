@@ -1,0 +1,11 @@
+PASS agent chains read then pauses before write
+PASS changed destination requires renewed approval
+PASS confirmation executes once and resumes model with receipt
+PASS actual exported bytes inspected
+PASS double confirmation cannot repeat write
+PASS final response does not masquerade as verified task completion
+PASS restart rebuilds preview without executing
+PASS restored task executes only after fresh confirmation
+PASS concurrent confirmations cannot duplicate in-flight operation
+PASS stop during execution preserves receipt and prevents continuation
+HARNESS FAILURE: Cannot grant temporary fixture folder

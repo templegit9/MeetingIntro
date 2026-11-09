@@ -1,0 +1,18 @@
+{
+  "manifest_sha256": "e3de95b06ad469c48e26d66c02e44f3f81fb7586a9da25d8aaecab4eb1c18998",
+  "blobs": [
+    {
+      "sha256": "2278139c42c814deaabd11563df5d21409211e3bcb2f8435273e696db98b7adc",
+      "bytes": 341
+    },
+    {
+      "sha256": "863fcfd8486b2681f83034ca178d188bbb682920ebc9103ab6bbf3691831026a",
+      "bytes": 2783446336
+    },
+    {
+      "sha256": "fc258d6aa9b979530ec86c8531955e2a87dcd852f63c9eaf10ce7ea5a0538c28",
+      "bytes": 33
+    }
+  ],
+  "passed": true
+}

@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-09-13T00:18:41.756196+00:00",
+  "local_started_at": "2026-09-12T17:18:41.756196-07:00",
+  "finished_at": "2026-09-13T00:25:35.500516+00:00",
+  "exit_code": 1,
+  "learning_checks": false,
+  "filter": null,
+  "context_only": false
+}

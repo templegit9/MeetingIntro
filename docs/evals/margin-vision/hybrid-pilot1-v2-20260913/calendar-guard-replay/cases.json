@@ -1,0 +1,103 @@
+[
+  {
+    "id": "predicted_planner/NEW-02",
+    "tool": "create_events",
+    "arguments": {
+      "events": [
+        {
+          "start": "2026-11-14T00:00:00",
+          "title": "Lantern walk"
+        },
+        {
+          "start": "2026-12-05T00:00:00",
+          "title": "Winter market"
+        }
+      ]
+    },
+    "request": "Create both calendar events.",
+    "evidence": {
+      "facts": {
+        "events": [
+          {
+            "title": "Lantern walk",
+            "start": "2026-11-14",
+            "all_day": true
+          },
+          {
+            "title": "Winter market",
+            "start": "2026-12-05",
+            "all_day": true
+          }
+        ]
+      },
+      "uncertainties": []
+    }
+  },
+  {
+    "id": "gold_planner/NEW-02",
+    "tool": "create_events",
+    "arguments": {
+      "events": [
+        {
+          "start": "2026-11-14T00:00:00",
+          "title": "Lantern walk"
+        },
+        {
+          "start": "2026-12-05T00:00:00",
+          "title": "Winter market"
+        }
+      ]
+    },
+    "request": "Create both calendar events.",
+    "evidence": {
+      "facts": {
+        "events": [
+          {
+            "title": "Lantern walk",
+            "start": "2026-11-14T00:00:00",
+            "all_day": true
+          },
+          {
+            "title": "Winter market",
+            "start": "2026-12-05T00:00:00",
+            "all_day": true
+          }
+        ]
+      },
+      "uncertainties": []
+    }
+  },
+  {
+    "id": "language/routing-43",
+    "tool": "move_event",
+    "arguments": {
+      "title": "the 1:1",
+      "original_date": "2026-09-11",
+      "new_start": "2026-09-17T13:00:00"
+    },
+    "request": "Move the 1:1 on September 11, 2026 to Thursday September 17, 2026. Keep its time.",
+    "evidence": null
+  },
+  {
+    "id": "language/args-4",
+    "tool": "create_events",
+    "arguments": {
+      "events": [
+        {
+          "start": "2026-10-31T00:00:00Z",
+          "title": "Halloween"
+        },
+        {
+          "start": "2026-12-24T00:00:00Z",
+          "title": "Christmas Eve"
+        },
+        {
+          "start": "2026-12-31T00:00:00Z",
+          "title": "New Year's Eve"
+        }
+      ]
+    },
+    "request": "Create three all-day calendar events: Halloween on October 31, 2026; Christmas Eve on December 24, 2026; New Year's Eve on December 31, 2026.",
+    "evidence": null
+  }
+]

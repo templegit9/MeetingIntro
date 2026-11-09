@@ -1,0 +1,2 @@
+{'timestamp': '2026-09-11T23:59:47.432734+00:00', 'stage': 'waiting_for_previous_run', 'previous': '/Users/oluyinkaoginni/Documents/SelfProjects/MeetingIntro/docs/evals/margin-models/20260911T230054Z-qwen35-4b'}
+{'timestamp': '2026-09-11T23:59:47.433428+00:00', 'stage': 'needs_attention', 'reason': 'Previous run stopped; inspect it before loading another model'}

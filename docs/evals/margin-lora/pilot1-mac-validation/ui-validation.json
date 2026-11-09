@@ -1,0 +1,26 @@
+{
+  "verified_at": "2026-09-13T01:17:24.082593+00:00",
+  "installed_build": "202609121758",
+  "model": "margin-lora-pilot:final",
+  "holiday_preview": {
+    "count": 8,
+    "all_day": true,
+    "all_dates_and_titles_inspected": true,
+    "action": "Leave it",
+    "real_events_created": false
+  },
+  "folder_confirmation_undo": {
+    "path": "/Users/oluyinkaoginni/Downloads/Margin UI Verification 20260912-1808",
+    "absent_before_confirmation": true,
+    "exists_after_create": true,
+    "absent_after_cross_out": true
+  },
+  "settings": "Card opens configuration; Ready on this Mac; existing local AI, no download needed. Personality and evolving soul controls visible.",
+  "duplicate_app": "Older /Applications/MeetingIntro 2.app stopped and unregistered; protected file remains. New executable launched directly.",
+  "boundaries": [
+    "No live RSVP sent",
+    "No calendar events created",
+    "Full 78-case suite predates routing fixes; targeted rerun is 7/7",
+    "Existing-model settings tested; fresh install tested separately by managed setup harness"
+  ]
+}

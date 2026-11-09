@@ -1,0 +1,106 @@
+{
+  "model": "margin-lora-base-control:preflight",
+  "started": "2026-09-12T05:06:19.125396+00:00",
+  "manifest_sha256": "96b09085fbc9f3ce339a7d1ad7c36b4ae45d0f08a09ba55db23a2465e3dab2a3",
+  "host": "Oluyinkas-MacBook-Pro.local",
+  "memory_bytes": 25769803776,
+  "runtime": {
+    "version": "0.30.10"
+  },
+  "profile": {
+    "num_ctx": 8192,
+    "num_predict": 2048,
+    "temperature": 0
+  },
+  "status": "completed",
+  "package": {
+    "name": "margin-lora-base-control:preflight",
+    "model": "margin-lora-base-control:preflight",
+    "modified_at": "2026-09-11T19:22:03.174099999-07:00",
+    "size": 2783447254,
+    "digest": "d30910bf13fea1f0fa3c45919b050182734af6125d9673bf45aefc801629b62a",
+    "details": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "qwen35",
+      "families": [
+        "qwen35"
+      ],
+      "parameter_size": "4.3B",
+      "quantization_level": "Q4_K_M",
+      "context_length": 262144,
+      "embedding_length": 2560
+    },
+    "capabilities": [
+      "completion"
+    ]
+  },
+  "swap_start_bytes": 3089503354.88,
+  "cold_start_seconds": 6.606307416004711,
+  "cold_response": {
+    "model": "margin-lora-base-control:preflight",
+    "created_at": "2026-09-12T05:06:25.76687Z",
+    "message": {
+      "role": "assistant",
+      "content": "READY",
+      "thinking": "Thinking Process:\n\n1.  **Analyze the Request:** The user wants a reply that is *only* \"READY\". No additional text, explanations, or formatting should be included.\n\n2.  **Determine the Output:** The required output is exactly \"READY\".\n\n3.  **Final Check:** Ensure no extra characters, spaces, or words are present before or after \"READY\".\n"
+    },
+    "done": true,
+    "done_reason": "stop",
+    "total_duration": 6605383084,
+    "load_duration": 2842934917,
+    "prompt_eval_count": 14,
+    "prompt_eval_duration": 190894000,
+    "eval_count": 86,
+    "eval_duration": 3557393000
+  },
+  "preflight_loaded_samples": [
+    [
+      {
+        "name": "margin-lora-base-control:preflight",
+        "model": "margin-lora-base-control:preflight",
+        "size": 3129569443,
+        "digest": "d30910bf13fea1f0fa3c45919b050182734af6125d9673bf45aefc801629b62a",
+        "details": {
+          "parent_model": "",
+          "format": "gguf",
+          "family": "qwen35",
+          "families": [
+            "qwen35"
+          ],
+          "parameter_size": "4.3B",
+          "quantization_level": "Q4_K_M"
+        },
+        "expires_at": "2026-09-11T22:16:25.767047-07:00",
+        "size_vram": 3129569443,
+        "context_length": 8192
+      }
+    ]
+  ],
+  "swap_after_load_bytes": 3089503354.88,
+  "swap_guard_basis": "Growth beyond 2 GiB after cold model load; initial loading swap retained separately.",
+  "finished": "2026-09-12T05:34:20.922846+00:00",
+  "failed_cases": 21,
+  "models_loaded_at_end": [
+    {
+      "name": "margin-lora-base-control:preflight",
+      "model": "margin-lora-base-control:preflight",
+      "size": 3129569443,
+      "digest": "d30910bf13fea1f0fa3c45919b050182734af6125d9673bf45aefc801629b62a",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen35",
+        "families": [
+          "qwen35"
+        ],
+        "parameter_size": "4.3B",
+        "quantization_level": "Q4_K_M"
+      },
+      "expires_at": "2026-09-11T22:34:20.977827-07:00",
+      "size_vram": 3129569443,
+      "context_length": 8192
+    }
+  ],
+  "swap_end_bytes": 3718313410.56
+}

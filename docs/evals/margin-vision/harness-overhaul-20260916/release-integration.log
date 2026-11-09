@@ -1,0 +1,17 @@
+PASS agent chains read then pauses before write
+PASS changed destination requires renewed approval
+PASS confirmation executes once and resumes model with receipt
+PASS actual exported bytes inspected
+PASS double confirmation cannot repeat write
+PASS final response does not masquerade as verified task completion
+PASS restart rebuilds preview without executing
+PASS restored task executes only after fresh confirmation
+PASS concurrent confirmations cannot duplicate in-flight operation
+PASS stop during execution preserves receipt and prevents continuation
+PASS image evidence enters shared loop and produces editable TXT draft
+PASS format follow-up uses tools without repeated OCR
+PASS image export remains a proposal before confirmation
+PASS confirmed Word export contains reviewed transcription
+PASS image task undo moves exported document out of destination
+PASS grant revocation invalidates approval before image write
+16/16 agent integration checks passed

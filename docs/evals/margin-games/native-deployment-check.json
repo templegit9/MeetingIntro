@@ -1,0 +1,15 @@
+{
+  "checked_at": "2026-09-13T06:58:44.199434+00:00",
+  "build": "202609130001",
+  "checks": [
+    "Signed Release build succeeded",
+    "Installed binary signature verified",
+    "Secret phrase opens native game page",
+    "Fifteen legal tile click increments moves",
+    "Pairs view opens and returning to Fifteen retains move",
+    "Test move reset and notebook dismissed"
+  ],
+  "state_checks": "12/12 persistence checks passed",
+  "screenshot": "/private/tmp/margin-easter-egg-open.png",
+  "scope": "Local margin-branch installation only; no public release or master merge"
+}

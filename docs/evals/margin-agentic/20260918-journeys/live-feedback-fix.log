@@ -1,0 +1,49 @@
+START recovery 2026-09-18T19:45:34Z
+CHECK recovery: invoice.txt waits for separate confirmation
+PASS recovery; writes=["invoice.txt"]; model=margin-lora-pilot:final
+user: Find the invoice note and save its complete text as invoice.txt in Work Reports.
+assistant: Notes
+Invoice note ID: expired-note
+Read observation; no write executed.
+assistant: Notes
+Invoice note ID: note-3986e095
+Read observation; no write executed.
+assistant: Granted folders
+/private/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-journey-7B80BFF3-8674-4DED-B8D9-4220238EA9CD/Work Reports/
+Read observation; no write executed.
+assistant: Note text
+Invoice total USD 19.44; payment due 2030-04-18.
+Read observation; no write executed.
+assistant: Save invoice.txt
+/private/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-journey-7B80BFF3-8674-4DED-B8D9-4220238EA9CD/Work Reports/
+Invoice total USD 19.44; payment due 2030-04-18.
+/private/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-journey-7B80BFF3-8674-4DED-B8D9-4220238EA9CD/Work Reports/invoice.txt
+Saved invoice.txt to /private/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-journey-7B80BFF3-8674-4DED-B8D9-4220238EA9CD/Work Reports/; verified contents: Invoice total USD 19.44; payment due 2030-04-18.
+assistant: Invoice.txt has been saved to Work Reports with the complete text: Invoice total USD 19.44; payment due 2030-04-18.
+END recovery; elapsed=58.80786406993866; at=2026-09-18T19:46:33Z
+START two-writes 2026-09-18T19:46:33Z
+CHECK two-writes: invoice.txt waits for separate confirmation
+CHECK two-writes: backup.txt waits for separate confirmation
+FAIL two-writes: Task did not finish with the expected execution receipts.
+user: Find the invoice note and save its complete text as invoice.txt in Work Reports. Then save a second copy as backup.txt in the same folder.
+assistant: Notes
+Invoice note ID: note-0f62063a
+Read observation; no write executed.
+assistant: Note text
+Invoice total USD 19.44; payment due 2030-04-18.
+Read observation; no write executed.
+assistant: Granted folders
+/private/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-journey-F18541FC-9E8C-4FAC-9183-6F487F56DB05/Work Reports/
+Read observation; no write executed.
+assistant: Save invoice.txt
+/private/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-journey-F18541FC-9E8C-4FAC-9183-6F487F56DB05/Work Reports/
+Invoice total USD 19.44; payment due 2030-04-18.
+/private/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-journey-F18541FC-9E8C-4FAC-9183-6F487F56DB05/Work Reports/invoice.txt
+Saved invoice.txt to /private/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-journey-F18541FC-9E8C-4FAC-9183-6F487F56DB05/Work Reports/; verified contents: Invoice total USD 19.44; payment due 2030-04-18.
+assistant: Save backup.txt
+/private/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-journey-F18541FC-9E8C-4FAC-9183-6F487F56DB05/Work Reports/
+Invoice total USD 19.44; payment due 2030-04-18.
+/private/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-journey-F18541FC-9E8C-4FAC-9183-6F487F56DB05/Work Reports/backup.txt
+Saved backup.txt to /private/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-journey-F18541FC-9E8C-4FAC-9183-6F487F56DB05/Work Reports/; verified contents: Invoice total USD 19.44; payment due 2030-04-18.
+END two-writes; elapsed=74.32684004306793; at=2026-09-18T19:47:47Z
+Live journeys: 1/2 executed cases passed; 0 blocked. Fixture tools only; no calendar or user-folder effects.

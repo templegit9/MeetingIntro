@@ -1,0 +1,86 @@
+
+Margin guards · no model involved
+  ✓ trash with no filter refuses instead of proposing the whole folder
+  ✓ trash with a filter proposes exactly the 2 matching files
+  ✓ reading an ungranted folder asks for access
+  ✓ a folder name containing ../ collapses to one component — got “etc-passwd”
+  ✓ rename proposes a new name, never a path, and keeps the extension — IMG_1234 Screen Shot.png → img-1234-screen-shot.png
+  ✓ moving to an ungranted destination is refused
+  6/6 guards held
+  ✓ 3pm means today's 15:00, not a title substring or tomorrow
+  ✓ explicit original date selects the later occurrence
+  ✓ same-id recurring occurrences remain separate; cancelled event excluded
+  ✓ ambiguous matches return a question, not a write proposal
+  ✓ blank title never matches everything
+  ✓ past occurrences are excluded
+  ✓ midnight and noon are distinct
+  ✓ invalid clock references are rejected
+  ✓ cancel tool refuses ambiguity before provider access
+  ✓ move tool refuses ambiguity before provider access
+  ✓ invalid original date does not broaden the selection
+  11/11 calendar guards held
+  ✓ memory and history start opt-in
+  ✓ disabled memory is absent from model instructions
+  ✓ enabled explicit memory enters instructions
+  ✓ personality, soul and proactivity survive reload
+  ✓ history retains tool details across reload
+  ✓ reopened history has no executable actions
+  ✓ screenshot regression: capabilities after PDF history
+  ✓ capability answer comes from the registered tool
+  ✓ cleared history remains empty after reload
+  ✓ preparing a proposal performs zero writes
+  ✓ simultaneous confirmations execute exactly once
+  11/11 behavior guards held
+Margin eval · gpt-oss:20b · 50 cases
+  ✓ 30.6s create_event · lunch with Sam tomorrow 1pm
+  ✓ 9.2s create_task · remind me to submit the expense report by Friday 5pm
+  ✓ 6.8s create_task · add a task to buy milk
+  ✓ 1.6s whats_on_today · what's on today?
+  ✓ 8.1s find_time · when am I free for 30 minutes
+  ✓ 10.1s find_time · what's free tomorrow afternoon
+  ✓ 14.9s find_time · any gaps this week for a 45 minute call
+  ✓ 17.4s create_event · block 90 minutes for the board deck on Thursday
+  ✓ 15.7s create_event · all day for Labour Day
+  ✓ 0.0s list_capabilities · what can yo do
+  ✓ 0.0s list_capabilities · what can you do?
+  ✓ 0.0s list_capabilities · help
+  ✓ 0.0s list_capabilities · who are you
+  ✓ 8.1s move_event · move my 3pm to 4pm
+  ✓ 7.5s cancel_event · cancel my 2pm
+  ✓ 13.2s move_event · push the standup to 10am
+  ✓ 3.5s cancel_event · take the design review off my calendar
+  ✓ 31.8s move_event · shift tomorrow's 1:1 to Thursday
+  ✓ 8.7s trash_files · delete everything in Downloads
+  ✓ 3.6s (declined) · how is the weather in Lagos
+  ✓ 3.2s find_files · find the pdfs in Downloads
+  ✓ 4.1s find_files · what dmg files do I have that are over a year old
+  ✓ 10.4s find_files_by_content · which file mentions Acme
+  ✓ 7.8s find_files_by_content · find the screenshot with the error message in it
+  ✓ 3.3s folder_summary · what's in my Downloads folder
+  ✓ 3.5s where_is · where is blender.dmg
+  ✓ 13.5s move_files · move the dmgs into an Installers folder
+  ✓ 24.8s move_files · put last month's invoices in Archive
+  ✓ 14.4s trash_files · bin the installers I haven't touched in a year
+  ✗ 18.5s trash_files · permanently delete the old screenshots
+    Expected (declined); arguments valid: true
+  ✓ 4.0s (declined) · empty the trash
+  ✓ 3.1s create_folder · make an Invoices folder in Downloads
+  ✓ 14.4s rename_files · prefix the screenshots with their date
+  ✓ 14.3s rename_files · replace IMG_ with Holiday in those file names
+  ✓ 3.0s list_tasks · what's on my list
+  ✓ 3.1s list_tasks · what's overdue
+  ✓ 2.4s complete_task · mark the expense report done
+  ✓ 3.0s day_briefing · how does my day look
+  ✓ 7.3s day_briefing · brief me on today
+  ✓ 3.0s rsvp · decline the Friday review
+  ✓ 2.7s rsvp · accept the standup invite
+  ✓ 2.7s whats_on_today · what meetings do I have today
+  ✓ 0.0s list_capabilities · what can you do
+  ✓ 0.0s list_capabilities · what can yo do?
+  ✓ 2.3s list_capabilities · tell me about your abilities
+  ✓ 2.1s list_tasks · List my overdue tasks
+  ✓ 6.6s move_event · move my 3pm to 4pm
+  ✓ 0.0s list_capabilities · what can you do?
+  ✓ 3.5s find_files · Find PNG files in Downloads instead
+  ✓ 7.8s cancel_event · cancel my 2pm
+  49/50 passed

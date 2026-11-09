@@ -1,0 +1,23 @@
+{
+  "generated": "2026-09-11T09:37:52.915857+00:00",
+  "complete": false,
+  "models": [
+    {
+      "model": "qwen3:8b",
+      "status": "completed",
+      "valid": 287,
+      "expected": 288,
+      "pass": 261,
+      "fail": 26,
+      "infrastructure": 1,
+      "not_run": 0,
+      "stable_cases": 87,
+      "critical_failures": 6,
+      "qualified": false,
+      "median": 12.74916133399529,
+      "p95": 50.41339479100134,
+      "rss_peak_bytes": 6971441152,
+      "runtime_vram_peak_bytes": 6079350046
+    }
+  ]
+}

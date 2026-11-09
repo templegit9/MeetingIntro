@@ -1,0 +1,5 @@
+{
+  "timestamp": "2026-09-11T23:59:47.433428+00:00",
+  "stage": "needs_attention",
+  "reason": "Previous run stopped; inspect it before loading another model"
+}

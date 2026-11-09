@@ -1,0 +1,38 @@
+{
+  "timestamp": "2026-09-13T22:22:44.766275+00:00",
+  "build": "/private/tmp/margin-image-read-build/Build/Products/Debug/MeetingIntro.app",
+  "installation": "Validation build running alone; /Applications/MeetingIntro.app unchanged. Margin enabled using process launch argument.",
+  "checks": [
+    {
+      "name": "Finder drag into notebook",
+      "result": "pass",
+      "detail": "Receipt imported using native pointer drag after dismissing the Quick Look overlay."
+    },
+    {
+      "name": "Native question submission",
+      "result": "pass",
+      "detail": "Typed into the writing field; observed reading status and USD 19.44 answer."
+    },
+    {
+      "name": "Clipboard image paste",
+      "result": "pass",
+      "detail": "Second image imported through Command-V; old answer cleared. Prior clipboard contents restored."
+    },
+    {
+      "name": "Cancel active image reading",
+      "result": "pass",
+      "detail": "Native Cancel returned to editable page with cancellation message; local API reported no loaded models."
+    },
+    {
+      "name": "Ribbon save and Index reopen",
+      "result": "pass",
+      "detail": "Saved first receipt page, pasted another image and cancelled a question, then reopened saved page through Index. Original question, source and USD 19.44 answer restored."
+    }
+  ],
+  "limits": [
+    "One known receipt fixture; not an independent accuracy evaluation.",
+    "Qwen 3.5 4B local vision reader with Pilot 1; not the Empero reader selection.",
+    "No image-driven file/calendar writes enabled.",
+    "No release installation, peak-memory measurement or broad latency qualification."
+  ]
+}

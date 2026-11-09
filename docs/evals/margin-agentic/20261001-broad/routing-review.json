@@ -1,0 +1,12 @@
+{
+  "original_score": "73/78; preserved unchanged",
+  "scope": "First-decision diagnostic, not full goal completion",
+  "findings": {
+    "routing-52": "Multi-tool plan create_folder then move_files, rejected by single-call diagnostic. Requires trajectory verification; not a refusal.",
+    "routing-66": "Clarification about standup title; no RSVP executed.",
+    "routing-71": "Textual capabilities answer; no live registry lookup.",
+    "routing-73": "Textual capabilities answer; no live registry lookup.",
+    "routing-78": "Clarification about which 2pm event; no cancellation executed."
+  },
+  "infrastructure": "Disk filled during diagnostic build; one report write failed. Temporary build was removed; final report contains all 78 cases."
+}

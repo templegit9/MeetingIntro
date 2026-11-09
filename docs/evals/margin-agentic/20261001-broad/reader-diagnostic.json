@@ -1,0 +1,9 @@
+{
+  "error" : "The data couldn’t be read because it isn’t in the correct format.",
+  "finished_at" : "2026-10-01T17:52:02Z",
+  "image" : "\/Users\/oluyinkaoginni\/Documents\/SelfProjects\/MeetingIntro\/docs\/evals\/margin-agentic\/20261001-broad\/fixtures\/week.png",
+  "parsed" : false,
+  "raw_reader_output" : "```json\n[\n  {\n    \"title\": \"Team offsite\",\n    \"start_date_time\": \"2026-10-07T09:00:00-07:00\",\n    \"duration_minutes\": null,\n    \"end_date_time\": null\n  },\n  {\n    \"title\": \"Standup\",\n    \"start_date_time\": \"2026-10-05T09:00:00-07:00\",\n    \"duration_minutes\": null,\n    \"end_date_time\": null\n  },\n  {\n    \"title\": \"Design review\",\n    \"start_date_time\": \"2026-10-05T10:00:00-07:00\",\n    \"duration_minutes\": null,\n    \"end_date_time\": null\n  },\n  {\n    \"title\": \"Client call\",\n    \"start_date_time\": \"2026-10-06T09:30:00-07:00\",\n    \"duration_minutes\": null,\n    \"end_date_time\": null\n  },\n  {\n    \"title\": \"Budget sync\",\n    \"start_date_time\": \"2026-10-06T09:45:00-07:00\",\n    \"duration_minutes\": null,\n    \"end_date_time\": null\n  },\n  {\n    \"title\": \"Standup\",\n    \"start_date_time\": \"2026-10-07T09:00:00-07:00\",\n    \"duration_minutes\": null,\n    \"end_date_time\": null\n  },\n  {\n    \"title\": \"Focus block\",\n    \"start_date_time\": \"2026-10-08T13:00:00-07:00\",\n    \"duration_minutes\": null,\n    \"end_date_time\": null\n  },\n  {\n    \"title\": \"Weekly review\",\n    \"start_date_time\": \"2026-10-09T16:00:00-07:00\",\n    \"duration_minutes\": null,\n    \"end_date_time\": null\n  }\n]\n```",
+  "scope" : "Actual production reader only; no planner or calendar writes",
+  "started_at" : "2026-10-01T17:51:29Z"
+}

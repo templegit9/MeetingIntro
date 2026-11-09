@@ -1,0 +1,30 @@
+checks/checks.swift:143: Precondition failed
+Stack dump:
+0.	Program arguments: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend -frontend -interpret /var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-guards-xgk5po6g/checks.swift -Xllvm -aarch64-use-tbi -enable-objc-interop -stack-check -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -no-color-diagnostics -Xcc -fno-color-diagnostics -new-driver-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-driver -empty-abi-descriptor -no-auto-bridging-header-chaining -module-name checks -disable-clang-spi -target-sdk-version 26.2 -target-sdk-name macosx26.2 -external-plugin-path /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server -external-plugin-path /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/local/lib/swift/host/plugins#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server -in-process-plugin-server-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/libSwiftInProcPluginServer.dylib -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/local/lib/swift/host/plugins
+1.	Apple Swift version 6.2.4 (swiftlang-6.2.4.1.4 clang-1700.6.4.2)
+2.	Compiling with effective version 5.10
+3.	While running user code "/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-guards-xgk5po6g/checks.swift"
+Stack dump without symbol names (ensure you have llvm-symbolizer in your PATH or set the environment var `LLVM_SYMBOLIZER_PATH` to point to it):
+0  swift-frontend           0x00000001087a3740 llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) + 56
+1  swift-frontend           0x00000001087a10d0 llvm::sys::RunSignalHandlers() + 112
+2  swift-frontend           0x00000001087a3d6c SignalHandler(int, __siginfo*, void*) + 344
+3  libsystem_platform.dylib 0x000000019fbc7744 _sigtramp + 56
+4  libswiftCore.dylib       0x00000001b2f36554 $ss17_assertionFailure__4file4line5flagss5NeverOs12StaticStringV_SSAHSus6UInt32VtF + 176
+5  libswiftCore.dylib       0x000000011596f56c $ss17_assertionFailure__4file4line5flagss5NeverOs12StaticStringV_SSAHSus6UInt32VtF + 18446744071069470920
+6  libswiftCore.dylib       0x000000011596e9e4 $ss17_assertionFailure__4file4line5flagss5NeverOs12StaticStringV_SSAHSus6UInt32VtF + 18446744071069467968
+7  swift-frontend           0x000000010253c4c8 llvm::orc::runAsMain(int (*)(int, char**), llvm::ArrayRef<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>, std::__1::optional<llvm::StringRef>) + 908
+8  swift-frontend           0x000000010244ebe0 swift::SwiftJIT::runMain(llvm::ArrayRef<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>) + 628
+9  swift-frontend           0x000000010245c0d4 swift::RunImmediately(swift::CompilerInstance&, std::__1::vector<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>, std::__1::allocator<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>>> const&, swift::IRGenOptions const&, swift::SILOptions const&, std::__1::unique_ptr<swift::SILModule, std::__1::default_delete<swift::SILModule>>&&) + 1052
+10 swift-frontend           0x00000001023d67c4 processCommandLineAndRunImmediately(swift::CompilerInstance&, std::__1::unique_ptr<swift::SILModule, std::__1::default_delete<swift::SILModule>>&&, llvm::PointerUnion<swift::ModuleDecl*, swift::SourceFile*>, swift::FrontendObserver*, int&) + 504
+11 swift-frontend           0x00000001023d2008 performCompileStepsPostSILGen(swift::CompilerInstance&, std::__1::unique_ptr<swift::SILModule, std::__1::default_delete<swift::SILModule>>, llvm::PointerUnion<swift::ModuleDecl*, swift::SourceFile*>, swift::PrimarySpecificPaths const&, int&, swift::FrontendObserver*) + 1980
+12 swift-frontend           0x00000001023d16f8 swift::performCompileStepsPostSema(swift::CompilerInstance&, int&, swift::FrontendObserver*) + 2688
+13 swift-frontend           0x00000001023d5018 performCompile(swift::CompilerInstance&, int&, swift::FrontendObserver*) + 4932
+14 swift-frontend           0x00000001023d2fc8 swift::performFrontend(llvm::ArrayRef<char const*>, char const*, void*, swift::FrontendObserver*) + 3580
+15 swift-frontend           0x0000000102350408 swift::mainEntry(int, char const**) + 5412
+16 dyld                     0x000000019f7f5d54 start + 7184
+Traceback (most recent call last):
+  File "/Users/oluyinkaoginni/Documents/SelfProjects/MeetingIntro/scripts/test-margin-request-checks.py", line 6, in <module>
+    p=pathlib.Path(tmp)/'checks.swift';p.write_text(text);subprocess.run(['swift',str(p)],check=True)
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/subprocess.py", line 528, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['swift', '/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-guards-xgk5po6g/checks.swift']' died with <Signals.SIGTRAP: 5>.

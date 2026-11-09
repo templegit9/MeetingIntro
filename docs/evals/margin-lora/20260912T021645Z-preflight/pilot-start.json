@@ -1,0 +1,24 @@
+{
+  "fetched_at": "2026-09-12T02:49:00.136386+00:00",
+  "state": {
+    "stage": "training",
+    "mode": "pilot",
+    "timestamp": "2026-09-12T02:48:46.434558+00:00",
+    "elapsed_seconds": 216.91985017500065,
+    "step": 2,
+    "planned_steps": 188,
+    "gpu": "2026/09/11 19:48:46.459, NVIDIA GeForce RTX 5070 Ti, 13331 MiB, 16303 MiB, 97 %, 64",
+    "peak_allocated_bytes": 11184005120,
+    "peak_reserved_bytes": 12218007552,
+    "metrics": {
+      "loss": 0.3853803277015686,
+      "grad_norm": 1.5025033950805664,
+      "learning_rate": 8.333333333333334e-06,
+      "epoch": 0.010666666666666666
+    }
+  },
+  "gpu": {
+    "timestamp": "2026-09-12T02:48:50.605145+00:00",
+    "gpu": "NVIDIA GeForce RTX 5070 Ti, 13331 MiB, 16303 MiB, 99 %, 66"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "counts": {
+    "train": 3600,
+    "validation": 460,
+    "holdout": 600
+  },
+  "created": "2026-09-12T06:11:19.643249+00:00",
+  "sha256": {
+    "holdout.jsonl": "c6319b4eaacf0c34c77e567249b591aeb0b705032f147539880272162297ecf0",
+    "train.jsonl": "659c2ac42d6fe5833714511ee27b3fb9609cc6409c5360f263d1a27e11e05664",
+    "validation.jsonl": "55bd087cc630114bdbc6fe071ca82ce1aad27281b05d7506234a874d8b0e9de1"
+  },
+  "note": "All original training rows retained; 200 examples per new category. Shared-template validation is loss monitoring only."
+}

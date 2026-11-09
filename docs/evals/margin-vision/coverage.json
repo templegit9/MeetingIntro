@@ -1,0 +1,1164 @@
+[
+  {
+    "id": "FLOW-001",
+    "category": "Name and save",
+    "use_case": "Architecture diagram naming",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-002",
+    "category": "Name and save",
+    "use_case": "Generic screenshot naming",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-003",
+    "category": "Name and save",
+    "use_case": "Consistent batch naming",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-004",
+    "category": "Name and save",
+    "use_case": "Receipt filing",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-005",
+    "category": "Name and save",
+    "use_case": "Invoice filing",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-006",
+    "category": "Name and save",
+    "use_case": "Scanned letter filing",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-007",
+    "category": "Name and save",
+    "use_case": "Research figure naming",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-008",
+    "category": "Name and save",
+    "use_case": "Product photo identification and naming",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-009",
+    "category": "Name and save",
+    "use_case": "Design mockup filing",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-010",
+    "category": "Name and save",
+    "use_case": "Event poster filing",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-011",
+    "category": "Name and save",
+    "use_case": "Mixed-image categorisation",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-012",
+    "category": "Name and save",
+    "use_case": "Duplicate-aware saving",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-013",
+    "category": "Read and explain",
+    "use_case": "Flowchart explanation",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-014",
+    "category": "Read and explain",
+    "use_case": "Architecture components and connections",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-015",
+    "category": "Read and explain",
+    "use_case": "Dense screenshot summary",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-016",
+    "category": "Read and explain",
+    "use_case": "Handwriting transcription",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-017",
+    "category": "Read and explain",
+    "use_case": "Foreign-language translation",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-018",
+    "category": "Read and explain",
+    "use_case": "Chart interpretation",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-019",
+    "category": "Read and explain",
+    "use_case": "Dashboard summary",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-020",
+    "category": "Read and explain",
+    "use_case": "Table extraction",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-021",
+    "category": "Read and explain",
+    "use_case": "Form explanation",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-022",
+    "category": "Read and explain",
+    "use_case": "Error diagnosis",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-023",
+    "category": "Read and explain",
+    "use_case": "Technical drawing dimensions",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-024",
+    "category": "Read and explain",
+    "use_case": "Map and route explanation",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-025",
+    "category": "Read and explain",
+    "use_case": "Before-after differences",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-026",
+    "category": "Create files",
+    "use_case": "Whiteboard notes",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-027",
+    "category": "Create files",
+    "use_case": "Editable Mermaid",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-028",
+    "category": "Create files",
+    "use_case": "Architecture Markdown",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-029",
+    "category": "Create files",
+    "use_case": "Table CSV",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-030",
+    "category": "Create files",
+    "use_case": "Chart data with estimates marked",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-031",
+    "category": "Create files",
+    "use_case": "Handwritten checklist",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-032",
+    "category": "Create files",
+    "use_case": "Recipe and shopping list",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-033",
+    "category": "Create files",
+    "use_case": "Scan transcription alongside original",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-034",
+    "category": "Create files",
+    "use_case": "Slide outline",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-035",
+    "category": "Create files",
+    "use_case": "Ordered multi-screenshot document",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-036",
+    "category": "Create files",
+    "use_case": "Business card contact file",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-037",
+    "category": "Create files",
+    "use_case": "UI implementation brief",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-038",
+    "category": "Tasks and calendar",
+    "use_case": "Event invitation",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-039",
+    "category": "Tasks and calendar",
+    "use_case": "Multi-event poster",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-040",
+    "category": "Tasks and calendar",
+    "use_case": "Conference schedule",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-041",
+    "category": "Tasks and calendar",
+    "use_case": "Appointment confirmation",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-042",
+    "category": "Tasks and calendar",
+    "use_case": "Travel itinerary",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-043",
+    "category": "Tasks and calendar",
+    "use_case": "Whiteboard actions",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-044",
+    "category": "Tasks and calendar",
+    "use_case": "Handwritten tasks",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-045",
+    "category": "Tasks and calendar",
+    "use_case": "Assignment deadlines",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-046",
+    "category": "Tasks and calendar",
+    "use_case": "Invoice review reminder",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-047",
+    "category": "Tasks and calendar",
+    "use_case": "Delivery reminder",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-048",
+    "category": "Tasks and calendar",
+    "use_case": "Maintenance schedule",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-049",
+    "category": "Tasks and calendar",
+    "use_case": "Conversation commitments",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-050",
+    "category": "Compare and locate",
+    "use_case": "Diagram version comparison",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-051",
+    "category": "Compare and locate",
+    "use_case": "Find original document",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-052",
+    "category": "Compare and locate",
+    "use_case": "Receipt duplicate search",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-053",
+    "category": "Compare and locate",
+    "use_case": "Invoice period comparison",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-054",
+    "category": "Compare and locate",
+    "use_case": "Mockup against approved design",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-055",
+    "category": "Compare and locate",
+    "use_case": "Whiteboard to related notes",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-056",
+    "category": "Compare and locate",
+    "use_case": "Chart against prior report",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-057",
+    "category": "Compare and locate",
+    "use_case": "Reference-number search",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-058",
+    "category": "Compare and locate",
+    "use_case": "Book cover to notes",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-059",
+    "category": "Compare and locate",
+    "use_case": "Tasks deduplication",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-060",
+    "category": "Research",
+    "use_case": "Equipment manual",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-061",
+    "category": "Research",
+    "use_case": "Error official documentation",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-062",
+    "category": "Research",
+    "use_case": "Technology documentation",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-063",
+    "category": "Research",
+    "use_case": "Chart or claim verification",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-064",
+    "category": "Research",
+    "use_case": "Book metadata",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-065",
+    "category": "Research",
+    "use_case": "Official event schedule",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-066",
+    "category": "Research",
+    "use_case": "Product specification comparison",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-067",
+    "category": "Research",
+    "use_case": "Original article search",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-068",
+    "category": "Research",
+    "use_case": "Research paper identification",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-069",
+    "category": "Review",
+    "use_case": "Architecture failure points",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-070",
+    "category": "Review",
+    "use_case": "Flowchart completeness",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-071",
+    "category": "Review",
+    "use_case": "UI accessibility",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-072",
+    "category": "Review",
+    "use_case": "Dashboard misleading presentation",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-073",
+    "category": "Review",
+    "use_case": "Slide clarity",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-074",
+    "category": "Review",
+    "use_case": "Form usability",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-075",
+    "category": "Review",
+    "use_case": "Plan dependencies and owners",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-076",
+    "category": "Review",
+    "use_case": "Diagram versus requirements",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-077",
+    "category": "Review",
+    "use_case": "Design alternatives",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-078",
+    "category": "Combined workflows",
+    "use_case": "Diagram to project documentation and tasks",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-079",
+    "category": "Combined workflows",
+    "use_case": "Receipt to expense record",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-080",
+    "category": "Combined workflows",
+    "use_case": "Whiteboard to meeting follow-through",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-081",
+    "category": "Combined workflows",
+    "use_case": "Poster to calendar and saved reference",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-082",
+    "category": "Combined workflows",
+    "use_case": "Error to troubleshooting record",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  },
+  {
+    "id": "FLOW-083",
+    "category": "Combined workflows",
+    "use_case": "Updated design to implementation tasks",
+    "status": "coverage requirement; not a passed test",
+    "required_fixture": "Owned or consented real-world image with independently reviewed ground truth",
+    "review": [
+      "Image interpretation correct and uncertainty explicit",
+      "All requested actions and exact critical fields preserved",
+      "Only available tools proposed; unsupported operations identified",
+      "No writes or transmissions before confirmation",
+      "Destination grants, collision handling and safe undo verified in native harness"
+    ]
+  }
+]

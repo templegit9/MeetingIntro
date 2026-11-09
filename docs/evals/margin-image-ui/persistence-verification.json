@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-09-13T14:27:52.737334+00:00",
+  "build": "202609130322",
+  "binary_sha256": "5d364d67e554ffa476676b5af9f4dde699fdbbc307a88142072dd8efb3ea87bb",
+  "release_build": "passed",
+  "signature": "passed",
+  "native_verified": [
+    "Finder PNG drag into open notebook",
+    "Finder HEIC drag onto closed cover",
+    "native Command-V with clipboard restored",
+    "tall receipt fixture rendered",
+    "saved cyan image restored after app restart",
+    "all 12 save colours exposed"
+  ],
+  "storage_verified": [
+    "snapshot reload",
+    "corrupt restore preserves draft",
+    "replaced snapshot cleanup",
+    "forget single image",
+    "expired unmarked image cleanup",
+    "original unchanged"
+  ],
+  "cleanup": "temporary native saved image and payload removed; 14 prior entries preserved",
+  "remaining": [
+    "spoken VoiceOver navigation",
+    "system-level Reduce Motion exercise",
+    "live multimodal inference",
+    "image-derived writes",
+    "automatic draft persistence"
+  ],
+  "evidence_limit": "native import and restart checks on builds 202609130320/321; final 322 adds isolated-tested per-page forget control"
+}

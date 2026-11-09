@@ -1,0 +1,85 @@
+{
+  "model": "margin-lora-smoke-adapted:preflight",
+  "started": "2026-09-12T02:43:58.242302+00:00",
+  "checks": [
+    {
+      "name": "json",
+      "passed": true,
+      "response": {
+        "model": "margin-lora-smoke-adapted:preflight",
+        "created_at": "2026-09-12T02:44:02.141482Z",
+        "message": {
+          "role": "assistant",
+          "content": "{\"ready\":true}",
+          "thinking": "The user wants me to return a specific JSON object with no additional text or formatting. I need to output exactly the string they provided, which is a valid JSON object indicating readiness.\n"
+        },
+        "done": true,
+        "done_reason": "stop",
+        "total_duration": 3874843750,
+        "load_duration": 1842937166,
+        "prompt_eval_count": 21,
+        "prompt_eval_duration": 181170000,
+        "eval_count": 45,
+        "eval_duration": 1835705000
+      }
+    },
+    {
+      "name": "tool",
+      "passed": true,
+      "response": {
+        "model": "margin-lora-smoke-adapted:preflight",
+        "created_at": "2026-09-12T02:44:15.56592Z",
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "thinking": "The user is asking what I can do. This matches the capability question pattern, so I should call list_capabilities.\n",
+          "tool_calls": [
+            {
+              "id": "6JRhJoz9R2lSYVeDfXXOw1I3FHpoMDuv",
+              "function": {
+                "index": 0,
+                "name": "list_capabilities",
+                "arguments": {}
+              }
+            }
+          ]
+        },
+        "done": true,
+        "done_reason": "stop",
+        "total_duration": 13421473000,
+        "load_duration": 226774291,
+        "prompt_eval_count": 5246,
+        "prompt_eval_duration": 11424701000,
+        "eval_count": 40,
+        "eval_duration": 1665682000
+      }
+    }
+  ],
+  "runtime": {
+    "version": "0.30.10"
+  },
+  "package": {
+    "name": "margin-lora-smoke-adapted:preflight",
+    "model": "margin-lora-smoke-adapted:preflight",
+    "modified_at": "2026-09-11T19:43:43.437836969-07:00",
+    "size": 2783446710,
+    "digest": "3d6adc6893d9974d9393bb36b63890714b285952f7b2f05180cee2ccebfc35a8",
+    "details": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "qwen35",
+      "families": [
+        "qwen35"
+      ],
+      "parameter_size": "4.3B",
+      "quantization_level": "Q4_K_M",
+      "context_length": 262144,
+      "embedding_length": 2560
+    },
+    "capabilities": [
+      "completion"
+    ]
+  },
+  "passed": true,
+  "finished": "2026-09-12T02:44:15.611041+00:00"
+}

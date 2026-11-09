@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "finished": "2026-09-12T02:45:02.412083+00:00",
+  "checks": [
+    {
+      "model": "margin-lora-base-control:preflight",
+      "report_sha256": "e1d8f4a0982b6657ee308d955cd7e4bc0a7d85a776b0c2dab39bcce8b8799a4c"
+    },
+    {
+      "model": "margin-lora-smoke-adapted:preflight",
+      "report_sha256": "5707efde92e6896fc9652ed309350f68ce99e9cbaebca6f6e27eb1425fc53ae1"
+    }
+  ],
+  "exports": [
+    {
+      "name": "base-control",
+      "path": "/mnt/c/Users/oluyi/Documents/Projects/Margin-Empero-LoRA/artifacts/exports/base-control-Q4_K_M.gguf",
+      "bytes": 2783446880,
+      "sha256": "7347c527c5c135e9ecf2911f518ce0a7db80d5afac737622681fd5a66bc1c95b"
+    },
+    {
+      "name": "smoke-adapted",
+      "path": "/mnt/c/Users/oluyi/Documents/Projects/Margin-Empero-LoRA/artifacts/exports/smoke-adapted-Q4_K_M.gguf",
+      "bytes": 2783446336,
+      "sha256": "6a16c0942be542fb601e94f3c00a52c1e9654a958ec1b8fcbe724137efea17ed"
+    }
+  ],
+  "scope": "Reload, canonical merge, unchanged MTP preservation, GGUF Q4_K_M import, JSON and tool-call decoding. Not category accuracy."
+}

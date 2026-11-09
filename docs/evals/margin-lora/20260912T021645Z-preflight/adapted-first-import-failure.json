@@ -1,0 +1,33 @@
+{
+  "model": "margin-lora-smoke-adapted:preflight",
+  "started": "2026-09-12T02:26:18.801152+00:00",
+  "checks": [],
+  "runtime": {
+    "version": "0.30.10"
+  },
+  "package": {
+    "name": "margin-lora-smoke-adapted:preflight",
+    "model": "margin-lora-smoke-adapted:preflight",
+    "modified_at": "2026-09-11T19:26:02.571512816-07:00",
+    "size": 2708804342,
+    "digest": "d34a9c844e3e3ba262d1bf88fb8803e3772a9447111ae9f14720ce816aac53f3",
+    "details": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "qwen35",
+      "families": [
+        "qwen35"
+      ],
+      "parameter_size": "4.2B",
+      "quantization_level": "Q4_K_M",
+      "context_length": 262144,
+      "embedding_length": 2560
+    },
+    "capabilities": [
+      "completion"
+    ]
+  },
+  "passed": false,
+  "error": "HTTP Error 500: Internal Server Error",
+  "finished": "2026-09-12T02:26:20.171948+00:00"
+}

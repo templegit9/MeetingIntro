@@ -1,0 +1,217 @@
+{
+  "cases" : [
+    {
+      "actual" : "create_events",
+      "arguments" : {
+        "events" : [
+          {
+            "all_day" : true,
+            "start" : "2026-10-12",
+            "title" : "Columbus Day \/ Indigenous Peoples' Day (Federal \/ National)"
+          },
+          {
+            "all_day" : true,
+            "start" : "2026-10-31",
+            "title" : "Halloween (Cultural \/ Observance)"
+          },
+          {
+            "all_day" : true,
+            "start" : "2026-11-11",
+            "title" : "Veterans Day (Federal \/ National)"
+          },
+          {
+            "all_day" : true,
+            "start" : "2026-11-26",
+            "title" : "Thanksgiving Day (Federal \/ National)"
+          },
+          {
+            "all_day" : true,
+            "start" : "2026-11-27",
+            "title" : "Black Friday (Observance \/ Commercial)"
+          },
+          {
+            "all_day" : true,
+            "start" : "2026-12-24",
+            "title" : "Christmas Eve (Observance)"
+          },
+          {
+            "all_day" : true,
+            "start" : "2026-12-25",
+            "title" : "Christmas Day (Federal \/ National)"
+          },
+          {
+            "all_day" : true,
+            "start" : "2026-12-31",
+            "title" : "New Year's Eve (Observance)"
+          }
+        ]
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : true,
+      "expected" : [
+        "create_events"
+      ],
+      "latency_seconds" : 0.0012820959091186523,
+      "model_reply" : "",
+      "note" : "screenshot: all eight holidays, complete arguments",
+      "passed" : true,
+      "prompt" : "Put the following events in my calendar\nOctober 12, 2026 – Columbus Day \/ Indigenous Peoples' Day (Federal \/ National)\nOctober 31, 2026 – Halloween (Cultural \/ Observance)\nNovember 11, 2026 – Veterans Day (Federal \/ National)\nNovember 26, 2026 – Thanksgiving Day (Federal \/ National)\nNovember 27, 2026 – Black Friday (Observance \/ Commercial)\nDecember 24, 2026 – Christmas Eve (Observance)\nDecember 25, 2026 – Christmas Day (Federal \/ National)\nDecember 31, 2026 – New Year's Eve (Observance)"
+    },
+    {
+      "actual" : "web_research",
+      "arguments" : {
+        "query" : "latest Swift concurrency guidance"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "web_research"
+      ],
+      "latency_seconds" : 24.78405499458313,
+      "model_reply" : "",
+      "note" : "public web research",
+      "passed" : true,
+      "prompt" : "Research the latest Swift concurrency guidance on the web"
+    },
+    {
+      "actual" : "list_recordings",
+      "arguments" : {
+
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : true,
+      "expected" : [
+        "list_recordings"
+      ],
+      "latency_seconds" : 0.00022590160369873047,
+      "model_reply" : "",
+      "note" : "existing recording state",
+      "passed" : true,
+      "prompt" : "Show my recordings"
+    },
+    {
+      "actual" : "search_transcripts",
+      "arguments" : {
+        "query" : "ServiceNow"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : true,
+      "expected" : [
+        "search_transcripts"
+      ],
+      "latency_seconds" : 0.00015890598297119141,
+      "model_reply" : "",
+      "note" : "literal local transcript query",
+      "passed" : true,
+      "prompt" : "Search my transcripts for ServiceNow"
+    },
+    {
+      "actual" : "create_event",
+      "arguments" : {
+        "all_day" : true,
+        "attendees" : [
+
+        ],
+        "duration_minutes" : null,
+        "location" : "",
+        "repeat" : "",
+        "start" : "2026-09-04T00:00:00",
+        "title" : "Labour Day"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "create_event"
+      ],
+      "latency_seconds" : 10.804666996002197,
+      "model_reply" : "",
+      "note" : "all-day",
+      "passed" : true,
+      "prompt" : "all day for Labour Day"
+    },
+    {
+      "actual" : "move_event",
+      "arguments" : {
+        "new_start" : "2026-09-10T16:00:00",
+        "original_date" : "2026-09-10",
+        "title" : "3pm"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "move_event"
+      ],
+      "latency_seconds" : 18.280739068984985,
+      "model_reply" : "",
+      "note" : "MUST NOT be create_event — that leaves two meetings",
+      "passed" : true,
+      "prompt" : "move my 3pm to 4pm"
+    },
+    {
+      "actual" : "move_event",
+      "arguments" : {
+        "new_start" : "2026-09-10T10:00:00",
+        "title" : "standup"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "move_event"
+      ],
+      "latency_seconds" : 12.412462949752808,
+      "model_reply" : "",
+      "note" : "move, other phrasing",
+      "passed" : true,
+      "prompt" : "push the standup to 10am"
+    },
+    {
+      "actual" : "move_event",
+      "arguments" : {
+        "new_date" : "2026-09-10",
+        "original_date" : "2026-09-11",
+        "title" : "1:1"
+      },
+      "arguments_valid" : true,
+      "context" : [
+
+      ],
+      "deterministic" : false,
+      "expected" : [
+        "move_event"
+      ],
+      "latency_seconds" : 16.999203085899353,
+      "model_reply" : "",
+      "note" : "move to another day",
+      "passed" : true,
+      "prompt" : "shift tomorrow's 1:1 to Thursday"
+    }
+  ],
+  "complete" : false,
+  "date" : "2026-09-11T01:56:02Z",
+  "expected_cases" : 11,
+  "infrastructure_error" : "Ollama returned HTTP 500. {\"error\":\"error parsing tool call: raw='{\\\"destination\\\":\\\"Archive\\\",\\\"ext\\\":[\\\"pdf\\\"],\\\"query\\\":\\\"invoice\\\",\\\"newer_than_days\\\":60,\\\"older_than_days\\\":30\\\"}', err=invalid character '\\\"' after object ",
+  "model" : "gpt-oss:20b",
+  "passed" : 8,
+  "scope" : "Product tool dispatch and selected arguments; deterministic capability routing included. No live provider mutations."
+}

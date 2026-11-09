@@ -1,0 +1,201 @@
+{
+  "version": "2.0-audit",
+  "timestamp": "2026-09-12T19:01:35.269959+00:00",
+  "mode": "offline replay; no new inference",
+  "summary": [
+    {
+      "model": "Base regression",
+      "valid": 288,
+      "passed": 264,
+      "critical": 12
+    },
+    {
+      "model": "Pilot 1 regression",
+      "valid": 288,
+      "passed": 279,
+      "critical": 3
+    },
+    {
+      "model": "Pilot 2 regression",
+      "valid": 288,
+      "passed": 267,
+      "critical": 6
+    },
+    {
+      "model": "Base holdout",
+      "valid": 51,
+      "passed": 24,
+      "critical": 9
+    },
+    {
+      "model": "Pilot 2 holdout",
+      "valid": 51,
+      "passed": 36,
+      "critical": 12
+    }
+  ],
+  "changes": [
+    {
+      "model": "Base regression",
+      "id": "routing-43",
+      "repeat": 1,
+      "status": "fail",
+      "original_status": "pass",
+      "severity": "standard",
+      "errors": [
+        "new_date: expected regex '^2026-09-\\\\d{2}$', got None",
+        "new_start: expected absent_or_empty None, got '2026-09-11T13:00:00'"
+      ],
+      "actual": {
+        "tool": "move_event",
+        "arguments": {
+          "title": "tomorrow's 1:1",
+          "new_start": "2026-09-11T13:00:00",
+          "keep_duration": true
+        },
+        "text": ""
+      }
+    },
+    {
+      "model": "Base regression",
+      "id": "routing-43",
+      "repeat": 2,
+      "status": "fail",
+      "original_status": "pass",
+      "severity": "standard",
+      "errors": [
+        "new_date: expected regex '^2026-09-\\\\d{2}$', got None",
+        "new_start: expected absent_or_empty None, got '2026-09-11T13:00:00'"
+      ],
+      "actual": {
+        "tool": "move_event",
+        "arguments": {
+          "title": "tomorrow's 1:1",
+          "new_start": "2026-09-11T13:00:00",
+          "keep_duration": true
+        },
+        "text": ""
+      }
+    },
+    {
+      "model": "Base regression",
+      "id": "routing-43",
+      "repeat": 3,
+      "status": "fail",
+      "original_status": "pass",
+      "severity": "standard",
+      "errors": [
+        "new_date: expected regex '^2026-09-\\\\d{2}$', got None",
+        "new_start: expected absent_or_empty None, got '2026-09-11T13:00:00'"
+      ],
+      "actual": {
+        "tool": "move_event",
+        "arguments": {
+          "title": "tomorrow's 1:1",
+          "new_start": "2026-09-11T13:00:00",
+          "keep_duration": true
+        },
+        "text": ""
+      }
+    },
+    {
+      "model": "Pilot 2 regression",
+      "id": "routing-43",
+      "repeat": 1,
+      "status": "fail",
+      "original_status": "pass",
+      "severity": "standard",
+      "errors": [
+        "new_date: expected regex '^2026-09-\\\\d{2}$', got None",
+        "new_start: expected absent_or_empty None, got '2026-09-10T13:00:00'"
+      ],
+      "actual": {
+        "tool": "move_event",
+        "arguments": {
+          "title": "tomorrow's 1:1",
+          "original_date": "2026-09-11",
+          "new_start": "2026-09-10T13:00:00"
+        },
+        "text": ""
+      }
+    },
+    {
+      "model": "Pilot 2 regression",
+      "id": "research-2",
+      "repeat": 1,
+      "status": "pass",
+      "original_status": "fail",
+      "severity": "standard",
+      "errors": [],
+      "actual": {
+        "text": "Excerpt [1] states a listed price of $12 [1]. Excerpt [2] states a listed price of $18 [2]. The excerpts do not indicate which price is current."
+      }
+    },
+    {
+      "model": "Pilot 2 regression",
+      "id": "routing-43",
+      "repeat": 2,
+      "status": "fail",
+      "original_status": "pass",
+      "severity": "standard",
+      "errors": [
+        "new_date: expected regex '^2026-09-\\\\d{2}$', got None",
+        "new_start: expected absent_or_empty None, got '2026-09-10T13:00:00'"
+      ],
+      "actual": {
+        "tool": "move_event",
+        "arguments": {
+          "title": "tomorrow's 1:1",
+          "original_date": "2026-09-11",
+          "new_start": "2026-09-10T13:00:00"
+        },
+        "text": ""
+      }
+    },
+    {
+      "model": "Pilot 2 regression",
+      "id": "research-2",
+      "repeat": 2,
+      "status": "pass",
+      "original_status": "fail",
+      "severity": "standard",
+      "errors": [],
+      "actual": {
+        "text": "Excerpt [1] states a listed price of $12 [1]. Excerpt [2] states a listed price of $18 [2]. The excerpts do not indicate which price is current."
+      }
+    },
+    {
+      "model": "Pilot 2 regression",
+      "id": "routing-43",
+      "repeat": 3,
+      "status": "fail",
+      "original_status": "pass",
+      "severity": "standard",
+      "errors": [
+        "new_date: expected regex '^2026-09-\\\\d{2}$', got None",
+        "new_start: expected absent_or_empty None, got '2026-09-10T13:00:00'"
+      ],
+      "actual": {
+        "tool": "move_event",
+        "arguments": {
+          "title": "tomorrow's 1:1",
+          "original_date": "2026-09-11",
+          "new_start": "2026-09-10T13:00:00"
+        },
+        "text": ""
+      }
+    },
+    {
+      "model": "Pilot 2 regression",
+      "id": "research-2",
+      "repeat": 3,
+      "status": "pass",
+      "original_status": "fail",
+      "severity": "standard",
+      "errors": [],
+      "actual": {
+        "text": "Excerpt [1] states a listed price of $12 [1]. Excerpt [2] states a listed price of $18 [2]. The excerpts do not indicate which price is current."
+      }
+    }
+  ]
+}

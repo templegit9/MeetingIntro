@@ -1,0 +1,134 @@
+{
+  "recorded_utc": "2026-09-11T05:18:58.060615+00:00",
+  "recorded_local": "2026-09-10T22:18:58.060615-07:00",
+  "binary_sha256": "8f67c7df5eb31ff668a645d384300b68d2f44fbfa62395043bfdcb99ec013095",
+  "guards_recorded_utc": "2026-09-11T05:17:49.163265+00:00",
+  "guards": [
+    {
+      "name": "Pinned manifest is bundled",
+      "pass": true
+    },
+    {
+      "name": "Intel compatibility explained",
+      "pass": true
+    },
+    {
+      "name": "Insufficient memory explained",
+      "pass": true
+    },
+    {
+      "name": "Insufficient disk explained",
+      "pass": true
+    },
+    {
+      "name": "Supported Mac accepted",
+      "pass": true
+    },
+    {
+      "name": "Checksum detects changed bytes",
+      "pass": true
+    },
+    {
+      "name": "Repeated layer updates are not double-counted",
+      "pass": true
+    },
+    {
+      "name": "Negative progress is bounded",
+      "pass": true
+    },
+    {
+      "name": "Oversized progress is bounded",
+      "pass": true
+    },
+    {
+      "name": "Closed stream requires success",
+      "pass": true
+    },
+    {
+      "name": "Provider error fails setup",
+      "pass": true
+    },
+    {
+      "name": "Malformed update fails setup",
+      "pass": true
+    },
+    {
+      "name": "Terminal success accepted",
+      "pass": true
+    },
+    {
+      "name": "First enable requires introduction and download approval",
+      "pass": true
+    },
+    {
+      "name": "Legacy enabled users skip introduction without granting downloads",
+      "pass": true
+    },
+    {
+      "name": "Unavailable AI cannot download without approval",
+      "pass": true
+    },
+    {
+      "name": "Cancelled setup does not write files",
+      "pass": true
+    },
+    {
+      "name": "Approval survives app updates",
+      "pass": true
+    }
+  ],
+  "runtime": {
+    "started": "2026-09-11T05:18:28.856223+00:00",
+    "ended": "2026-09-11T05:18:33.834245+00:00",
+    "checks": [
+      {
+        "name": "Official runtime archive matches pinned SHA-256",
+        "pass": true,
+        "timestamp": "2026-09-11T05:18:29.100975+00:00"
+      },
+      {
+        "name": "Archive links stay inside installation",
+        "pass": true,
+        "timestamp": "2026-09-11T05:18:30.527058+00:00"
+      },
+      {
+        "name": "Supervisor signature verifies",
+        "pass": true,
+        "timestamp": "2026-09-11T05:18:30.536636+00:00"
+      },
+      {
+        "name": "Packaged engine starts on its own loopback port",
+        "pass": true,
+        "timestamp": "2026-09-11T05:18:33.005080+00:00"
+      },
+      {
+        "name": "Stopping supervisor stops its engine",
+        "pass": true,
+        "timestamp": "2026-09-11T05:18:33.237668+00:00"
+      },
+      {
+        "name": "Engine starts under disposable app owner",
+        "pass": true,
+        "timestamp": "2026-09-11T05:18:33.489563+00:00"
+      },
+      {
+        "name": "App crash stops the owned engine",
+        "pass": true,
+        "timestamp": "2026-09-11T05:18:33.693809+00:00"
+      },
+      {
+        "name": "No model downloaded during lifecycle tests",
+        "pass": true,
+        "timestamp": "2026-09-11T05:18:33.694370+00:00"
+      }
+    ],
+    "passed": 8,
+    "total": 8,
+    "scope": "Real pinned runtime; no fresh 14 GB model download."
+  },
+  "limits": [
+    "Full first-time 14 GB model pull on a clean Mac has not been run.",
+    "First-enable popup interaction has not been exercised with fresh native preferences.",
+    "These setup checks do not rerun or replace the model routing evaluation."
+  ]
+}

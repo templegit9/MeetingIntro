@@ -1,0 +1,382 @@
+{
+  "updated": "2026-09-13T01:17:24.137491+00:00",
+  "native_complete": true,
+  "native_passed": 76,
+  "native_total": 78,
+  "median": 4.040641963481903,
+  "p95": 15.774307012557983,
+  "managed_setup": {
+    "detail": "AI is ready on this Mac. Your model will be kept across app updates.",
+    "endpoint": "http://127.0.0.1:64258",
+    "finished": "2026-09-13T00:42:36Z",
+    "model": "margin-lora-pilot:final",
+    "passed": true,
+    "ready": true,
+    "started": "2026-09-13T00:40:44Z",
+    "tool_reply": "Reply(text: \"\", toolCalls: [MeetingIntro.OllamaToolClient.ToolCall(name: \"list_capabilities\", arguments: [:])])"
+  },
+  "publication": {
+    "timestamp": "2026-09-13T00:31:20.991397+00:00",
+    "repo": "olluyeancah/margin-pilot1-gguf",
+    "commit": "245704da10dfc9cb769926e197f1f540e0b21fa1",
+    "url": "https://huggingface.co/olluyeancah/margin-pilot1-gguf/commit/245704da10dfc9cb769926e197f1f540e0b21fa1"
+  },
+  "targeted_fixes": {
+    "cases": [
+      {
+        "actual": "rsvp",
+        "arguments": {
+          "response": "tentative",
+          "title": "project review invitation"
+        },
+        "arguments_valid": true,
+        "category": "Calendar changes",
+        "context": [],
+        "deterministic": false,
+        "expected": [
+          "rsvp"
+        ],
+        "id": "routing-1",
+        "latency_seconds": 19.52017092704773,
+        "model_reply": "",
+        "note": "tentative response",
+        "passed": true,
+        "prompt": "Tentatively accept the project review invitation",
+        "status": "pass",
+        "timestamp": "2026-09-13T00:55:53Z"
+      },
+      {
+        "actual": "create_events",
+        "arguments": {
+          "events": [
+            {
+              "all_day": true,
+              "start": "2026-10-12",
+              "title": "Columbus Day / Indigenous Peoples' Day (Federal / National)"
+            },
+            {
+              "all_day": true,
+              "start": "2026-10-31",
+              "title": "Halloween (Cultural / Observance)"
+            },
+            {
+              "all_day": true,
+              "start": "2026-11-11",
+              "title": "Veterans Day (Federal / National)"
+            },
+            {
+              "all_day": true,
+              "start": "2026-11-26",
+              "title": "Thanksgiving Day (Federal / National)"
+            },
+            {
+              "all_day": true,
+              "start": "2026-11-27",
+              "title": "Black Friday (Observance / Commercial)"
+            },
+            {
+              "all_day": true,
+              "start": "2026-12-24",
+              "title": "Christmas Eve (Observance)"
+            },
+            {
+              "all_day": true,
+              "start": "2026-12-25",
+              "title": "Christmas Day (Federal / National)"
+            },
+            {
+              "all_day": true,
+              "start": "2026-12-31",
+              "title": "New Year's Eve (Observance)"
+            }
+          ]
+        },
+        "arguments_valid": true,
+        "category": "Calendar changes",
+        "context": [],
+        "deterministic": true,
+        "expected": [
+          "create_events"
+        ],
+        "id": "routing-2",
+        "latency_seconds": 0.002261042594909668,
+        "model_reply": "",
+        "note": "screenshot: all eight holidays, complete arguments",
+        "passed": true,
+        "prompt": "Put the following events in my calendar\nOctober 12, 2026 \u2013 Columbus Day / Indigenous Peoples' Day (Federal / National)\nOctober 31, 2026 \u2013 Halloween (Cultural / Observance)\nNovember 11, 2026 \u2013 Veterans Day (Federal / National)\nNovember 26, 2026 \u2013 Thanksgiving Day (Federal / National)\nNovember 27, 2026 \u2013 Black Friday (Observance / Commercial)\nDecember 24, 2026 \u2013 Christmas Eve (Observance)\nDecember 25, 2026 \u2013 Christmas Day (Federal / National)\nDecember 31, 2026 \u2013 New Year's Eve (Observance)",
+        "status": "pass",
+        "timestamp": "2026-09-13T00:56:12Z"
+      },
+      {
+        "actual": "move_event",
+        "arguments": {
+          "new_start": "2026-09-12T16:00:00",
+          "title": "my 3pm"
+        },
+        "arguments_valid": true,
+        "category": "Calendar changes",
+        "context": [],
+        "deterministic": false,
+        "expected": [
+          "move_event"
+        ],
+        "id": "routing-3",
+        "latency_seconds": 18.349362015724182,
+        "model_reply": "",
+        "note": "MUST NOT be create_event \u2014 that leaves two meetings",
+        "passed": true,
+        "prompt": "move my 3pm to 4pm",
+        "status": "pass",
+        "timestamp": "2026-09-13T00:56:13Z"
+      },
+      {
+        "actual": "move_event",
+        "arguments": {
+          "new_date": "2026-09-17",
+          "original_date": "2026-09-13",
+          "title": "1:1"
+        },
+        "arguments_valid": true,
+        "category": "Calendar changes",
+        "context": [],
+        "deterministic": false,
+        "expected": [
+          "move_event"
+        ],
+        "id": "routing-4",
+        "latency_seconds": 19.115467071533203,
+        "model_reply": "",
+        "note": "move to another day",
+        "passed": true,
+        "prompt": "shift tomorrow's 1:1 to Thursday",
+        "status": "pass",
+        "timestamp": "2026-09-13T00:56:31Z"
+      },
+      {
+        "actual": "rsvp",
+        "arguments": {
+          "response": "decline",
+          "title": "Friday review"
+        },
+        "arguments_valid": true,
+        "category": "Calendar changes",
+        "context": [],
+        "deterministic": false,
+        "expected": [
+          "rsvp"
+        ],
+        "id": "routing-5",
+        "latency_seconds": 15.960687041282654,
+        "model_reply": "",
+        "note": "RSVP",
+        "passed": true,
+        "prompt": "decline the Friday review",
+        "status": "pass",
+        "timestamp": "2026-09-13T00:56:50Z"
+      },
+      {
+        "actual": "rsvp",
+        "arguments": {
+          "response": "accept",
+          "title": "standup"
+        },
+        "arguments_valid": true,
+        "category": "Calendar changes",
+        "context": [],
+        "deterministic": false,
+        "expected": [
+          "rsvp"
+        ],
+        "id": "routing-6",
+        "latency_seconds": 16.313520073890686,
+        "model_reply": "",
+        "note": "RSVP",
+        "passed": true,
+        "prompt": "accept the standup invite",
+        "status": "pass",
+        "timestamp": "2026-09-13T00:57:06Z"
+      },
+      {
+        "actual": "move_event",
+        "arguments": {
+          "new_start": "2026-09-12T16:00:00",
+          "original_start": "2026-09-12T15:00:00",
+          "title": "review"
+        },
+        "arguments_valid": true,
+        "category": "Calendar changes",
+        "context": [
+          {
+            "content": "Create a review tomorrow at 3pm",
+            "role": "user"
+          },
+          {
+            "content": "Create review at 3pm tomorrow. Proposal only; not confirmed.",
+            "role": "assistant"
+          }
+        ],
+        "deterministic": false,
+        "expected": [
+          "move_event"
+        ],
+        "id": "routing-7",
+        "latency_seconds": 20.867295026779175,
+        "model_reply": "",
+        "note": "move must not inherit create_event",
+        "passed": true,
+        "prompt": "move my 3pm to 4pm",
+        "status": "pass",
+        "timestamp": "2026-09-13T00:57:22Z"
+      }
+    ],
+    "complete": true,
+    "date": "2026-09-13T00:57:43Z",
+    "expected_cases": 7,
+    "finished_at": "2026-09-13T00:57:43Z",
+    "infrastructure_errors": [],
+    "model": "margin-lora-pilot:final",
+    "passed": 7,
+    "planned_cases": [
+      {
+        "category": "Calendar changes",
+        "context": [],
+        "expected": [
+          "rsvp"
+        ],
+        "id": "routing-1",
+        "prompt": "Tentatively accept the project review invitation"
+      },
+      {
+        "category": "Calendar changes",
+        "context": [],
+        "expected": [
+          "create_events"
+        ],
+        "id": "routing-2",
+        "prompt": "Put the following events in my calendar\nOctober 12, 2026 \u2013 Columbus Day / Indigenous Peoples' Day (Federal / National)\nOctober 31, 2026 \u2013 Halloween (Cultural / Observance)\nNovember 11, 2026 \u2013 Veterans Day (Federal / National)\nNovember 26, 2026 \u2013 Thanksgiving Day (Federal / National)\nNovember 27, 2026 \u2013 Black Friday (Observance / Commercial)\nDecember 24, 2026 \u2013 Christmas Eve (Observance)\nDecember 25, 2026 \u2013 Christmas Day (Federal / National)\nDecember 31, 2026 \u2013 New Year's Eve (Observance)"
+      },
+      {
+        "category": "Calendar changes",
+        "context": [],
+        "expected": [
+          "move_event"
+        ],
+        "id": "routing-3",
+        "prompt": "move my 3pm to 4pm"
+      },
+      {
+        "category": "Calendar changes",
+        "context": [],
+        "expected": [
+          "move_event"
+        ],
+        "id": "routing-4",
+        "prompt": "shift tomorrow's 1:1 to Thursday"
+      },
+      {
+        "category": "Calendar changes",
+        "context": [],
+        "expected": [
+          "rsvp"
+        ],
+        "id": "routing-5",
+        "prompt": "decline the Friday review"
+      },
+      {
+        "category": "Calendar changes",
+        "context": [],
+        "expected": [
+          "rsvp"
+        ],
+        "id": "routing-6",
+        "prompt": "accept the standup invite"
+      },
+      {
+        "category": "Calendar changes",
+        "context": [
+          {
+            "content": "Create a review tomorrow at 3pm",
+            "role": "user"
+          },
+          {
+            "content": "Create review at 3pm tomorrow. Proposal only; not confirmed.",
+            "role": "assistant"
+          }
+        ],
+        "expected": [
+          "move_event"
+        ],
+        "id": "routing-7",
+        "prompt": "move my 3pm to 4pm"
+      }
+    ],
+    "registered_tools": [
+      "create_event",
+      "create_events",
+      "create_task",
+      "whats_on_today",
+      "find_time",
+      "list_capabilities",
+      "find_files",
+      "find_files_by_content",
+      "folder_summary",
+      "where_is",
+      "move_files",
+      "trash_files",
+      "create_folder",
+      "rename_files",
+      "list_tasks",
+      "complete_task",
+      "day_briefing",
+      "rsvp",
+      "move_event",
+      "cancel_event",
+      "web_research",
+      "list_jobs",
+      "pause_job",
+      "resume_job",
+      "watch_folder",
+      "schedule_organize",
+      "list_recordings",
+      "search_transcripts",
+      "generate_notes"
+    ],
+    "scope": "Product tool dispatch and selected arguments; deterministic capability routing included. No live provider mutations.",
+    "started_at": "2026-09-13T00:55:53Z"
+  },
+  "installation": {
+    "installed_at": "2026-09-13T00:59:10.709460+00:00",
+    "path": "/Applications/MeetingIntro.app",
+    "backup": "/private/tmp/MeetingIntro-backup-20260912-175910.app",
+    "version": "2.20.6",
+    "build": "202609121758",
+    "model": "margin-lora-pilot:final",
+    "sha256": "2681538971d5823440b75bfe5a05262f69d301c5cfdf02f122d185cc1110ad2b"
+  },
+  "ui_validation": {
+    "verified_at": "2026-09-13T01:17:24.082593+00:00",
+    "installed_build": "202609121758",
+    "model": "margin-lora-pilot:final",
+    "holiday_preview": {
+      "count": 8,
+      "all_day": true,
+      "all_dates_and_titles_inspected": true,
+      "action": "Leave it",
+      "real_events_created": false
+    },
+    "folder_confirmation_undo": {
+      "path": "/Users/oluyinkaoginni/Downloads/Margin UI Verification 20260912-1808",
+      "absent_before_confirmation": true,
+      "exists_after_create": true,
+      "absent_after_cross_out": true
+    },
+    "settings": "Card opens configuration; Ready on this Mac; existing local AI, no download needed. Personality and evolving soul controls visible.",
+    "duplicate_app": "Older /Applications/MeetingIntro 2.app stopped and unregistered; protected file remains. New executable launched directly.",
+    "boundaries": [
+      "No live RSVP sent",
+      "No calendar events created",
+      "Full 78-case suite predates routing fixes; targeted rerun is 7/7",
+      "Existing-model settings tested; fresh install tested separately by managed setup harness"
+    ]
+  }
+}

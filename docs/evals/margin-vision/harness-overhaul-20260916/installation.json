@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-09-17T05:42:10.873046+00:00",
+  "state": "installed_and_running",
+  "branch": "margin",
+  "build": "202609162240",
+  "model": "margin-lora-pilot:final",
+  "backup": {
+    "backup": "/Users/oluyinkaoginni/Library/Application Support/MeetingIntro/BuildBackups/MeetingIntro-before-margin-20260916-224024.zip",
+    "sha256": "738bef6f97ffc9127745809d927ac1e14ed1dc1c48ae965a8f952a5a8380f9f5"
+  },
+  "installed_at": "2026-09-17T05:43:55.501806+00:00",
+  "path": "/Applications/MeetingIntro.app",
+  "binary_sha256": "b1dab8d2aabf2cb6b7a984fc6b5f39e91b8567d25848ae9a146e06ce3e844886",
+  "version": "2.20.6",
+  "signature": "Developer ID Application: Oluyinka Oginni (PVRL9W627Q)",
+  "release_integration": "16/16 passed",
+  "verified_at": "2026-09-17T05:45:20.312609+00:00",
+  "running_pid": 18318,
+  "running_instances": 1,
+  "native_notebook_opened": true,
+  "selected_model_verified": "margin-lora-pilot:final"
+}

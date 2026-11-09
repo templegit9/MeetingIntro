@@ -1,0 +1,7 @@
+{
+  "updated_at": "2026-09-13T02:53:11.691851+00:00",
+  "candidate": 0,
+  "stage": "infrastructure failure",
+  "model": "empero-ai/Qwen3.8-4B-Distill",
+  "error": "Traceback (most recent call last):\n  File \"/mnt/c/Users/oluyi/Documents/Projects/Margin-Vision-Pilot/source_probe.py\", line 34, in <module>\n    inputs=processor.apply_chat_template(messages,tokenize=True,add_generation_prompt=True,return_dict=True,return_tensors='pt',enable_thinking=False).to(model.device)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/oluyi/.venvs/margin-empero-lora/lib/python3.12/site-packages/transformers/processing_utils.py\", line 1807, in apply_chat_template\n    visuals = [content for content in message[\"content\"] if content[\"type\"] in [\"image\", \"video\"]]\n                                                            ~~~~~~~^^^^^^^^\nTypeError: string indices must be integers, not 'str'\n"
+}

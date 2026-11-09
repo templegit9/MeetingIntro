@@ -1,0 +1,58 @@
+{
+  "generated_at": "2026-09-17T05:34:44.954085+00:00",
+  "runs": {
+    "loop-and-journal": {
+      "finished_at": "2026-09-17T05:29:49.866473+00:00",
+      "log": "loop-and-journal.log",
+      "bytes": 1803
+    },
+    "compiled-integration": {
+      "finished_at": "2026-09-17T05:33:09.998096+00:00",
+      "log": "compiled-integration.log",
+      "bytes": 1012
+    },
+    "live-pilot1": {
+      "finished_at": "2026-09-17T05:25:51.742655+00:00",
+      "log": "live-pilot1.log",
+      "bytes": 1011
+    },
+    "request-guards": {
+      "finished_at": "2026-09-17T05:28:27.114227+00:00",
+      "log": "request-guards.log",
+      "bytes": 62
+    },
+    "filesystem-export": {
+      "finished_at": "2026-09-17T05:31:08.839937+00:00",
+      "log": "filesystem-export.log",
+      "bytes": 31
+    },
+    "document-export": {
+      "finished_at": "2026-09-17T05:31:10.166003+00:00",
+      "log": "document-export.log",
+      "bytes": 34
+    },
+    "draft-persistence": {
+      "finished_at": "2026-09-17T05:31:12.000355+00:00",
+      "log": "draft-persistence.log",
+      "bytes": 118
+    },
+    "provider-guards": {
+      "finished_at": "2026-09-17T05:30:49.425670+00:00",
+      "log": "provider-guards.log",
+      "bytes": 4064
+    },
+    "build": {
+      "finished_at": "2026-09-17T05:32:41.107760+00:00",
+      "log": "build.log",
+      "bytes": 44594
+    }
+  },
+  "live_model": "margin-lora-pilot:final",
+  "limitations": [
+    "Scripted responses in compiled integration tests",
+    "One live fixture trajectory, not broad model qualification",
+    "Native component render, not complete physical-input verification",
+    "No live provider writes; signed Release installed separately after verification"
+  ],
+  "installation": "installation.json"
+}

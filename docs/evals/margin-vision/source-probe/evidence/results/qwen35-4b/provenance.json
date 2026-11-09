@@ -1,0 +1,24 @@
+{
+  "model": {
+    "repo": "Qwen/Qwen3.5-4B",
+    "url": "https://huggingface.co/Qwen/Qwen3.5-4B",
+    "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "role": "Official multimodal control and fallback",
+    "architectures": [
+      "Qwen3_5ForConditionalGeneration"
+    ],
+    "vision_config_present": true,
+    "format": "Original Transformers safetensors and processor; not language-only GGUF",
+    "local_image_inference_verified": false
+  },
+  "started_at": "2026-09-13T03:00:24.725991+00:00",
+  "torch": "2.12.1+cu130",
+  "transformers": "5.5.0",
+  "load_seconds": 2.4486921380012063,
+  "dtype": "bfloat16",
+  "max_new_tokens": 512,
+  "do_sample": false,
+  "enable_thinking": false,
+  "image_preprocessing": "RGB thumbnail within 1000x750; no OCR",
+  "script_sha256": "39eefa73dd54e8740919d93adf06390a4b9a400cd1120c56039b6d676ccf04ed"
+}

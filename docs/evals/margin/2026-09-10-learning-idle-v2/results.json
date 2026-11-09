@@ -1,0 +1,11 @@
+{
+  "cases" : [
+
+  ],
+  "complete" : true,
+  "date" : "2026-09-11T02:27:05Z",
+  "expected_cases" : 0,
+  "model" : "gpt-oss:20b",
+  "passed" : 0,
+  "scope" : "Product tool dispatch and selected arguments; deterministic capability routing included. No live provider mutations."
+}

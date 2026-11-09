@@ -1,0 +1,152 @@
+
+Margin guards · no model involved
+  ✓ trash with no filter refuses instead of proposing the whole folder
+  ✓ trash with a filter proposes exactly the 2 matching files
+  ✓ reading an ungranted folder asks for access
+  ✓ a folder name containing ../ collapses to one component — got “etc-passwd”
+  ✓ rename proposes a new name, never a path, and keeps the extension — IMG_1234 Screen Shot.png → img-1234-screen-shot.png
+  ✓ moving to an ungranted destination is refused
+  6/6 guards held
+  ✓ 3pm means today's 15:00, not a title substring or tomorrow
+  ✓ explicit original date selects the later occurrence
+  ✓ same-id recurring occurrences remain separate; cancelled event excluded
+  ✓ ambiguous matches return a question, not a write proposal
+  ✓ blank title never matches everything
+  ✓ past occurrences are excluded
+  ✓ midnight and noon are distinct
+  ✓ invalid clock references are rejected
+  ✓ cancel tool refuses ambiguity before provider access
+  ✓ move tool refuses ambiguity before provider access
+  ✓ invalid original date does not broaden the selection
+  ✓ exact original time works without an invented title
+  ✓ two meetings at the exact same time remain ambiguous
+  ✓ missing both title and original time refuses
+  ✓ opaque Graph IDs cannot change the cancellation endpoint
+  15/15 calendar guards held
+  ✓ memory and history start opt-in
+  ✓ disabled memory is absent from model instructions
+  ✓ enabled explicit memory enters instructions
+  ✓ personality, soul and proactivity survive reload
+  ✓ unconfirmed history pages have grey markers
+  ✓ unchanged pages keep their original date
+  ✓ confirmed history pages retain action markers and outcomes
+  ✓ history retains tool details across reload
+  ✓ reopened history has no executable actions
+  ✓ screenshot regression: capabilities after PDF history
+  ✓ capability answer comes from the registered tool
+  ✓ cleared history remains empty after reload
+  ✓ explicit permanent deletion refuses instead of proposing Trash
+  ✓ search text about deletion is not treated as a deletion command
+  ✓ preparing a proposal performs zero writes
+  ✓ simultaneous confirmations execute exactly once
+  16/16 behavior guards held
+  ✓ screenshot holiday request retains all eight events
+  ✓ last requested date survives parsing
+  ✓ full holiday title survives parsing
+  ✓ date-only events explicitly preview all-day
+  ✓ timed lists are not silently converted to all-day
+  ✓ initial activity describes batch scope
+  ✓ invalid eighth event blocks whole batch
+  ✓ duplicate entries rejected
+  ✓ multiple returned event calls are combined, never truncated
+  ✓ all-day interval uses calendar boundaries
+  ✓ event preview includes year
+  ✓ failure stops before following writes
+  ✓ partial completion survives restart without pretending failure is retry-safe
+  ✓ resume skips completed and uncertain steps
+  ✓ identical completed steps cannot replay through a new job
+  ✓ in-flight write becomes uncertain after restart
+  ✓ pause finishes current step and stops next step
+  ✓ corrupt journals cannot be overwritten
+  ✓ Brave credential goes only in API header
+  ✓ search key never enters URL
+  ✓ search result limit enforced
+  ✓ missing Brave key fails before network
+  ✓ search results deduplicate URLs and reject executable links
+  ✓ quota errors are not empty search results
+  ✓ malformed search response fails
+  25/25 roadmap guards held
+Margin eval · gpt-oss:20b · 57 cases
+  ✓ 0.0s create_events · Put the following events in my calendar
+October 12, 2026 – Columbus Day / Indigenous Peoples' Day (Federal / National)
+October 31, 2026 – Halloween (Cultural / Observance)
+November 11, 2026 – Veterans Day (Federal / National)
+November 26, 2026 – Thanksgiving Day (Federal / National)
+November 27, 2026 – Black Friday (Observance / Commercial)
+December 24, 2026 – Christmas Eve (Observance)
+December 25, 2026 – Christmas Day (Federal / National)
+December 31, 2026 – New Year's Eve (Observance)
+  ✓ 30.9s web_research · Research the latest Swift concurrency guidance on the web
+  ✓ 3.3s list_jobs · List my saved jobs and their progress
+  ✗ 21.9s (declined) · Show my recordings
+    Expected list_recordings; arguments valid: true
+  ✗ 8.1s (declined) · Search my transcripts for ServiceNow
+    Expected search_transcripts; arguments valid: true
+  ✓ 4.5s watch_folder · Watch my Downloads folder for new files
+  ✓ 6.0s schedule_organize · Schedule organizing Downloads every day at 9am
+  ✓ 9.6s create_event · lunch with Sam tomorrow 1pm
+  ✓ 14.9s create_task · remind me to submit the expense report by Friday 5pm
+  ✓ 4.4s create_task · add a task to buy milk
+  ✓ 2.0s whats_on_today · what's on today?
+  ✓ 12.8s find_time · when am I free for 30 minutes
+  ✓ 7.1s find_time · what's free tomorrow afternoon
+  ✓ 8.9s find_time · any gaps this week for a 45 minute call
+  ✗ 12.3s (declined) · block 90 minutes for the board deck on Thursday
+    Expected create_event; arguments valid: true
+  ✗ 13.2s (declined) · all day for Labour Day
+    Expected create_event; arguments valid: true
+  ✓ 0.0s list_capabilities · what can yo do
+  ✓ 0.0s list_capabilities · what can you do?
+  ✓ 0.0s list_capabilities · help
+  ✓ 0.0s list_capabilities · who are you
+  ✗ 7.3s (declined) · move my 3pm to 4pm
+    Expected move_event; arguments valid: true
+  ✗ 7.3s (declined) · cancel my 2pm
+    Expected cancel_event; arguments valid: true
+  ✗ 9.1s (declined) · push the standup to 10am
+    Expected move_event; arguments valid: true
+  ✓ 6.8s cancel_event · take the design review off my calendar
+  ✗ 11.8s (declined) · shift tomorrow's 1:1 to Thursday
+    Expected move_event; arguments valid: true
+  ✓ 19.6s trash_files · delete everything in Downloads
+  ✗ 3.9s (declined) · how is the weather in Lagos
+    Expected web_research; arguments valid: true
+  ✓ 3.1s find_files · find the pdfs in Downloads
+  ✓ 7.1s find_files · what dmg files do I have that are over a year old
+  ✗ 7.2s (declined) · which file mentions Acme
+    Expected find_files_by_content; arguments valid: true
+  ✓ 9.0s find_files_by_content · find the screenshot with the error message in it
+  ✓ 4.1s folder_summary · what's in my Downloads folder
+  ✓ 2.5s where_is · where is blender.dmg
+  ✗ 6.2s (declined) · move the dmgs into an Installers folder
+    Expected move_files; arguments valid: true
+  ✗ 14.7s (declined) · put last month's invoices in Archive
+    Expected move_files; arguments valid: true
+  ✗ 10.7s (declined) · bin the installers I haven't touched in a year
+    Expected trash_files; arguments valid: true
+  ✓ 0.0s (declined) · permanently delete the old screenshots
+  ✓ 4.4s (declined) · empty the trash
+  ✓ 3.1s create_folder · make an Invoices folder in Downloads
+  ✗ 8.3s (declined) · prefix the screenshots with their date
+    Expected rename_files; arguments valid: true
+  ✗ 8.5s (declined) · replace IMG_ with Holiday in those file names
+    Expected rename_files; arguments valid: true
+  ✓ 4.2s list_tasks · what's on my list
+  ✓ 3.6s list_tasks · what's overdue
+  ✓ 6.1s complete_task · mark the expense report done
+  ✓ 2.8s day_briefing · how does my day look
+  ✓ 4.9s day_briefing · brief me on today
+  ✓ 3.0s rsvp · decline the Friday review
+  ✓ 5.2s rsvp · accept the standup invite
+  ✓ 2.1s whats_on_today · what meetings do I have today
+  ✓ 0.0s list_capabilities · what can you do
+  ✓ 0.0s list_capabilities · what can yo do?
+  ✓ 2.4s list_capabilities · tell me about your abilities
+  ✓ 2.3s list_tasks · List my overdue tasks
+  ✗ 5.8s (declined) · move my 3pm to 4pm
+    Expected move_event; arguments valid: true
+  ✓ 0.0s list_capabilities · what can you do?
+  ✓ 3.2s find_files · Find PNG files in Downloads instead
+  ✗ 11.1s (declined) · cancel my 2pm
+    Expected cancel_event; arguments valid: true
+  40/57 passed

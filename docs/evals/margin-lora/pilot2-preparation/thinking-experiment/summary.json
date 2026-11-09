@@ -1,0 +1,66 @@
+{
+  "stage": "complete",
+  "updated": "2026-09-12T19:54:53.166332+00:00",
+  "arms": [
+    {
+      "model": "margin-think-base:audit",
+      "think": true,
+      "tested": 60,
+      "expected": 60,
+      "passed": 27,
+      "critical": 18,
+      "infra": 0,
+      "median": 1.128256396004872
+    },
+    {
+      "model": "margin-think-base:audit",
+      "think": false,
+      "tested": 60,
+      "expected": 60,
+      "passed": 39,
+      "critical": 6,
+      "infra": 0,
+      "median": 0.5838095209983294
+    },
+    {
+      "model": "margin-think-pilot1:audit",
+      "think": true,
+      "tested": 60,
+      "expected": 60,
+      "passed": 36,
+      "critical": 9,
+      "infra": 0,
+      "median": 0.8850126670004101
+    },
+    {
+      "model": "margin-think-pilot1:audit",
+      "think": false,
+      "tested": 60,
+      "expected": 60,
+      "passed": 42,
+      "critical": 9,
+      "infra": 0,
+      "median": 0.40324752050219104
+    },
+    {
+      "model": "margin-think-pilot2:audit",
+      "think": true,
+      "tested": 60,
+      "expected": 60,
+      "passed": 33,
+      "critical": 12,
+      "infra": 0,
+      "median": 0.6931881670025177
+    },
+    {
+      "model": "margin-think-pilot2:audit",
+      "think": false,
+      "tested": 60,
+      "expected": 60,
+      "passed": 39,
+      "critical": 9,
+      "infra": 0,
+      "median": 0.3926623954976094
+    }
+  ]
+}

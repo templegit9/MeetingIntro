@@ -1,0 +1,9 @@
+{
+  "reviewed_at": "2026-09-11T03:48:06.064700+00:00",
+  "checks": {
+    "paused learning leaves preferences unchanged": {
+      "status": "invalid_test",
+      "reason": "The assertion compared against safeBefore captured before the preceding permission-escalation experiment. That experiment changed learned state, so a disabled no-op was incorrectly marked failed. The fixture now captures pausedBefore immediately before disabling learning. This result is excluded from pass/fail scoring, not converted to a pass."
+    }
+  }
+}

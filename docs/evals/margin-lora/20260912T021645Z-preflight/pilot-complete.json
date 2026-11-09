@@ -1,0 +1,54 @@
+{
+  "fetched_at": "2026-09-12T04:50:14.165143+00:00",
+  "state": {
+    "stage": "pilot_training_complete",
+    "mode": "pilot",
+    "timestamp": "2026-09-12T04:49:40.008291+00:00",
+    "elapsed_seconds": 7473.047047434001,
+    "step": 188,
+    "adapter": "/mnt/c/Users/oluyi/Documents/Projects/Margin-Empero-LoRA/artifacts/pilot-adapter",
+    "gpu": "2026/09/11 21:49:40.003, NVIDIA GeForce RTX 5070 Ti, 10793 MiB, 16303 MiB, 6 %, 45"
+  },
+  "final_metrics": [
+    {
+      "timestamp": "2026-09-12T04:49:36.441855+00:00",
+      "mode": "pilot",
+      "step": 188,
+      "planned_steps": 188,
+      "gpu": "2026/09/11 21:49:36.463, NVIDIA GeForce RTX 5070 Ti, 10793 MiB, 16303 MiB, 33 %, 49",
+      "peak_allocated_bytes": 17853229568,
+      "peak_reserved_bytes": 19016974336,
+      "metrics": {
+        "eval_loss": 0.010703088715672493,
+        "eval_runtime": 30.4274,
+        "eval_samples_per_second": 1.052,
+        "eval_steps_per_second": 1.052,
+        "epoch": 1.0
+      }
+    },
+    {
+      "timestamp": "2026-09-12T04:49:38.830809+00:00",
+      "mode": "pilot",
+      "step": 188,
+      "planned_steps": 188,
+      "gpu": "2026/09/11 21:49:38.850, NVIDIA GeForce RTX 5070 Ti, 10793 MiB, 16303 MiB, 4 %, 45",
+      "peak_allocated_bytes": 17853229568,
+      "peak_reserved_bytes": 19016974336,
+      "metrics": {
+        "train_runtime": 7339.3402,
+        "train_samples_per_second": 0.409,
+        "train_steps_per_second": 0.026,
+        "total_flos": 2.738504076991365e+17,
+        "train_loss": 0.012361933381917066,
+        "epoch": 1.0
+      }
+    }
+  ],
+  "checkpoints": [
+    "artifacts/pilot/checkpoint-170",
+    "artifacts/pilot/checkpoint-180",
+    "artifacts/pilot/checkpoint-188",
+    "artifacts/smoke/checkpoint-10",
+    "artifacts/smoke/checkpoint-20"
+  ]
+}

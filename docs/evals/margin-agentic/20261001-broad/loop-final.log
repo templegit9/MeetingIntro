@@ -1,0 +1,33 @@
+/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-loop-y92pea2i/checks.swift:451:23: warning: expression of type 'MarginToolLoop.End' is unused [#no-usage]
+449 |    try await MarginToolLoop.run(messages: [], request: { _ in throw CancellationError() }, prepare: { _ in fatalError("must not prepare") }, present: { _ in }, answer: { _ in })
+450 |   }
+451 |   do { try await task.value; fatalError("cancel swallowed") } catch is CancellationError { check(true, "cancellation propagates") }
+    |                       `- warning: expression of type 'MarginToolLoop.End' is unused [#no-usage]
+452 |   let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+453 |   defer { try? FileManager.default.removeItem(at: directory) }
+PASS read -> inspect -> read -> write preview
+PASS write never executes without confirmation
+PASS both read observations reach next model call
+PASS tool error -> corrected arguments -> grounded answer
+PASS identical call loop stops
+PASS step budget stops changing-call loop
+PASS stale ID permits inventory refresh and recovery
+PASS identical failed call still stops without retry
+PASS one error permits only one refresh of the same read
+PASS authorization pause blocks later calls and run closure
+PASS cancellation propagates
+PASS restart preserves unapproved goal and arguments
+PASS calendar source binding survives restart
+PASS crash during write becomes uncertain
+PASS uncertain write cannot execute again
+PASS execution receipt returns to model transcript
+PASS execution consumes pending approval
+PASS approval binds displayed target
+PASS resumes share persistent call budget
+PASS corrupt journal fails closed
+PASS failed persistence cannot publish executable proposal
+PASS human no-effect reconciliation requires new preview
+PASS completed operation cannot repeat within same task
+PASS starting another goal keeps interrupted task discoverable
+PASS archived goal can be restored with its original state
+25/25 orchestration checks passed

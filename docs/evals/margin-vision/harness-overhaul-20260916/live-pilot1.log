@@ -1,0 +1,11 @@
+PASS live Pilot 1: inspect -> evidence -> save proposal; no pre-approval write
+PASS live Pilot 1: confirm -> actual file -> resumed response
+MODEL: margin-lora-pilot:final; ELAPSED: 22.35563600063324; TIMESTAMP: 2026-09-17T05:25:51Z
+user: Inspect the fixture inventory, then save a copy to its preconfigured output. Use the tools and wait for my confirmation before saving.
+assistant: Fixture inventory
+One item: diagram note. Contents: Order received -> payment checked -> dispatch. Use save_fixture_copy to save it to the preconfigured temporary output.
+Proposal only; not confirmed.
+assistant: Save fixture copy
+/var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-live-9370D60D-983B-48B8-B2C8-0499D93858B8/fixture-copy.txt
+Saved and verified /var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-live-9370D60D-983B-48B8-B2C8-0499D93858B8/fixture-copy.txt
+assistant: Saved and verified: /var/folders/gz/pq0q76xn0dqcbqwhd_fnm77w0000gn/T/margin-live-9370D60D-983B-48B8-B2C8-0499D93858B8/fixture-copy.txt.

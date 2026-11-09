@@ -1,0 +1,15 @@
+{
+  "scope": "Offline diagnostic only; fences stripped for inspection, never accepted into calendar execution",
+  "missing_from_image": [
+    "year",
+    "timezone"
+  ],
+  "reported_uncertainties": [],
+  "invented_years": [
+    "2024"
+  ],
+  "invented_offsets": [
+    "+00:00"
+  ],
+  "passed": false
+}

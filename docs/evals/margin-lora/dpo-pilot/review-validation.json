@@ -1,0 +1,14 @@
+{
+  "pairs": 640,
+  "categories": {
+    "research_citations": 100,
+    "all_day_batches": 100,
+    "boundaries": 80,
+    "retention": 120,
+    "memory": 100,
+    "timezones": 40,
+    "calendar_destination": 100
+  },
+  "chosen_schema_errors": 0,
+  "review": "Rules and category samples reviewed; synthetic mutations, not independent human preference labels."
+}

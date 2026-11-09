@@ -1,0 +1,5 @@
+{
+  "timestamp": "2026-09-11T11:06:53.873713+00:00",
+  "stage": "cancelled",
+  "reason": "Granite skipped at user request; remaining Qwen candidates moved to a fresh run"
+}

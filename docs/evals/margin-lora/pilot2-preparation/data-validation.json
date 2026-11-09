@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "counts": {
+    "train": 3600,
+    "validation": 460,
+    "holdout": 600
+  },
+  "original_training_rows_retained": 3000,
+  "schema_errors": 0,
+  "fresh_holdout_cases": 17
+}

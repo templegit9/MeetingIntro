@@ -1,0 +1,20 @@
+{
+  "counts": {
+    "train": 576,
+    "validation": 64
+  },
+  "categories": {
+    "research_citations": 100,
+    "all_day_batches": 100,
+    "boundaries": 80,
+    "retention": 120,
+    "memory": 100,
+    "timezones": 40,
+    "calendar_destination": 100
+  },
+  "sha256": {
+    "train.jsonl": "f1a871fadefc0d3ef8e6611c301bd19e7fe833a4b6a944aa964797f881e19036",
+    "validation.jsonl": "6a787b850a38284da2facc1c1363c2654e8fd7649291e2f60b82aadf77aee431"
+  },
+  "review": "Synthetic preference pairs with reviewed mutation rules, not human-labeled feedback. Full original eval and separately frozen holdouts are excluded from training. Development validation is not independent generalization."
+}

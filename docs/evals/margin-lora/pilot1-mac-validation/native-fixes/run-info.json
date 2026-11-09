@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-09-13T00:55:52.433626+00:00",
+  "local_started_at": "2026-09-12T17:55:52.433626-07:00",
+  "finished_at": "2026-09-13T00:57:43.690315+00:00",
+  "exit_code": 0,
+  "learning_checks": false,
+  "filter": "Tentatively|shift tomorrow|move my|accept|decline|Put the following",
+  "context_only": false
+}

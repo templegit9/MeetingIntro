@@ -1,0 +1,87 @@
+{
+  "model": "qwen3.5:9b",
+  "started": "2026-09-11T06:14:55.027012+00:00",
+  "manifest_sha256": "f0130ac63a15d1a765945cc9c9dd56e3d9f5dcc3fda253bfd232d9fa3ca3b3b9",
+  "host": "Oluyinkas-Mac-mini.local",
+  "memory_bytes": 25769803776,
+  "runtime": {
+    "version": "0.32.13"
+  },
+  "profile": {
+    "num_ctx": 8192,
+    "num_predict": 2048,
+    "temperature": 0
+  },
+  "status": "incomplete",
+  "package": {
+    "name": "qwen3.5:9b",
+    "model": "qwen3.5:9b",
+    "modified_at": "2026-03-03T11:42:14.342538421-08:00",
+    "size": 6594474711,
+    "digest": "6488c96fa5faab64bb65cbd30d4289e20e6130ef535a93ef9a49f42eda893ea7",
+    "details": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "qwen35",
+      "families": [
+        "qwen35"
+      ],
+      "parameter_size": "9.7B",
+      "quantization_level": "Q4_K_M",
+      "context_length": 262144,
+      "embedding_length": 4096
+    },
+    "capabilities": [
+      "vision",
+      "completion",
+      "tools",
+      "thinking"
+    ]
+  },
+  "swap_start_bytes": 53589835776.0,
+  "cold_start_seconds": 16.090657042,
+  "cold_response": {
+    "model": "qwen3.5:9b",
+    "created_at": "2026-09-11T06:15:11.225557Z",
+    "message": {
+      "role": "assistant",
+      "content": "READY",
+      "thinking": "Thinking Process:\n\n1.  **Analyze the Request:** The user is asking me to reply *only* with the word \"READY\". This is a constraint-based instruction.\n\n2.  **Identify Constraints:**\n    *   Content: Must be exactly \"READY\".\n    *   Formatting: No extra text, no explanations, no punctuation (unless part of the word, but usually \"READY\" implies just the letters).\n    *   Tone: Direct compliance.\n\n3.  **Determine Output:** The only acceptable output is \"READY\".\n\n4.  **Final Check:** Does this violate any safety policies? No. It's a simple instruction following task.\n\n5.  **Construct Response:** READY.cw"
+    },
+    "done": true,
+    "done_reason": "stop",
+    "total_duration": 16088007333,
+    "load_duration": 6836813083,
+    "prompt_eval_count": 14,
+    "prompt_eval_duration": 322232000,
+    "eval_count": 156,
+    "eval_duration": 8927649000
+  },
+  "preflight_loaded_samples": [
+    [
+      {
+        "name": "qwen3.5:9b",
+        "model": "qwen3.5:9b",
+        "size": 5620493187,
+        "digest": "6488c96fa5faab64bb65cbd30d4289e20e6130ef535a93ef9a49f42eda893ea7",
+        "details": {
+          "parent_model": "",
+          "format": "gguf",
+          "family": "qwen35",
+          "families": [
+            "qwen35"
+          ],
+          "parameter_size": "9.7B",
+          "quantization_level": "Q4_K_M"
+        },
+        "expires_at": "2026-09-10T23:25:11.225646-07:00",
+        "size_vram": 5620493187,
+        "context_length": 8192
+      }
+    ]
+  ],
+  "finished": "2026-09-11T06:26:45.846587+00:00",
+  "reason": "Swap grew by over 2 GiB; hardware-pressure stop",
+  "models_loaded_at_end": [],
+  "swap_end_bytes": 57105711104.0
+}

@@ -1,0 +1,40 @@
+{
+  "generated": "2026-09-12T10:36:28.085554+00:00",
+  "complete": true,
+  "models": [
+    {
+      "model": "margin-lora-base-control:preflight",
+      "status": "completed",
+      "valid": 51,
+      "expected": 51,
+      "pass": 24,
+      "fail": 27,
+      "infrastructure": 0,
+      "not_run": 0,
+      "stable_cases": 8,
+      "critical_failures": 6,
+      "qualified": false,
+      "median": 8.126486624998506,
+      "p95": 23.222537249996094,
+      "rss_peak_bytes": 3755802624,
+      "runtime_vram_peak_bytes": 3129569443
+    },
+    {
+      "model": "margin-lora-pilot2:final",
+      "status": "completed",
+      "valid": 51,
+      "expected": 51,
+      "pass": 36,
+      "fail": 15,
+      "infrastructure": 0,
+      "not_run": 0,
+      "stable_cases": 12,
+      "critical_failures": 9,
+      "qualified": false,
+      "median": 5.9196117499959655,
+      "p95": 11.725752540995018,
+      "rss_peak_bytes": 3429367808,
+      "runtime_vram_peak_bytes": 3129569443
+    }
+  ]
+}

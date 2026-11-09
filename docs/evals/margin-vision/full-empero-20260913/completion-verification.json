@@ -1,0 +1,14 @@
+{
+  "status": {
+    "updated_at": "2026-09-13T03:34:45.079306+00:00",
+    "stage": "complete",
+    "completed": 114,
+    "total": 114
+  },
+  "completion": {
+    "finished_at": "2026-09-13T03:34:45.083303+00:00",
+    "completed": 114,
+    "training_started": false
+  },
+  "gpu": "625 MiB, 1 %\n"
+}

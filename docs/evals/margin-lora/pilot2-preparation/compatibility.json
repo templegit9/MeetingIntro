@@ -1,0 +1,85 @@
+{
+  "model": "margin-lora-pilot2:final",
+  "started": "2026-09-12T09:53:18.914515+00:00",
+  "checks": [
+    {
+      "name": "json",
+      "passed": true,
+      "response": {
+        "model": "margin-lora-pilot2:final",
+        "created_at": "2026-09-12T09:53:23.052205Z",
+        "message": {
+          "role": "assistant",
+          "content": "{\"ready\":true}",
+          "thinking": "Thinking Process:\n\n1.  **Analyze the Request:** The user wants a specific JSON object returned as the response. The object is `{\"ready\": true}`.\n2.  **Constraint:** Return *only* the JSON object. No markdown, no explanation, no extra text.\n3.  **Format:** Valid JSON.\n\nPlan: Output exactly `{\"ready\":true}`.\n"
+        },
+        "done": true,
+        "done_reason": "stop",
+        "total_duration": 4117088625,
+        "load_duration": 1443766542,
+        "prompt_eval_count": 21,
+        "prompt_eval_duration": 140773000,
+        "eval_count": 91,
+        "eval_duration": 2524574000
+      }
+    },
+    {
+      "name": "tool",
+      "passed": true,
+      "response": {
+        "model": "margin-lora-pilot2:final",
+        "created_at": "2026-09-12T09:53:31.463412Z",
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "thinking": "The user is asking what I can do. This matches the capability question pattern. I will call list_capabilities with no parameters.\n",
+          "tool_calls": [
+            {
+              "id": "J42tenXDPMEp5OrJdJd2cwxORrOCy2T2",
+              "function": {
+                "index": 0,
+                "name": "list_capabilities",
+                "arguments": {}
+              }
+            }
+          ]
+        },
+        "done": true,
+        "done_reason": "stop",
+        "total_duration": 8409119667,
+        "load_duration": 132107750,
+        "prompt_eval_count": 5246,
+        "prompt_eval_duration": 6969147000,
+        "eval_count": 42,
+        "eval_duration": 1252563000
+      }
+    }
+  ],
+  "runtime": {
+    "version": "0.30.10"
+  },
+  "package": {
+    "name": "margin-lora-pilot2:final",
+    "model": "margin-lora-pilot2:final",
+    "modified_at": "2026-09-12T02:53:18.822179825-07:00",
+    "size": 2783446710,
+    "digest": "a950eda3d11b3ed472c408879ac68e6a5d79bf944cc036df4483ca66d6bd28fa",
+    "details": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "qwen35",
+      "families": [
+        "qwen35"
+      ],
+      "parameter_size": "4.3B",
+      "quantization_level": "Q4_K_M",
+      "context_length": 262144,
+      "embedding_length": 2560
+    },
+    "capabilities": [
+      "completion"
+    ]
+  },
+  "passed": true,
+  "finished": "2026-09-12T09:53:31.492060+00:00"
+}
