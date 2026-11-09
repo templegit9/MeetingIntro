@@ -252,6 +252,43 @@ final class GraphCalendarProvider: CalendarProvider {
     /// explain the one-off re-sign-in rather than showing an unexplained disconnection.
     private(set) var registrationChanged = false
 
+    /// Set when Graph answers 429 or 503. Until then no Graph request is sent: retrying
+    /// every 30 s through a throttle is what extends it.
+    private var throttledUntil: Date?
+
+    private func throttleGuard(_ path: String) throws {
+        guard let until = throttledUntil else { return }
+        if until > Date() { throw CalendarProviderError.networkError(underlying: URLError(.cannotLoadFromNetwork)) }
+        throttledUntil = nil
+        onDiagnostic?("Microsoft 365 throttle lifted; resuming requests")
+    }
+
+    /// Records a throttle from a 429/503 and returns true when it was one.
+    private func noteThrottle(_ http: HTTPURLResponse, path: String) -> Bool {
+        guard http.statusCode == 429 || http.statusCode == 503 else { return false }
+        let header = http.value(forHTTPHeaderField: "Retry-After") ?? ""
+        let seconds = Self.retryAfterSeconds(header)
+        throttledUntil = Date().addingTimeInterval(seconds)
+        onDiagnostic?("Microsoft 365 throttled (HTTP \(http.statusCode)) on \(path); pausing requests for \(Int(seconds)) s (Retry-After: \(header.isEmpty ? "none" : header))")
+        return true
+    }
+
+    /// Retry-After is seconds or an HTTP date. Missing or odd values fall back to 60 s,
+    /// and the pause is held between 5 s and 10 min.
+    static func retryAfterSeconds(_ header: String) -> TimeInterval {
+        let trimmed = header.trimmingCharacters(in: .whitespaces)
+        var seconds: TimeInterval = 60
+        if let n = TimeInterval(trimmed) {
+            seconds = n
+        } else {
+            let f = DateFormatter()
+            f.locale = Locale(identifier: "en_US_POSIX")
+            f.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
+            if let date = f.date(from: trimmed) { seconds = date.timeIntervalSinceNow }
+        }
+        return min(max(seconds, 5), 600)
+    }
+
     private func validToken() async throws -> String {
         // Tokens from a previous registration can never be refreshed. Clear them once,
         // deliberately, rather than letting every call fail against Microsoft.
@@ -292,11 +329,25 @@ final class GraphCalendarProvider: CalendarProvider {
         request.httpBody = "grant_type=refresh_token&client_id=\(clientId)&refresh_token=\(refresh)&scope=\(Self.oauthScope)"
             .data(using: .utf8)
 
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await URLSession.shared.data(for: request)
         guard let tokenResponse = try? JSONDecoder().decode(TokenResponse.self, from: data) else {
-            // Refresh token rejected/expired — force a fresh sign-in.
-            signOut()
-            throw CalendarProviderError.notAuthenticated
+            let http = response as? HTTPURLResponse
+            if let http, noteThrottle(http, path: "token refresh") {
+                throw CalendarProviderError.networkError(underlying: URLError(.cannotLoadFromNetwork))
+            }
+            // Only Microsoft saying the grant is dead ends the sign-in. A 5xx or an
+            // unreadable body during an outage keeps the tokens and retries next poll;
+            // signing out there turned a 5-minute Microsoft incident into a manual
+            // sign-in.
+            let code = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["error"] as? String ?? ""
+            let fatal: Set<String> = ["invalid_grant", "interaction_required", "invalid_client", "unauthorized_client", "consent_required"]
+            if fatal.contains(code) {
+                onDiagnostic?("Microsoft 365 refused the refresh token (\(code)); sign in again")
+                signOut()
+                throw CalendarProviderError.notAuthenticated
+            }
+            onDiagnostic?("Microsoft 365 token refresh failed temporarily (HTTP \(http?.statusCode ?? 0)\(code.isEmpty ? "" : ", \(code)")); keeping the sign-in and retrying")
+            throw CalendarProviderError.networkError(underlying: URLError(.badServerResponse))
         }
         self.accessToken = tokenResponse.accessToken
         self.tokenExpiration = Date().addingTimeInterval(TimeInterval(tokenResponse.expiresIn))
@@ -306,6 +357,7 @@ final class GraphCalendarProvider: CalendarProvider {
     }
 
     func fetchUpcomingEvents(within interval: TimeInterval) async throws -> [MeetingEvent] {
+        try throttleGuard("calendarview")
         let token = try await validToken()
 
         let now = Date()
@@ -383,7 +435,9 @@ final class GraphCalendarProvider: CalendarProvider {
             throw CalendarProviderError.unknown(underlying: URLError(.badURL))
         }
 
+        try throttleGuard(path)
         var request = URLRequest(url: url)
+        request.timeoutInterval = 20
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
@@ -391,6 +445,10 @@ final class GraphCalendarProvider: CalendarProvider {
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw CalendarProviderError.networkError(underlying: URLError(.badServerResponse))
+        }
+
+        if noteThrottle(httpResponse, path: "/" + path) {
+            throw CalendarProviderError.networkError(underlying: URLError(.cannotLoadFromNetwork))
         }
 
         if httpResponse.statusCode == 401 {
